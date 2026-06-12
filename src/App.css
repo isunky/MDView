@@ -32,10 +32,13 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: var(--brand-bg);
-  color: white;
-  font-weight: 760;
-  font-size: 13px;
+}
+
+.app-logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(16, 24, 40, 0.12));
 }
 
 .brand-block h1 {
@@ -388,10 +391,6 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: var(--brand-bg);
-  color: white;
-  font-size: 15px;
-  font-weight: 760;
 }
 
 .about-header h2 {

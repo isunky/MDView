@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { appInfo } from '../appInfo'
+import { AppLogo } from './AppLogo'
 
 type AboutDialogProps = {
   open: boolean
@@ -53,7 +54,7 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
 
         <div className="about-header">
           <div className="about-mark" aria-hidden="true">
-            MD
+            <AppLogo />
           </div>
           <div>
             <h2 id="about-title">About {appInfo.name}</h2>

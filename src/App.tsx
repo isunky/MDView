@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
+import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
 import { MarkdownPreview } from './components/MarkdownPreview'
 import { MarkdownEditor } from './components/MarkdownEditor'
@@ -220,7 +221,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
       <header className="topbar">
         <div className="brand-block">
           <div className="app-mark" aria-hidden="true">
-            MD
+            <AppLogo />
           </div>
           <div>
             <h1>MDView</h1>
