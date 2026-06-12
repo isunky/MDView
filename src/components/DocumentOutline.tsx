@@ -1,14 +1,26 @@
+import { PanelLeftClose } from 'lucide-react'
 import type { MarkdownOutlineItem } from '../domain/markdownOutline'
 
 type DocumentOutlineProps = {
   items: MarkdownOutlineItem[]
   onJump: (id: string) => void
+  onClose: () => void
 }
 
-export function DocumentOutline({ items, onJump }: DocumentOutlineProps) {
+export function DocumentOutline({ items, onJump, onClose }: DocumentOutlineProps) {
   return (
     <nav className="document-outline" aria-label="Document outline">
-      <div className="outline-title">Outline</div>
+      <div className="outline-header">
+        <div className="outline-title">Outline</div>
+        <button
+          type="button"
+          className="outline-close"
+          onClick={onClose}
+          aria-label="Collapse document outline"
+        >
+          <PanelLeftClose aria-hidden="true" />
+        </button>
+      </div>
       {items.length > 0 ? (
         <ol className="outline-list">
           {items.map((item) => (

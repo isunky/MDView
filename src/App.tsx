@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import {
   Eye,
   FilePlus2,
   FolderOpen,
   Info,
+  PanelLeftOpen,
   PencilLine,
   Save,
   SaveAll,
@@ -29,11 +30,24 @@ type AppProps = {
   fileAccess?: FileAccess
 }
 
+const DEFAULT_OUTLINE_WIDTH = 260
+const MIN_OUTLINE_WIDTH = 180
+const MAX_OUTLINE_WIDTH = 420
+const OUTLINE_KEYBOARD_STEP = 16
+
+type OutlineResizeStart = {
+  pointerX: number
+  width: number
+} | null
+
 function App({ fileAccess = tauriFileAccess }: AppProps) {
   const [markdownDocument, setMarkdownDocument] = useState(createInitialDocument)
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [statusMessage, setStatusMessage] = useState('Saved')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true)
+  const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
+  const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const outlineItems = useMemo(
     () => extractMarkdownOutline(markdownDocument.content),
     [markdownDocument.content],
@@ -73,6 +87,32 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
   useEffect(() => {
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`
   }, [markdownDocument.isDirty, markdownDocument.title])
+
+  useEffect(() => {
+    if (!outlineResizeStart) {
+      return
+    }
+
+    const resizeStart = outlineResizeStart
+
+    function handlePointerMove(event: PointerEvent) {
+      setOutlineWidth(
+        clampOutlineWidth(resizeStart.width + event.clientX - resizeStart.pointerX),
+      )
+    }
+
+    function handlePointerUp() {
+      setOutlineResizeStart(null)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+  }, [outlineResizeStart])
 
   async function handleNewDocument() {
     if (!canDiscardUnsavedChanges()) {
@@ -148,6 +188,28 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
   function handleOutlineJump(id: string) {
     window.document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+
+  function handleOutlineResizeKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+      return
+    }
+
+    event.preventDefault()
+    setOutlineWidth((currentWidth) =>
+      clampOutlineWidth(
+        currentWidth + (event.key === 'ArrowRight' ? OUTLINE_KEYBOARD_STEP : -OUTLINE_KEYBOARD_STEP),
+      ),
+    )
+  }
+
+  const isOutlineVisible = viewMode === 'preview' && isOutlineOpen
+  const workspaceClasses = [
+    'workspace',
+    viewMode === 'preview' && isOutlineOpen ? 'outline-open' : '',
+    viewMode === 'preview' && !isOutlineOpen ? 'outline-collapsed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const nativeFileTitle = fileAccess.supportsNativeFiles
     ? undefined
@@ -242,11 +304,45 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
         </div>
       </header>
 
-      <section className="workspace" aria-label="Markdown workspace">
-        {viewMode === 'preview' ? (
-          <aside className="outline-panel" aria-label="Outline panel">
-            <DocumentOutline items={outlineItems} onJump={handleOutlineJump} />
+      <section className={workspaceClasses} aria-label="Markdown workspace">
+        {isOutlineVisible ? (
+          <aside
+            className="outline-panel"
+            aria-label="Outline panel"
+            style={{ width: `${outlineWidth}px` }}
+          >
+            <DocumentOutline
+              items={outlineItems}
+              onJump={handleOutlineJump}
+              onClose={() => setIsOutlineOpen(false)}
+            />
           </aside>
+        ) : null}
+        {isOutlineVisible ? (
+          <div
+            className="outline-resizer"
+            role="separator"
+            aria-label="Resize document outline"
+            aria-orientation="vertical"
+            aria-valuemin={MIN_OUTLINE_WIDTH}
+            aria-valuemax={MAX_OUTLINE_WIDTH}
+            aria-valuenow={outlineWidth}
+            tabIndex={0}
+            onPointerDown={(event) => {
+              setOutlineResizeStart({ pointerX: event.clientX, width: outlineWidth })
+            }}
+            onKeyDown={handleOutlineResizeKey}
+          />
+        ) : null}
+        {viewMode === 'preview' && !isOutlineOpen ? (
+          <button
+            type="button"
+            className="outline-reopen"
+            onClick={() => setIsOutlineOpen(true)}
+            aria-label="Expand document outline"
+          >
+            <PanelLeftOpen aria-hidden="true" />
+          </button>
         ) : null}
         <section className="editor-panel" aria-label="Source editor panel">
           <MarkdownEditor value={markdownDocument.content} onChange={handleContentChange} />
@@ -262,6 +358,10 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'File operation failed'
+}
+
+function clampOutlineWidth(width: number): number {
+  return Math.min(Math.max(width, MIN_OUTLINE_WIDTH), MAX_OUTLINE_WIDTH)
 }
 
 export default App

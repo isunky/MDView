@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -115,6 +115,49 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Split preview and source' }))
 
     expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
+  })
+
+  it('collapses and reopens the outline in preview mode', async () => {
+    const user = userEvent.setup()
+    render(
+      <App
+        fileAccess={createFileAccess({
+          startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
+        })}
+      />,
+    )
+
+    expect(await screen.findByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse document outline' }))
+
+    expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Expand document outline' }))
+
+    expect(screen.getByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
+  })
+
+  it('resizes the outline with the preview separator', async () => {
+    render(
+      <App
+        fileAccess={createFileAccess({
+          startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
+        })}
+      />,
+    )
+
+    const separator = await screen.findByRole('separator', { name: 'Resize document outline' })
+    expect(separator).toHaveAttribute('aria-valuenow', '260')
+
+    fireEvent.pointerDown(separator, { clientX: 260 })
+    fireEvent.pointerMove(window, { clientX: 340 })
+    fireEvent.pointerUp(window)
+
+    await waitFor(() => {
+      expect(separator).toHaveAttribute('aria-valuenow', '340')
+      expect(screen.getByLabelText('Outline panel')).toHaveStyle({ width: '340px' })
+    })
   })
 })
 

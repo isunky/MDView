@@ -88,6 +88,9 @@
 .toolbar button:focus-visible,
 .view-controls button:focus-visible,
 .about-close:focus-visible,
+.outline-close:focus-visible,
+.outline-reopen:focus-visible,
+.outline-resizer:focus-visible,
 .markdown-editor:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -158,7 +161,6 @@
 
 .outline-panel {
   overflow: auto;
-  border-right: 1px solid var(--border);
   background: var(--toolbar-bg);
 }
 
@@ -181,6 +183,14 @@
   grid-template-columns: 260px minmax(0, 1fr);
 }
 
+.view-preview .workspace.outline-open {
+  grid-template-columns: auto 8px minmax(0, 1fr);
+}
+
+.view-preview .workspace.outline-collapsed {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
 .view-edit .workspace {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -190,16 +200,81 @@
 }
 
 .document-outline {
-  padding: 24px 14px;
+  padding: 18px 14px 24px;
+}
+
+.outline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .outline-title {
-  margin: 0 0 14px;
+  margin: 0;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 760;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.outline-close,
+.outline-reopen {
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--control-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.outline-close {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.outline-close:hover,
+.outline-reopen:hover {
+  border-color: var(--border);
+  background: var(--control-hover);
+}
+
+.outline-close svg,
+.outline-reopen svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.1;
+}
+
+.outline-resizer {
+  width: 8px;
+  min-width: 8px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background:
+    linear-gradient(to right, transparent 0 3px, rgba(100, 116, 139, 0.5) 3px 5px, transparent 5px),
+    var(--toolbar-bg);
+  cursor: col-resize;
+}
+
+.outline-resizer:hover,
+.outline-resizer:focus-visible {
+  background:
+    linear-gradient(to right, transparent 0 3px, var(--accent) 3px 5px, transparent 5px),
+    var(--control-hover);
+}
+
+.outline-reopen {
+  width: 44px;
+  min-width: 44px;
+  height: 100%;
+  border-radius: 0;
+  border-right: 1px solid var(--border);
+  background: var(--toolbar-bg);
 }
 
 .outline-list {
@@ -521,7 +596,17 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .view-preview .workspace.outline-open,
+  .view-preview .workspace.outline-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .view-preview .outline-panel {
+    display: none;
+  }
+
+  .view-preview .outline-resizer,
+  .view-preview .outline-reopen {
     display: none;
   }
 
