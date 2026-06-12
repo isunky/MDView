@@ -6,6 +6,10 @@
 
 MDView 是一个轻量级的跨平台 Markdown 桌面查看与简单编辑工具，基于 React、Vite 和 Tauri 构建。当前版本重点支持 Windows 桌面环境，并预留 macOS 打包配置。
 
+### 界面预览
+
+![MDView 软件截图](main.png)
+
 ### 主要功能
 
 - Markdown 预览优先的阅读体验。
@@ -121,6 +125,10 @@ Tauri 配置中已声明 `.md` 和 `.markdown` 文件关联：
 
 MDView is a lightweight cross-platform desktop app for viewing Markdown files and making simple source edits. It is built with React, Vite, and Tauri. The current version focuses on Windows desktop usage and keeps macOS bundle configuration ready for future builds.
 
+### Screenshot
+
+![MDView app screenshot](main.png)
+
 ### Features
 
 - Preview-first Markdown reading experience.
@@ -231,4 +239,3 @@ After installation, the operating system can register Markdown file associations
 - Version: 0.1.0
 - Author: Sunky
 - Website: www.sunky.net
-
