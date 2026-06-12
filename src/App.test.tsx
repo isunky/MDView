@@ -72,7 +72,7 @@ describe('App', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'About MDView' })
     expect(dialog).toBeInTheDocument()
-    expect(screen.getByText('Version 0.1.1')).toBeInTheDocument()
+    expect(screen.getByText('Version 0.1.2')).toBeInTheDocument()
     expect(screen.getByText('Sunky')).toBeInTheDocument()
     expect(screen.queryByText('Author Sunky')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'www.sunky.net' })).toHaveAttribute(
