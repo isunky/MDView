@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { appInfo } from './appInfo'
 import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 
 describe('App', () => {
@@ -72,7 +73,7 @@ describe('App', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'About MDView' })
     expect(dialog).toBeInTheDocument()
-    expect(screen.getByText('Version 0.1.2')).toBeInTheDocument()
+    expect(screen.getByText(`Version ${appInfo.version}`)).toBeInTheDocument()
     expect(screen.getByText('Sunky')).toBeInTheDocument()
     expect(screen.queryByText('Author Sunky')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'www.sunky.net' })).toHaveAttribute(

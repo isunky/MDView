@@ -1,47 +1,65 @@
-# MDView
+<p align="center">
+  <img src="src/assets/app-icon.png" alt="MDView logo" width="112" height="112" />
+</p>
 
-[中文](#中文) | [English](#english)
+<h1 align="center">MDView</h1>
+
+<p align="center">
+  A lightweight Markdown desktop viewer and source editor built with React, Vite, and Tauri.
+  <br />
+  轻量级 Markdown 桌面查看与源码编辑工具，基于 React、Vite 和 Tauri 构建。
+</p>
+
+<p align="center">
+  <a href="#中文">中文</a>
+  ·
+  <a href="#english">English</a>
+</p>
+
+<p align="center">
+  <strong>Version / 版本：</strong>0.1.3
+  ·
+  <strong>Author / 作者：</strong>Sunky
+  ·
+  <a href="https://www.sunky.net">www.sunky.net</a>
+</p>
+
+![MDView screenshot](main.png)
+
+---
 
 ## 中文
 
-MDView 是一个轻量级的跨平台 Markdown 桌面查看与简单编辑工具，基于 React、Vite 和 Tauri 构建。当前版本重点支持 Windows 桌面环境，并预留 macOS 打包配置。
+MDView 是一个轻量、清爽的 Markdown 桌面应用，适合快速打开、阅读和轻量编辑 `.md` / `.markdown` 文件。它采用预览优先的界面布局，同时保留源码编辑、目录导航和保存能力，当前版本主要面向 Windows 桌面环境。
 
-### 界面预览
+### 亮点
 
-![MDView 软件截图](main.png)
-
-### 主要功能
-
-- Markdown 预览优先的阅读体验。
-- 左侧目录栏，自动提取 `H1-H3` 标题并支持点击跳转。
-- Markdown 源文本编辑，支持未保存状态提示。
-- 打开、保存、另存为 `.md` / `.markdown` 文件。
-- 支持 GitHub Flavored Markdown：表格、任务列表、代码高亮等。
-- About 信息弹窗，展示版本、作者和网站信息。
-- Tauri 文件关联配置，后续可关联 `.md` / `.markdown` 文件直接打开。
-- Windows MSI 安装包打包配置。
+- **预览优先**：打开文档后优先进入阅读视图，减少干扰。
+- **目录导航**：自动提取 `H1` 到 `H3` 标题，支持点击跳转。
+- **源码编辑**：内置 Markdown 源码编辑区，支持编辑、保存和另存为。
+- **状态清晰**：显示已保存 / 未保存状态，降低误操作风险。
+- **GFM 支持**：支持表格、任务列表、代码高亮等 GitHub Flavored Markdown 能力。
+- **桌面集成**：基于 Tauri 2，支持 Windows MSI 打包和 Markdown 文件关联配置。
+- **中文友好**：已优化 Windows 中文字体回退，提升中文阅读清晰度。
 
 ### 技术栈
 
-- React 19
-- TypeScript
-- Vite
-- Tauri 2
-- react-markdown
-- remark-gfm
-- rehype-highlight
-- Vitest
-- ESLint
+| 层级 | 技术 |
+| --- | --- |
+| 桌面壳 | Tauri 2 |
+| 前端 | React 19, TypeScript, Vite |
+| Markdown | react-markdown, remark-gfm, rehype-highlight, highlight.js |
+| 测试与质量 | Vitest, Testing Library, ESLint |
 
-### 开发环境
+### 快速开始
 
-安装前端依赖：
+安装依赖：
 
 ```bash
 npm install
 ```
 
-仅运行 Web UI：
+运行 Web 预览：
 
 ```bash
 npm run dev
@@ -53,114 +71,106 @@ npm run dev
 npm run desktop:dev
 ```
 
-Tauri 桌面模式需要本机安装 Rust/Cargo 以及对应平台的构建工具。
+桌面开发和打包需要本机安装 Rust/Cargo。Windows 上还需要 Visual Studio Build Tools，并包含 C++ 构建工具。
 
-### 验证命令
+### 常用命令
 
 ```bash
-npm test
+npm run test
 npm run lint
 npm run build
 ```
 
 ### Windows 打包
 
-普通 Tauri 打包：
+生成默认 Tauri 安装包：
 
 ```bash
 npm run desktop:build
 ```
 
-仅打包 MSI：
+仅生成 MSI：
 
 ```bash
-npx tauri build --bundles msi
+npm run desktop:build -- --bundles msi
 ```
 
-在 Windows 上，如果需要使用 Visual Studio Build Tools 环境，可使用：
+如果当前终端没有加载 Visual Studio C++ 构建环境，可在 Windows 上使用：
 
 ```cmd
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 set PATH=%USERPROFILE%\.cargo\bin;%PATH%
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64
-npx tauri build --bundles msi
+npm run desktop:build -- --bundles msi
 ```
 
-MSI 默认输出目录：
+MSI 输出目录：
 
 ```text
 src-tauri/target/release/bundle/msi/
 ```
 
-### macOS 打包说明
+### 图标资源
 
-项目已包含 macOS bundle 配置，但 `.app` / DMG 需要在 macOS 环境或 macOS CI Runner 中构建。Windows 环境无法直接生成可用的 macOS 安装包，因为缺少 Apple SDK 和原生 macOS 链接工具链。
+当前应用图标来自新的 `MD` 扁平视觉设计：
 
-### 文件关联
+- 前端展示图标：`src/assets/app-icon.png`
+- Tauri 源图：`src-tauri/app-icon.png`
+- 平台图标集：`src-tauri/icons/`
 
-Tauri 配置中已声明 `.md` 和 `.markdown` 文件关联：
+如需重新生成平台图标，可使用：
 
-```json
-"fileAssociations": [
-  {
-    "ext": ["md", "markdown"],
-    "name": "Markdown Document",
-    "description": "Markdown text document",
-    "mimeType": "text/markdown",
-    "role": "Editor",
-    "rank": "Default"
-  }
-]
+```bash
+npx tauri icon src-tauri/app-icon.png
 ```
 
-安装包安装后，系统可根据平台行为注册 Markdown 文件关联。
+### macOS 说明
+
+项目保留了 macOS bundle 配置，但 `.app` / DMG 需要在 macOS 或 macOS CI Runner 上构建。Windows 环境缺少 Apple SDK 和 macOS 原生链接工具链，无法直接生成可用的 macOS 安装包。
 
 ### 项目信息
 
-- 应用名称：MDView
-- 当前版本：0.1.0
-- 作者：Sunky
-- 网站：www.sunky.net
+| 项目 | 内容 |
+| --- | --- |
+| 应用名称 | MDView |
+| 当前版本 | 0.1.3 |
+| 作者 | Sunky |
+| 网站 | [www.sunky.net](https://www.sunky.net) |
+| 许可证 | GPL-3.0 |
+
+---
 
 ## English
 
-MDView is a lightweight cross-platform desktop app for viewing Markdown files and making simple source edits. It is built with React, Vite, and Tauri. The current version focuses on Windows desktop usage and keeps macOS bundle configuration ready for future builds.
+MDView is a small, focused Markdown desktop app for opening, reading, and lightly editing `.md` / `.markdown` files. It is preview-first by default, but keeps source editing, document outline navigation, and save workflows close at hand. The current release is primarily tuned for Windows desktop usage.
 
-### Screenshot
+### Highlights
 
-![MDView app screenshot](main.png)
-
-### Features
-
-- Preview-first Markdown reading experience.
-- Left-side document outline generated from `H1-H3` headings with click-to-jump navigation.
-- Plain text Markdown source editing with unsaved-change state.
-- Open, save, and save-as for `.md` and `.markdown` files.
-- GitHub Flavored Markdown support, including tables, task lists, and code highlighting.
-- About dialog with version, author, and website information.
-- Tauri file association configuration for opening `.md` and `.markdown` documents directly.
-- Windows MSI installer packaging configuration.
+- **Preview-first reading**: opens documents in a clean reading layout.
+- **Document outline**: extracts `H1` to `H3` headings with click-to-jump navigation.
+- **Source editing**: includes a plain Markdown source editor with save and save-as support.
+- **Clear state**: shows saved / unsaved document status.
+- **GFM support**: renders tables, task lists, highlighted code blocks, and other GitHub Flavored Markdown features.
+- **Desktop packaging**: built on Tauri 2 with Windows MSI packaging and Markdown file association configuration.
+- **Chinese-friendly typography**: Windows font fallback has been tuned for clearer Chinese text rendering.
 
 ### Tech Stack
 
-- React 19
-- TypeScript
-- Vite
-- Tauri 2
-- react-markdown
-- remark-gfm
-- rehype-highlight
-- Vitest
-- ESLint
+| Layer | Technology |
+| --- | --- |
+| Desktop shell | Tauri 2 |
+| Frontend | React 19, TypeScript, Vite |
+| Markdown | react-markdown, remark-gfm, rehype-highlight, highlight.js |
+| Testing and quality | Vitest, Testing Library, ESLint |
 
-### Development
+### Getting Started
 
-Install frontend dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Run the web UI only:
+Run the web preview:
 
 ```bash
 npm run dev
@@ -172,12 +182,12 @@ Run the desktop app in development mode:
 npm run desktop:dev
 ```
 
-Tauri desktop mode requires Rust/Cargo and the platform-specific build tools installed on the build machine.
+Desktop development and packaging require Rust/Cargo. On Windows, Visual Studio Build Tools with the C++ toolchain is also required.
 
-### Verification
+### Common Commands
 
 ```bash
-npm test
+npm run test
 npm run lint
 npm run build
 ```
@@ -193,15 +203,15 @@ npm run desktop:build
 Build MSI only:
 
 ```bash
-npx tauri build --bundles msi
+npm run desktop:build -- --bundles msi
 ```
 
-On Windows, when the Visual Studio Build Tools environment is required, use:
+If the current terminal has not loaded the Visual Studio C++ build environment, use:
 
 ```cmd
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 set PATH=%USERPROFILE%\.cargo\bin;%PATH%
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64
-npx tauri build --bundles msi
+npm run desktop:build -- --bundles msi
 ```
 
 Default MSI output directory:
@@ -210,32 +220,30 @@ Default MSI output directory:
 src-tauri/target/release/bundle/msi/
 ```
 
-### macOS Packaging
+### Icon Assets
 
-The project includes macOS bundle configuration, but `.app` / DMG builds must be produced on macOS or a macOS CI runner. A Windows environment cannot directly produce usable macOS installers because it lacks the Apple SDK and native macOS linker toolchain.
+The app now uses the new flat `MD` logo design:
 
-### File Associations
+- Frontend icon: `src/assets/app-icon.png`
+- Tauri source icon: `src-tauri/app-icon.png`
+- Platform icon set: `src-tauri/icons/`
 
-The Tauri configuration declares `.md` and `.markdown` file associations:
+To regenerate platform icons:
 
-```json
-"fileAssociations": [
-  {
-    "ext": ["md", "markdown"],
-    "name": "Markdown Document",
-    "description": "Markdown text document",
-    "mimeType": "text/markdown",
-    "role": "Editor",
-    "rank": "Default"
-  }
-]
+```bash
+npx tauri icon src-tauri/app-icon.png
 ```
 
-After installation, the operating system can register Markdown file associations according to platform behavior.
+### macOS Notes
+
+The project keeps macOS bundle configuration in place, but `.app` / DMG builds must be produced on macOS or a macOS CI runner. Windows cannot produce usable macOS installers directly because it lacks the Apple SDK and native macOS linker toolchain.
 
 ### Project Info
 
-- App name: MDView
-- Version: 0.1.0
-- Author: Sunky
-- Website: www.sunky.net
+| Item | Value |
+| --- | --- |
+| App name | MDView |
+| Version | 0.1.3 |
+| Author | Sunky |
+| Website | [www.sunky.net](https://www.sunky.net) |
+| License | GPL-3.0 |
