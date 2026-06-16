@@ -34,6 +34,13 @@ fn write_markdown_file(path: String, content: String) -> Result<(), String> {
   fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))
 }
 
+#[tauri::command]
+fn write_html_file(path: String, content: String) -> Result<(), String> {
+  let path = PathBuf::from(path);
+  ensure_html_path(&path)?;
+  fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -42,7 +49,8 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       take_opened_files,
       read_markdown_file,
-      write_markdown_file
+      write_markdown_file,
+      write_html_file
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {
@@ -116,10 +124,44 @@ fn ensure_markdown_path(path: &Path) -> Result<(), String> {
   }
 }
 
+fn ensure_html_path(path: &Path) -> Result<(), String> {
+  if is_html_path(path) {
+    Ok(())
+  } else {
+    Err("Only HTML files with .html or .htm extensions are supported.".to_string())
+  }
+}
+
 fn is_markdown_path(path: &Path) -> bool {
   path
     .extension()
     .and_then(|extension| extension.to_str())
     .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "md" | "markdown"))
     .unwrap_or(false)
+}
+
+fn is_html_path(path: &Path) -> bool {
+  path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "html" | "htm"))
+    .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn accepts_html_export_paths() {
+    assert!(ensure_html_path(Path::new("report.html")).is_ok());
+    assert!(ensure_html_path(Path::new("report.htm")).is_ok());
+    assert!(ensure_html_path(Path::new("REPORT.HTML")).is_ok());
+  }
+
+  #[test]
+  fn rejects_non_html_export_paths() {
+    assert!(ensure_html_path(Path::new("report.md")).is_err());
+    assert!(ensure_html_path(Path::new("report")).is_err());
+  }
 }

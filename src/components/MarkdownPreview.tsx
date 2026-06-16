@@ -1,4 +1,5 @@
 import type { Content, Heading, PhrasingContent, Root } from 'mdast'
+import type { Ref } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -7,11 +8,12 @@ import { createHeadingIdCounts, createUniqueHeadingId } from '../domain/markdown
 
 type MarkdownPreviewProps = {
   content: string
+  previewRef?: Ref<HTMLElement>
 }
 
-export function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, previewRef }: MarkdownPreviewProps) {
   return (
-    <article className="markdown-preview" aria-label="Markdown preview">
+    <article className="markdown-preview" aria-label="Markdown preview" ref={previewRef}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkHeadingIds]} rehypePlugins={[rehypeHighlight]}>
         {content}
       </ReactMarkdown>

@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react'
+import {
+  ChevronDown,
   Eye,
   FilePlus2,
   FolderOpen,
-  Info,
-  Languages,
   PanelLeftOpen,
   PencilLine,
   Save,
@@ -23,7 +29,15 @@ import {
   replaceDocumentContent,
   updateDocumentDraft,
 } from './domain/documentState'
+import { buildExportHtml } from './domain/exportHtml'
 import { extractMarkdownOutline } from './domain/markdownOutline'
+import {
+  addRecentFile,
+  clearRecentFiles,
+  loadRecentFiles,
+  removeRecentFile,
+  saveRecentFiles,
+} from './domain/recentFiles'
 import {
   detectSystemLanguage,
   translations,
@@ -54,20 +68,42 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [isFileMenuOpen, setIsFileMenuOpen] = useState(false)
+  const [isLogoMenuOpen, setIsLogoMenuOpen] = useState(false)
+  const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
   const [isOutlineOpen, setIsOutlineOpen] = useState(true)
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
+  const logoMenuRef = useRef<HTMLDivElement | null>(null)
+  const previewRef = useRef<HTMLElement | null>(null)
   const outlineItems = useMemo(
     () => extractMarkdownOutline(markdownDocument.content),
     [markdownDocument.content],
   )
   const t = translations[language]
 
+  const rememberRecentFile = useCallback((path: string) => {
+    setRecentFiles((currentFiles) => {
+      const nextFiles = addRecentFile(currentFiles, path)
+      saveRecentFiles(nextFiles)
+      return nextFiles
+    })
+  }, [])
+
+  const forgetRecentFile = useCallback((path: string) => {
+    setRecentFiles((currentFiles) => {
+      const nextFiles = removeRecentFile(currentFiles, path)
+      saveRecentFiles(nextFiles)
+      return nextFiles
+    })
+  }, [])
+
   const loadFile = useCallback((file: OpenedMarkdownFile) => {
     setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path))
     setViewMode('preview')
     setStatusMessage('opened')
-  }, [])
+    rememberRecentFile(file.path)
+  }, [rememberRecentFile])
 
   useEffect(() => {
     fileAccess.readStartupMarkdownFile().then((file) => {
@@ -124,6 +160,35 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     }
   }, [outlineResizeStart])
 
+  useEffect(() => {
+    if (!isLogoMenuOpen) {
+      return
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target
+      if (target instanceof Node && logoMenuRef.current?.contains(target)) {
+        return
+      }
+
+      setIsLogoMenuOpen(false)
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsLogoMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isLogoMenuOpen])
+
   async function handleNewDocument() {
     if (!canDiscardUnsavedChanges()) {
       return
@@ -139,6 +204,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       return
     }
 
+    setIsFileMenuOpen(false)
+
     try {
       const file = await fileAccess.openMarkdownFile()
       if (file) {
@@ -149,15 +216,74 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     }
   }
 
+  async function handleOpenRecentFile(path: string) {
+    if (!canDiscardUnsavedChanges()) {
+      return
+    }
+
+    setIsFileMenuOpen(false)
+
+    try {
+      loadFile(await fileAccess.openMarkdownFileAtPath(path))
+    } catch {
+      forgetRecentFile(path)
+      setStatusMessage(t.recentFileOpenFailed)
+    }
+  }
+
+  async function handleExportHtml() {
+    setIsFileMenuOpen(false)
+
+    try {
+      const savedPath = await fileAccess.exportHtmlFile(
+        buildCurrentExportHtml(),
+        markdownDocument.path,
+        markdownDocument.title,
+      )
+      setStatusMessage(savedPath ? t.exportHtmlSaved : t.exportCanceled)
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error))
+    }
+  }
+
+  async function handleExportPdf() {
+    setIsFileMenuOpen(false)
+
+    try {
+      await fileAccess.printExportHtml(buildCurrentExportHtml(), markdownDocument.title)
+      setStatusMessage(t.printDialogOpened)
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error))
+    }
+  }
+
+  function buildCurrentExportHtml(): string {
+    const previewElement = previewRef.current
+    if (!previewElement) {
+      throw new Error(t.exportPreviewUnavailable)
+    }
+
+    return buildExportHtml({
+      title: markdownDocument.title,
+      lang: language === 'zh' ? 'zh-CN' : 'en',
+      contentHtml: previewElement.innerHTML,
+    })
+  }
+
   async function handleSaveFile() {
     try {
-      const savedPath = markdownDocument.path
-        ? await fileAccess.saveMarkdownFile(markdownDocument.path, markdownDocument.content)
-        : await fileAccess.saveMarkdownFileAs(markdownDocument.content, markdownDocument.path)
+      const currentPath = markdownDocument.path
+      const isSaveAs = !currentPath
+      const savedPath = isSaveAs
+        ? await fileAccess.saveMarkdownFileAs(markdownDocument.content, currentPath)
+        : await fileAccess.saveMarkdownFile(currentPath, markdownDocument.content)
 
       if (savedPath) {
         setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
         setStatusMessage('saved')
+        if (isSaveAs) {
+          rememberRecentFile(savedPath)
+        }
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
@@ -174,6 +300,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       if (savedPath) {
         setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
         setStatusMessage('saved')
+        rememberRecentFile(savedPath)
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
@@ -195,15 +322,27 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     )
   }
 
-  function handleLanguageChange(event: ChangeEvent<HTMLSelectElement>) {
-    setLanguage(event.currentTarget.value as AppLanguage)
+  function handleOpenAboutFromLogoMenu() {
+    setIsLogoMenuOpen(false)
+    setIsAboutOpen(true)
+  }
+
+  function handleLanguageSelect(nextLanguage: AppLanguage) {
+    setLanguage(nextLanguage)
+    setIsLogoMenuOpen(false)
+  }
+
+  function handleClearRecentFiles() {
+    clearRecentFiles()
+    setRecentFiles([])
+    setIsFileMenuOpen(false)
   }
 
   function handleOutlineJump(id: string) {
     window.document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  function handleOutlineResizeKey(event: KeyboardEvent<HTMLDivElement>) {
+  function handleOutlineResizeKey(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
       return
     }
@@ -234,8 +373,50 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
       <header className="topbar">
         <div className="brand-block">
-          <div className="app-mark" aria-hidden="true">
-            <AppLogo />
+          <div className="logo-menu" ref={logoMenuRef}>
+            <button
+              type="button"
+              className="app-mark logo-menu-trigger"
+              onClick={() => {
+                setIsFileMenuOpen(false)
+                setIsLogoMenuOpen((isOpen) => !isOpen)
+              }}
+              aria-label={t.logoMenuLabel}
+              aria-haspopup="menu"
+              aria-expanded={isLogoMenuOpen}
+            >
+              <AppLogo />
+            </button>
+            {isLogoMenuOpen ? (
+              <div className="logo-menu-panel" role="menu">
+                <button
+                  type="button"
+                  className="logo-menu-item"
+                  onClick={handleOpenAboutFromLogoMenu}
+                  role="menuitem"
+                >
+                  {t.about}
+                </button>
+                <div className="logo-menu-divider" />
+                <div className="logo-menu-label">{t.languageLabel}</div>
+                <button
+                  type="button"
+                  className={`logo-menu-item ${language === 'en' ? 'active' : ''}`}
+                  onClick={() => handleLanguageSelect('en')}
+                  role="menuitem"
+                >
+                  {t.languageEnglish}
+                </button>
+                <button
+                  type="button"
+                  className={`logo-menu-item ${language === 'zh' ? 'active' : ''}`}
+                  onClick={() => handleLanguageSelect('zh')}
+                  role="menuitem"
+                >
+                  {t.languageChinese}
+                </button>
+              </div>
+            ) : null}
           </div>
           <div>
             <h1>MDView</h1>
@@ -248,16 +429,79 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             <FilePlus2 aria-hidden="true" />
             <span>{t.createNew}</span>
           </button>
-          <button
-            type="button"
-            onClick={handleOpenFile}
-            aria-label={t.openLabel}
-            disabled={!fileAccess.supportsNativeFiles}
-            title={nativeFileTitle}
-          >
-            <FolderOpen aria-hidden="true" />
-            <span>{t.open}</span>
-          </button>
+          <div className="file-menu">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogoMenuOpen(false)
+                setIsFileMenuOpen((isOpen) => !isOpen)
+              }}
+              aria-haspopup="menu"
+              aria-expanded={isFileMenuOpen}
+              disabled={!fileAccess.supportsNativeFiles}
+              title={nativeFileTitle}
+            >
+              <FolderOpen aria-hidden="true" />
+              <span>{t.open}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {isFileMenuOpen && fileAccess.supportsNativeFiles ? (
+              <div className="file-menu-panel" role="menu">
+                <button
+                  type="button"
+                  className="file-menu-item"
+                  onClick={handleOpenFile}
+                  role="menuitem"
+                >
+                  {t.openMarkdownFile}
+                </button>
+                <div className="file-menu-divider" />
+                <div className="file-menu-section-label">{t.recentFiles}</div>
+                {recentFiles.length > 0 ? (
+                  recentFiles.map((file) => (
+                    <button
+                      key={file.path}
+                      type="button"
+                      className="file-menu-item recent-file-item"
+                      onClick={() => handleOpenRecentFile(file.path)}
+                      title={file.path}
+                      role="menuitem"
+                    >
+                      {file.title}
+                    </button>
+                  ))
+                ) : (
+                  <div className="file-menu-empty">{t.noRecentFiles}</div>
+                )}
+                <button
+                  type="button"
+                  className="file-menu-item file-menu-clear"
+                  onClick={handleClearRecentFiles}
+                  disabled={recentFiles.length === 0}
+                  role="menuitem"
+                >
+                  {t.clearRecentFiles}
+                </button>
+                <div className="file-menu-divider" />
+                <button
+                  type="button"
+                  className="file-menu-item"
+                  onClick={handleExportHtml}
+                  role="menuitem"
+                >
+                  {t.exportAsHtml}
+                </button>
+                <button
+                  type="button"
+                  className="file-menu-item"
+                  onClick={handleExportPdf}
+                  role="menuitem"
+                >
+                  {t.exportAsPdf}
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={handleSaveFile}
@@ -277,10 +521,6 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           >
             <SaveAll aria-hidden="true" />
             <span>{t.saveAs}</span>
-          </button>
-          <button type="button" onClick={() => setIsAboutOpen(true)} aria-label={t.aboutOpenLabel}>
-            <Info aria-hidden="true" />
-            <span>{t.about}</span>
           </button>
         </nav>
 
@@ -313,15 +553,6 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             <span>{t.split}</span>
           </button>
         </div>
-
-        <label className="language-control">
-          <Languages aria-hidden="true" />
-          <span className="visually-hidden">{t.languageLabel}</span>
-          <select value={language} onChange={handleLanguageChange} aria-label={t.languageLabel}>
-            <option value="en">{t.languageEnglish}</option>
-            <option value="zh">{t.languageChinese}</option>
-          </select>
-        </label>
 
         <div className={`save-state ${markdownDocument.isDirty ? 'dirty' : ''}`}>
           {visibleStatus}
@@ -377,7 +608,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           />
         </section>
         <section className="preview-panel" aria-label={t.previewPanel}>
-          <MarkdownPreview content={markdownDocument.content} />
+          <MarkdownPreview content={markdownDocument.content} previewRef={previewRef} />
         </section>
       </section>
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />

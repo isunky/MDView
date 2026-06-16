@@ -10,7 +10,7 @@
 .topbar {
   min-height: 64px;
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
   gap: 14px;
   align-items: center;
   padding: 10px 18px;
@@ -25,13 +25,31 @@
   gap: 12px;
 }
 
+.logo-menu {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
 .app-mark {
   width: 38px;
   height: 38px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: 8px;
+  background: transparent;
+}
+
+.logo-menu-trigger {
+  cursor: pointer;
+}
+
+.logo-menu-trigger:hover {
+  background: var(--control-hover);
+  border-color: var(--border);
 }
 
 .app-logo {
@@ -61,8 +79,7 @@
 }
 
 .toolbar,
-.view-controls,
-.language-control {
+.view-controls {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -91,6 +108,8 @@
 
 .toolbar button:focus-visible,
 .view-controls button:focus-visible,
+.logo-menu-trigger:focus-visible,
+.logo-menu-item:focus-visible,
 .about-close:focus-visible,
 .outline-close:focus-visible,
 .outline-reopen:focus-visible,
@@ -112,42 +131,122 @@
   stroke-width: 2.1;
 }
 
+.file-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.file-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 10;
+  width: min(320px, 80vw);
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  box-shadow: 0 16px 42px rgba(16, 24, 40, 0.16);
+}
+
+.toolbar .file-menu-item {
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+  justify-content: flex-start;
+  padding: 7px 9px;
+  border-radius: 6px;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.toolbar .recent-file-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar .file-menu-clear {
+  color: var(--text-muted);
+}
+
+.file-menu-empty,
+.file-menu-section-label {
+  padding: 8px 9px;
+  color: var(--text-muted);
+  font: 13px/1.35 var(--ui-font);
+}
+
+.file-menu-section-label {
+  padding-bottom: 3px;
+  font-weight: 760;
+}
+
+.file-menu-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+.logo-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 12;
+  width: 180px;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  box-shadow: 0 16px 42px rgba(16, 24, 40, 0.16);
+}
+
+.logo-menu-item {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--control-text);
+  background: transparent;
+  font: 600 13px/1.25 var(--ui-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.logo-menu-item:hover {
+  background: var(--control-hover);
+  border-color: var(--border);
+}
+
+.logo-menu-item.active {
+  color: var(--text-strong);
+  background: var(--segmented-bg);
+}
+
+.logo-menu-label {
+  padding: 8px 9px 3px;
+  color: var(--text-muted);
+  font: 760 12px/1.35 var(--ui-font);
+}
+
+.logo-menu-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
 .view-controls {
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--segmented-bg);
-}
-
-.language-control {
-  height: 36px;
-  padding: 0 9px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--control-text);
-  background: var(--toolbar-bg);
-}
-
-.language-control svg {
-  width: 17px;
-  height: 17px;
-  stroke-width: 2.1;
-}
-
-.language-control select {
-  border: 0;
-  color: inherit;
-  background: transparent;
-  font: 600 13px/1 var(--ui-font);
-}
-
-.language-control select:focus-visible {
-  outline: 0;
-}
-
-.language-control:focus-within {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
 }
 
 .visually-hidden {
@@ -619,8 +718,7 @@
   }
 
   .toolbar,
-  .view-controls,
-  .language-control {
+  .view-controls {
     overflow-x: auto;
   }
 
