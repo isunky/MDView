@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import {
   Eye,
   FilePlus2,
   FolderOpen,
   Info,
+  Languages,
   PanelLeftOpen,
   PencilLine,
   Save,
@@ -23,12 +24,18 @@ import {
   updateDocumentDraft,
 } from './domain/documentState'
 import { extractMarkdownOutline } from './domain/markdownOutline'
+import {
+  detectSystemLanguage,
+  translations,
+  type AppLanguage,
+} from './i18n'
 import { tauriFileAccess, type FileAccess, type OpenedMarkdownFile } from './platform/fileAccess'
 
 type ViewMode = 'preview' | 'edit' | 'split'
 
 type AppProps = {
   fileAccess?: FileAccess
+  initialLanguage?: AppLanguage
 }
 
 const DEFAULT_OUTLINE_WIDTH = 260
@@ -41,10 +48,11 @@ type OutlineResizeStart = {
   width: number
 } | null
 
-function App({ fileAccess = tauriFileAccess }: AppProps) {
+function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
+  const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [markdownDocument, setMarkdownDocument] = useState(createInitialDocument)
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
-  const [statusMessage, setStatusMessage] = useState('Saved')
+  const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [isOutlineOpen, setIsOutlineOpen] = useState(true)
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
@@ -53,11 +61,12 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
     () => extractMarkdownOutline(markdownDocument.content),
     [markdownDocument.content],
   )
+  const t = translations[language]
 
   const loadFile = useCallback((file: OpenedMarkdownFile) => {
     setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path))
     setViewMode('preview')
-    setStatusMessage('Opened')
+    setStatusMessage('opened')
   }, [])
 
   useEffect(() => {
@@ -122,7 +131,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
 
     setMarkdownDocument(createInitialDocument())
     setViewMode('edit')
-    setStatusMessage('Saved')
+    setStatusMessage('saved')
   }
 
   async function handleOpenFile() {
@@ -148,7 +157,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
 
       if (savedPath) {
         setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
-        setStatusMessage('Saved')
+        setStatusMessage('saved')
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
@@ -164,7 +173,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
 
       if (savedPath) {
         setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
-        setStatusMessage('Saved')
+        setStatusMessage('saved')
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
@@ -174,7 +183,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
   function handleContentChange(content: string) {
     setMarkdownDocument((current) => {
       const nextDocument = updateDocumentDraft(current, content)
-      setStatusMessage(nextDocument.isDirty ? 'Unsaved' : 'Saved')
+      setStatusMessage(nextDocument.isDirty ? 'unsaved' : 'saved')
       return nextDocument
     })
   }
@@ -182,8 +191,12 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
   function canDiscardUnsavedChanges(): boolean {
     return (
       !markdownDocument.isDirty ||
-      window.confirm('You have unsaved changes. Discard them and continue?')
+      window.confirm(t.discardUnsaved)
     )
+  }
+
+  function handleLanguageChange(event: ChangeEvent<HTMLSelectElement>) {
+    setLanguage(event.currentTarget.value as AppLanguage)
   }
 
   function handleOutlineJump(id: string) {
@@ -214,10 +227,11 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
 
   const nativeFileTitle = fileAccess.supportsNativeFiles
     ? undefined
-    : 'Native file dialogs are available after launching the desktop app.'
+    : t.nativeFileUnavailable
+  const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
 
   return (
-    <main className={`app-shell view-${viewMode}`}>
+    <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
       <header className="topbar">
         <div className="brand-block">
           <div className="app-mark" aria-hidden="true">
@@ -229,93 +243,103 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
           </div>
         </div>
 
-        <nav className="toolbar" aria-label="Document actions">
-          <button type="button" onClick={handleNewDocument} aria-label="Create new markdown file">
+        <nav className="toolbar" aria-label={t.documentActions}>
+          <button type="button" onClick={handleNewDocument} aria-label={t.createNewLabel}>
             <FilePlus2 aria-hidden="true" />
-            <span>New</span>
+            <span>{t.createNew}</span>
           </button>
           <button
             type="button"
             onClick={handleOpenFile}
-            aria-label="Open markdown file"
+            aria-label={t.openLabel}
             disabled={!fileAccess.supportsNativeFiles}
             title={nativeFileTitle}
           >
             <FolderOpen aria-hidden="true" />
-            <span>Open</span>
+            <span>{t.open}</span>
           </button>
           <button
             type="button"
             onClick={handleSaveFile}
-            aria-label="Save markdown file"
+            aria-label={t.saveLabel}
             disabled={!fileAccess.supportsNativeFiles}
             title={nativeFileTitle}
           >
             <Save aria-hidden="true" />
-            <span>Save</span>
+            <span>{t.save}</span>
           </button>
           <button
             type="button"
             onClick={handleSaveFileAs}
-            aria-label="Save markdown file as"
+            aria-label={t.saveAsLabel}
             disabled={!fileAccess.supportsNativeFiles}
             title={nativeFileTitle}
           >
             <SaveAll aria-hidden="true" />
-            <span>Save As</span>
+            <span>{t.saveAs}</span>
           </button>
-          <button type="button" onClick={() => setIsAboutOpen(true)} aria-label="Open about dialog">
+          <button type="button" onClick={() => setIsAboutOpen(true)} aria-label={t.aboutOpenLabel}>
             <Info aria-hidden="true" />
-            <span>About</span>
+            <span>{t.about}</span>
           </button>
         </nav>
 
-        <div className="view-controls" aria-label="View mode">
+        <div className="view-controls" aria-label={t.viewMode}>
           <button
             type="button"
             className={viewMode === 'preview' ? 'active' : ''}
             onClick={() => setViewMode('preview')}
-            aria-label="Preview markdown"
+            aria-label={t.previewLabel}
           >
             <Eye aria-hidden="true" />
-            <span>Preview</span>
+            <span>{t.preview}</span>
           </button>
           <button
             type="button"
             className={viewMode === 'edit' ? 'active' : ''}
             onClick={() => setViewMode('edit')}
-            aria-label="Edit markdown source"
+            aria-label={t.editLabel}
           >
             <PencilLine aria-hidden="true" />
-            <span>Edit</span>
+            <span>{t.edit}</span>
           </button>
           <button
             type="button"
             className={viewMode === 'split' ? 'active' : ''}
             onClick={() => setViewMode('split')}
-            aria-label="Split preview and source"
+            aria-label={t.splitLabel}
           >
             <SplitSquareHorizontal aria-hidden="true" />
-            <span>Split</span>
+            <span>{t.split}</span>
           </button>
         </div>
 
+        <label className="language-control">
+          <Languages aria-hidden="true" />
+          <span className="visually-hidden">{t.languageLabel}</span>
+          <select value={language} onChange={handleLanguageChange} aria-label={t.languageLabel}>
+            <option value="en">{t.languageEnglish}</option>
+            <option value="zh">{t.languageChinese}</option>
+          </select>
+        </label>
+
         <div className={`save-state ${markdownDocument.isDirty ? 'dirty' : ''}`}>
-          {markdownDocument.isDirty ? 'Unsaved' : statusMessage}
+          {visibleStatus}
         </div>
       </header>
 
-      <section className={workspaceClasses} aria-label="Markdown workspace">
+      <section className={workspaceClasses} aria-label={t.workspace}>
         {isOutlineVisible ? (
           <aside
             className="outline-panel"
-            aria-label="Outline panel"
+            aria-label={t.outlinePanel}
             style={{ width: `${outlineWidth}px` }}
           >
             <DocumentOutline
               items={outlineItems}
               onJump={handleOutlineJump}
               onClose={() => setIsOutlineOpen(false)}
+              t={t}
             />
           </aside>
         ) : null}
@@ -323,7 +347,7 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
           <div
             className="outline-resizer"
             role="separator"
-            aria-label="Resize document outline"
+            aria-label={t.resizeOutline}
             aria-orientation="vertical"
             aria-valuemin={MIN_OUTLINE_WIDTH}
             aria-valuemax={MAX_OUTLINE_WIDTH}
@@ -340,25 +364,45 @@ function App({ fileAccess = tauriFileAccess }: AppProps) {
             type="button"
             className="outline-reopen"
             onClick={() => setIsOutlineOpen(true)}
-            aria-label="Expand document outline"
+            aria-label={t.expandOutline}
           >
             <PanelLeftOpen aria-hidden="true" />
           </button>
         ) : null}
-        <section className="editor-panel" aria-label="Source editor panel">
-          <MarkdownEditor value={markdownDocument.content} onChange={handleContentChange} />
+        <section className="editor-panel" aria-label={t.sourceEditorPanel}>
+          <MarkdownEditor
+            value={markdownDocument.content}
+            onChange={handleContentChange}
+            label={t.markdownSource}
+          />
         </section>
-        <section className="preview-panel" aria-label="Preview panel">
+        <section className="preview-panel" aria-label={t.previewPanel}>
           <MarkdownPreview content={markdownDocument.content} />
         </section>
       </section>
-      <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
     </main>
   )
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'File operation failed'
+  return error instanceof Error ? error.message : translations.en.fileOperationFailed
+}
+
+function translateStatus(statusMessage: 'saved' | 'opened' | string, t: (typeof translations)['en']) {
+  if (statusMessage === 'saved') {
+    return t.saved
+  }
+
+  if (statusMessage === 'opened') {
+    return t.opened
+  }
+
+  if (statusMessage === 'unsaved') {
+    return t.unsaved
+  }
+
+  return statusMessage
 }
 
 function clampOutlineWidth(width: number): number {

@@ -1,14 +1,16 @@
 import { useEffect } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { appInfo } from '../appInfo'
+import type { Translation } from '../i18n'
 import { AppLogo } from './AppLogo'
 
 type AboutDialogProps = {
   open: boolean
   onClose: () => void
+  t: Translation
 }
 
-export function AboutDialog({ open, onClose }: AboutDialogProps) {
+export function AboutDialog({ open, onClose, t }: AboutDialogProps) {
   useEffect(() => {
     if (!open) {
       return
@@ -47,7 +49,7 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
           type="button"
           className="about-close"
           onClick={onClose}
-          aria-label="Close about dialog"
+          aria-label={t.closeAbout}
         >
           <X aria-hidden="true" />
         </button>
@@ -57,22 +59,22 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
             <AppLogo />
           </div>
           <div>
-            <h2 id="about-title">About {appInfo.name}</h2>
-            <p>Markdown viewer and editor</p>
+            <h2 id="about-title">{t.aboutTitle}</h2>
+            <p>{t.aboutSubtitle}</p>
           </div>
         </div>
 
         <dl className="about-meta">
           <div className="about-row">
-            <dt>Version</dt>
-            <dd>Version {appInfo.version}</dd>
+            <dt>{t.versionLabel}</dt>
+            <dd>{t.versionValue(appInfo.version)}</dd>
           </div>
           <div className="about-row">
-            <dt>Author</dt>
+            <dt>{t.authorLabel}</dt>
             <dd>{appInfo.author}</dd>
           </div>
           <div className="about-row">
-            <dt>Website</dt>
+            <dt>{t.websiteLabel}</dt>
             <dd>
               <a href={appInfo.websiteUrl} target="_blank" rel="noreferrer">
                 {appInfo.website}

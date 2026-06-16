@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { appInfo } from './appInfo'
@@ -7,7 +8,7 @@ import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 
 describe('App', () => {
   it('loads a markdown file passed by the desktop shell at startup', async () => {
-    render(<App fileAccess={createFileAccess({ startupFile: file('/tmp/start.md', '# Startup') })} />)
+    renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/start.md', '# Startup') }) })
 
     expect(await screen.findByRole('heading', { name: 'Startup' })).toBeInTheDocument()
     expect(screen.getByText('start.md')).toBeInTheDocument()
@@ -15,7 +16,7 @@ describe('App', () => {
 
   it('opens a markdown file from the toolbar', async () => {
     const user = userEvent.setup()
-    render(<App fileAccess={createFileAccess({ openFile: file('/tmp/readme.md', '# Readme') })} />)
+    renderApp({ fileAccess: createFileAccess({ openFile: file('/tmp/readme.md', '# Readme') }) })
 
     await user.click(screen.getByRole('button', { name: 'Open markdown file' }))
 
@@ -26,14 +27,12 @@ describe('App', () => {
   it('marks edits as unsaved and saves the current file path', async () => {
     const user = userEvent.setup()
     const saveMarkdownFile = vi.fn(async (path: string) => path)
-    render(
-      <App
-        fileAccess={createFileAccess({
-          startupFile: file('/tmp/draft.md', '# Draft'),
-          saveMarkdownFile,
-        })}
-      />,
-    )
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/draft.md', '# Draft'),
+        saveMarkdownFile,
+      }),
+    })
 
     await screen.findByRole('heading', { name: 'Draft' })
     await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
@@ -52,7 +51,7 @@ describe('App', () => {
 
   it('returns to saved state when edits match the saved content again', async () => {
     const user = userEvent.setup()
-    render(<App fileAccess={createFileAccess({ startupFile: file('/tmp/draft.md', '# Draft') })} />)
+    renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/draft.md', '# Draft') }) })
 
     await screen.findByRole('heading', { name: 'Draft' })
     await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
@@ -67,7 +66,7 @@ describe('App', () => {
 
   it('opens and closes the About dialog with version and author details', async () => {
     const user = userEvent.setup()
-    render(<App fileAccess={createFileAccess()} />)
+    renderApp({ fileAccess: createFileAccess() })
 
     await user.click(screen.getByRole('button', { name: 'Open about dialog' }))
 
@@ -90,16 +89,14 @@ describe('App', () => {
     const user = userEvent.setup()
     const scrollIntoView = vi.fn()
     window.HTMLElement.prototype.scrollIntoView = scrollIntoView
-    render(
-      <App
-        fileAccess={createFileAccess({
-          startupFile: file(
-            '/tmp/outline.md',
-            ['# Project Plan', '', '## Scope', '', '### Details'].join('\n'),
-          ),
-        })}
-      />,
-    )
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file(
+          '/tmp/outline.md',
+          ['# Project Plan', '', '## Scope', '', '### Details'].join('\n'),
+        ),
+      }),
+    })
 
     expect(await screen.findByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Jump to Project Plan' })).toBeInTheDocument()
@@ -120,13 +117,11 @@ describe('App', () => {
 
   it('collapses and reopens the outline in preview mode', async () => {
     const user = userEvent.setup()
-    render(
-      <App
-        fileAccess={createFileAccess({
-          startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
-        })}
-      />,
-    )
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
+      }),
+    })
 
     expect(await screen.findByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
 
@@ -140,13 +135,11 @@ describe('App', () => {
   })
 
   it('resizes the outline with the preview separator', async () => {
-    render(
-      <App
-        fileAccess={createFileAccess({
-          startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
-        })}
-      />,
-    )
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
+      }),
+    })
 
     const separator = await screen.findByRole('separator', { name: 'Resize document outline' })
     expect(separator).toHaveAttribute('aria-valuenow', '260')
@@ -160,7 +153,25 @@ describe('App', () => {
       expect(screen.getByLabelText('Outline panel')).toHaveStyle({ width: '340px' })
     })
   })
+
+  it('uses Chinese interface text when the system language is Chinese and can switch languages', async () => {
+    const user = userEvent.setup()
+    render(<App fileAccess={createFileAccess()} initialLanguage="zh" />)
+
+    expect(screen.getByRole('button', { name: '新建 Markdown 文件' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '预览 Markdown' })).toBeInTheDocument()
+    expect(screen.getByText('已保存')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('界面语言'), 'en')
+
+    expect(screen.getByRole('button', { name: 'Create new markdown file' })).toBeInTheDocument()
+    expect(screen.getByText('Saved')).toBeInTheDocument()
+  })
 })
+
+function renderApp(props: ComponentProps<typeof App>) {
+  return render(<App {...props} initialLanguage={props.initialLanguage ?? 'en'} />)
+}
 
 function file(path: string, content: string): OpenedMarkdownFile {
   return { path, content }

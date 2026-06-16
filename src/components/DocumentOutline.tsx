@@ -1,22 +1,24 @@
 import { PanelLeftClose } from 'lucide-react'
 import type { MarkdownOutlineItem } from '../domain/markdownOutline'
+import type { Translation } from '../i18n'
 
 type DocumentOutlineProps = {
   items: MarkdownOutlineItem[]
   onJump: (id: string) => void
   onClose: () => void
+  t: Translation
 }
 
-export function DocumentOutline({ items, onJump, onClose }: DocumentOutlineProps) {
+export function DocumentOutline({ items, onJump, onClose, t }: DocumentOutlineProps) {
   return (
-    <nav className="document-outline" aria-label="Document outline">
+    <nav className="document-outline" aria-label={t.outlineNav}>
       <div className="outline-header">
-        <div className="outline-title">Outline</div>
+        <div className="outline-title">{t.outline}</div>
         <button
           type="button"
           className="outline-close"
           onClick={onClose}
-          aria-label="Collapse document outline"
+          aria-label={t.collapseOutline}
         >
           <PanelLeftClose aria-hidden="true" />
         </button>
@@ -29,7 +31,7 @@ export function DocumentOutline({ items, onJump, onClose }: DocumentOutlineProps
                 type="button"
                 className={`outline-link depth-${item.level}`}
                 onClick={() => onJump(item.id)}
-                aria-label={`Jump to ${item.text}`}
+                aria-label={t.jumpTo(item.text)}
               >
                 {item.text}
               </button>
@@ -37,7 +39,7 @@ export function DocumentOutline({ items, onJump, onClose }: DocumentOutlineProps
           ))}
         </ol>
       ) : (
-        <p className="outline-empty">No headings</p>
+        <p className="outline-empty">{t.noHeadings}</p>
       )}
     </nav>
   )

@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Version / 版本：</strong>0.1.3
+  <strong>Version / 版本：</strong>1.2.0
   ·
   <strong>Author / 作者：</strong>Sunky
   ·
@@ -41,6 +41,7 @@ MDView 是一个轻量、清爽的 Markdown 桌面应用，适合快速打开、
 - **GFM 支持**：支持表格、任务列表、代码高亮等 GitHub Flavored Markdown 能力。
 - **桌面集成**：基于 Tauri 2，支持 Windows MSI 打包和 Markdown 文件关联配置。
 - **中文友好**：已优化 Windows 中文字体回退，提升中文阅读清晰度。
+- **双语界面**：根据系统语言默认显示中文或英文，并支持在界面内切换。
 
 ### 技术栈
 
@@ -132,7 +133,7 @@ npx tauri icon src-tauri/app-icon.png
 | 项目 | 内容 |
 | --- | --- |
 | 应用名称 | MDView |
-| 当前版本 | 0.1.3 |
+| 当前版本 | 1.2.0 |
 | 作者 | Sunky |
 | 网站 | [www.sunky.net](https://www.sunky.net) |
 | 许可证 | GPL-3.0 |
@@ -152,6 +153,7 @@ MDView is a small, focused Markdown desktop app for opening, reading, and lightl
 - **GFM support**: renders tables, task lists, highlighted code blocks, and other GitHub Flavored Markdown features.
 - **Desktop packaging**: built on Tauri 2 with Windows MSI packaging and Markdown file association configuration.
 - **Chinese-friendly typography**: Windows font fallback has been tuned for clearer Chinese text rendering.
+- **Bilingual interface**: defaults to Chinese or English from the system language and can be switched in the UI.
 
 ### Tech Stack
 
@@ -243,7 +245,7 @@ The project keeps macOS bundle configuration in place, but `.app` / DMG builds m
 | Item | Value |
 | --- | --- |
 | App name | MDView |
-| Version | 0.1.3 |
+| Version | 1.2.0 |
 | Author | Sunky |
 | Website | [www.sunky.net](https://www.sunky.net) |
 | License | GPL-3.0 |
