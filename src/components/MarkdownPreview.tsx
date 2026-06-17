@@ -2,6 +2,7 @@ import type { Content, Heading, PhrasingContent, Root } from 'mdast'
 import { useEffect, useState, type ComponentProps, type MouseEvent, type Ref } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 import 'highlight.js/styles/github.css'
 import {
@@ -30,7 +31,7 @@ export function MarkdownPreview({
     <article className="markdown-preview" aria-label="Markdown preview" ref={previewRef}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
           a({ href, children, ...props }) {
             function handleClick(event: MouseEvent<HTMLAnchorElement>) {

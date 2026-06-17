@@ -81,6 +81,33 @@ describe('MarkdownPreview', () => {
     expect(screen.queryByRole('dialog', { name: 'Image preview' })).not.toBeInTheDocument()
   })
 
+  it('renders inline HTML and loads local images inside HTML blocks', async () => {
+    const readLocalImageFile = vi.fn(async (path: string) => ({
+      path,
+      dataUrl: 'data:image/png;base64,logo',
+    }))
+
+    render(
+      <MarkdownPreview
+        content='<p align="center"><strong>HTML header</strong><br /><img src="images/logo.png" alt="Logo" width="112" /></p>'
+        sourcePath="C:\\Docs\\README.md"
+        readLocalImageFile={readLocalImageFile}
+      />,
+    )
+
+    expect(screen.queryByText(/<p align=/)).not.toBeInTheDocument()
+    expect(screen.getByText('HTML header')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(readLocalImageFile).toHaveBeenCalledWith('C:\\Docs\\images\\logo.png')
+    })
+
+    expect(screen.getByRole('img', { name: 'Logo' })).toHaveAttribute(
+      'src',
+      'data:image/png;base64,logo',
+    )
+  })
+
   it('opens local markdown links through the app and scrolls same-document anchors', () => {
     const onOpenMarkdownLink = vi.fn()
     const scrollIntoView = vi.fn()
