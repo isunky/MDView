@@ -12,6 +12,25 @@ describe('localMarkdownResources', () => {
     })
   })
 
+  it('resolves Windows absolute image paths', () => {
+    expect(resolveLocalMarkdownResource('C:\\Images\\cover.png', 'C:\\Docs\\Guide\\readme.md')).toEqual({
+      kind: 'image',
+      path: 'C:\\Images\\cover.png',
+    })
+
+    expect(resolveLocalMarkdownResource('C:/Images/cover.png', 'C:\\Docs\\Guide\\readme.md')).toEqual({
+      kind: 'image',
+      path: 'C:\\Images\\cover.png',
+    })
+  })
+
+  it('resolves file URL image paths', () => {
+    expect(resolveLocalMarkdownResource('file:///C:/Images/cover%20one.png', 'C:\\Docs\\Guide\\readme.md')).toEqual({
+      kind: 'image',
+      path: 'C:\\Images\\cover one.png',
+    })
+  })
+
   it('resolves markdown links with heading fragments', () => {
     expect(resolveLocalMarkdownResource('../intro.md#quick-start', 'C:\\Docs\\Guide\\readme.md')).toEqual({
       kind: 'markdown',

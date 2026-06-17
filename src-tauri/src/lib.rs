@@ -14,6 +14,7 @@ use tauri::{AppHandle, Emitter};
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ImageFilePayload {
   path: String,
   data_url: String,
@@ -214,6 +215,19 @@ mod tests {
   fn accepts_supported_image_paths() {
     assert!(ensure_image_path(Path::new("diagram.PNG")).is_ok());
     assert!(ensure_image_path(Path::new("photo.webp")).is_ok());
+  }
+
+  #[test]
+  fn serializes_image_payload_for_frontend() {
+    let payload = ImageFilePayload {
+      path: "diagram.png".to_string(),
+      data_url: "data:image/png;base64,abc".to_string(),
+    };
+
+    let value = serde_json::to_value(payload).expect("image payload should serialize");
+
+    assert_eq!(value["dataUrl"], "data:image/png;base64,abc");
+    assert!(value.get("data_url").is_none());
   }
 
   #[test]

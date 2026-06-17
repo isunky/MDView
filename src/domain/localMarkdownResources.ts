@@ -9,14 +9,18 @@ export function resolveLocalMarkdownResource(
   href: string | undefined,
   sourcePath: string | null | undefined,
 ): LocalMarkdownResource | null {
-  if (!href || !sourcePath || isExternalHref(href) || href.startsWith('#')) {
+  if (!href || isExternalHref(href) || href.startsWith('#')) {
     return null
   }
 
   const { pathPart, fragment } = splitFragment(href)
-  const decodedPath = decodePath(pathPart)
+  const decodedPath = toLocalPath(pathPart)
+  if (!sourcePath && !isAbsolutePath(decodedPath)) {
+    return null
+  }
+
   const extension = getExtension(decodedPath)
-  const resolvedPath = resolvePath(dirname(sourcePath), decodedPath)
+  const resolvedPath = resolvePath(sourcePath ? dirname(sourcePath) : '', decodedPath)
 
   if (imageExtensions.has(extension)) {
     return { kind: 'image', path: resolvedPath }
@@ -111,7 +115,15 @@ function isAbsolutePath(path: string): boolean {
 }
 
 function isExternalHref(href: string): boolean {
+  if (isWindowsAbsolutePath(href)) {
+    return false
+  }
+
   return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(href) && !href.startsWith('file:')
+}
+
+function isWindowsAbsolutePath(path: string): boolean {
+  return /^[a-zA-Z]:[\\/]/.test(path)
 }
 
 function getExtension(path: string): string {
@@ -125,5 +137,28 @@ function decodePath(value: string): string {
     return decodeURIComponent(value)
   } catch {
     return value
+  }
+}
+
+function toLocalPath(path: string): string {
+  if (!path.startsWith('file:')) {
+    return decodePath(path)
+  }
+
+  try {
+    const url = new URL(path)
+    const decodedPath = decodePath(url.pathname)
+
+    if (url.hostname) {
+      return `\\\\${url.hostname}${decodedPath.replace(/\//g, '\\')}`
+    }
+
+    if (/^\/[a-zA-Z]:\//.test(decodedPath)) {
+      return decodedPath.slice(1).replace(/\//g, '\\')
+    }
+
+    return decodedPath
+  } catch {
+    return decodePath(path)
   }
 }
