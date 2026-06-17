@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'src-tauri/target']),
+  globalIgnores(['dist', 'playwright-report', 'src-tauri/target', 'test-results']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -16,7 +16,10 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
 ])

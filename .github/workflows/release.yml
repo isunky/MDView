@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Windows MSI
+    runs-on: windows-latest
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Import Windows signing certificate
+        if: ${{ env.WINDOWS_CERTIFICATE_BASE64 != '' && env.WINDOWS_CERTIFICATE_PASSWORD != '' && env.WINDOWS_CERTIFICATE_THUMBPRINT != '' }}
+        shell: pwsh
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP "mdview-code-signing.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $password = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
+          Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password | Out-Null
+
+          $configPath = Join-Path $env:RUNNER_TEMP "tauri-signing.json"
+          @{
+            bundle = @{
+              windows = @{
+                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+                digestAlgorithm = "sha256"
+                timestampUrl = "http://timestamp.digicert.com"
+              }
+            }
+          } | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
+
+          "TAURI_SIGNING_CONFIG=$configPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          if ($env:TAURI_SIGNING_CONFIG) {
+            npm run tauri -- build --bundles msi --ci --config "$env:TAURI_SIGNING_CONFIG"
+          } else {
+            npm run tauri -- build --bundles msi --ci
+          }
+
+      - name: Upload MSI to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src-tauri/target/release/bundle/msi/*.msi
+          fail_on_unmatched_files: true

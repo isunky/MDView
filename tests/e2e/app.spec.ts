@@ -1,0 +1,126 @@
+import { expect, test, type Page } from '@playwright/test'
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'language', {
+      configurable: true,
+      value: 'en-US',
+    })
+    Object.defineProperty(navigator, 'languages', {
+      configurable: true,
+      value: ['en-US'],
+    })
+
+    const selectedPath = 'C:\\Docs\\E2E Opened.md'
+    const files: Record<string, string> = {
+      [selectedPath]: '# E2E Opened\n\nThis file was loaded by Playwright.\n',
+    }
+    const state = {
+      savedContent: null as string | null,
+      savedPath: null as string | null,
+    }
+    const win = window as typeof window & {
+      __MDVIEW_E2E_FILE_ACCESS__?: unknown
+      __MDVIEW_E2E_STATE__?: typeof state
+    }
+
+    localStorage.clear()
+    win.__MDVIEW_E2E_STATE__ = state
+    win.__MDVIEW_E2E_FILE_ACCESS__ = {
+      supportsNativeFiles: true,
+      openMarkdownFile: async () => ({
+        path: selectedPath,
+        content: files[selectedPath],
+      }),
+      openMarkdownFileAtPath: async (path: string) => {
+        const content = files[path]
+        if (content === undefined) {
+          throw new Error(`Missing test file: ${path}`)
+        }
+
+        return { path, content }
+      },
+      saveMarkdownFile: async (path: string, content: string) => {
+        state.savedPath = path
+        state.savedContent = content
+        files[path] = content
+        return path
+      },
+      saveMarkdownFileAs: async (content: string) => {
+        const path = 'C:\\Docs\\Saved As.md'
+        state.savedPath = path
+        state.savedContent = content
+        files[path] = content
+        return path
+      },
+      exportHtmlFile: async () => 'C:\\Docs\\Exported.html',
+      printExportHtml: async () => undefined,
+      readLocalImageFile: async (path: string) => ({
+        path,
+        dataUrl: 'data:image/png;base64,',
+      }),
+      readStartupMarkdownFile: async () => null,
+      listenForOpenedFiles: async () => null,
+    }
+  })
+
+  await page.goto('/')
+})
+
+test('opens a markdown file through the file menu', async ({ page }) => {
+  await openMarkdownFile(page)
+
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E Opened' })).toBeVisible()
+  await expect(page.locator('.save-state')).toHaveText('Opened')
+})
+
+test('saves edited markdown content', async ({ page }) => {
+  await openMarkdownFile(page)
+  await page.getByRole('button', { name: 'Edit markdown source' }).click()
+
+  await page
+    .getByRole('textbox', { name: 'Markdown source' })
+    .fill('# Saved from E2E\n\nUpdated by Playwright.\n')
+  await page.getByRole('button', { exact: true, name: 'Save markdown file' }).click()
+
+  await expect(page.locator('.save-state')).toHaveText('Saved')
+  await expect
+    .poll(() => getSavedContent(page))
+    .toContain('# Saved from E2E')
+})
+
+test('switches the interface language from the logo menu', async ({ page }) => {
+  await page.getByRole('button', { name: 'Open application menu' }).click()
+  await page.getByRole('menuitem', { name: '中文' }).click()
+
+  await expect(page.getByRole('button', { exact: true, name: '打开' })).toBeVisible()
+
+  await page.getByRole('button', { name: '打开应用菜单' }).click()
+  await expect(page.getByText('界面语言')).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: '关于' })).toBeVisible()
+})
+
+test('opens the About dialog from the logo menu', async ({ page }) => {
+  await page.getByRole('button', { name: 'Open application menu' }).click()
+  await page.getByRole('menuitem', { name: 'About' }).click()
+
+  await expect(page.getByRole('dialog', { name: 'About MDView' })).toBeVisible()
+  await expect(page.getByText(/^Version [0-9]+\.[0-9]+\.[0-9]+$/)).toBeVisible()
+})
+
+async function openMarkdownFile(page: Page) {
+  await page.getByRole('button', { exact: true, name: 'Open' }).click()
+  await page.getByRole('menuitem', { name: 'Open Markdown File' }).click()
+}
+
+async function getSavedContent(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const win = window as typeof window & {
+      __MDVIEW_E2E_STATE__?: {
+        savedContent: string | null
+      }
+    }
+
+    return win.__MDVIEW_E2E_STATE__?.savedContent ?? null
+  })
+}

@@ -50,7 +50,7 @@ MDView 是一个轻量、清爽的 Markdown 桌面应用，适合快速打开、
 | 桌面壳 | Tauri 2 |
 | 前端 | React 19, TypeScript, Vite |
 | Markdown | react-markdown, remark-gfm, rehype-highlight, highlight.js |
-| 测试与质量 | Vitest, Testing Library, ESLint |
+| 测试与质量 | Vitest, Testing Library, Playwright, ESLint, GitHub Actions |
 
 ### 快速开始
 
@@ -80,6 +80,8 @@ npm run desktop:dev
 npm run test
 npm run lint
 npm run build
+npm run test:e2e
+npm run version:sync -- 1.4.1
 ```
 
 ### Windows 打包
@@ -110,6 +112,21 @@ MSI 输出目录：
 src-tauri/target/release/bundle/msi/
 ```
 
+### CI、发布与签名
+
+项目包含 GitHub Actions 工作流：
+
+- PR / 主分支推送：自动运行单元测试、lint、前端构建、Web E2E，并构建 Windows MSI artifact。
+- 推送 `v*` 标签：自动构建 MSI，并上传到 GitHub Releases。
+
+Windows 安装包支持可选签名。如需在 CI 中签名 MSI，请在 GitHub Secrets 中配置：
+
+- `WINDOWS_CERTIFICATE_BASE64`
+- `WINDOWS_CERTIFICATE_PASSWORD`
+- `WINDOWS_CERTIFICATE_THUMBPRINT`
+
+未配置证书时，工作流会继续生成未签名 MSI。
+
 ### 图标资源
 
 当前应用图标来自新的 `MD` 扁平视觉设计：
@@ -133,7 +150,7 @@ npx tauri icon src-tauri/app-icon.png
 | 项目 | 内容 |
 | --- | --- |
 | 应用名称 | MDView |
-| 当前版本 | 1.2.0 |
+| 当前版本 | 1.4.0 |
 | 作者 | Sunky |
 | 网站 | [www.sunky.net](https://www.sunky.net) |
 | 许可证 | GPL-3.0 |
@@ -162,7 +179,7 @@ MDView is a small, focused Markdown desktop app for opening, reading, and lightl
 | Desktop shell | Tauri 2 |
 | Frontend | React 19, TypeScript, Vite |
 | Markdown | react-markdown, remark-gfm, rehype-highlight, highlight.js |
-| Testing and quality | Vitest, Testing Library, ESLint |
+| Testing and quality | Vitest, Testing Library, Playwright, ESLint, GitHub Actions |
 
 ### Getting Started
 
@@ -192,6 +209,8 @@ Desktop development and packaging require Rust/Cargo. On Windows, Visual Studio 
 npm run test
 npm run lint
 npm run build
+npm run test:e2e
+npm run version:sync -- 1.4.1
 ```
 
 ### Windows Packaging
@@ -222,6 +241,21 @@ Default MSI output directory:
 src-tauri/target/release/bundle/msi/
 ```
 
+### CI, Release, and Signing
+
+The repository includes GitHub Actions workflows:
+
+- Pull requests and main branch pushes run unit tests, lint, frontend build, Web E2E, and produce a Windows MSI artifact.
+- Pushing a `v*` tag builds the MSI and uploads it to GitHub Releases.
+
+Windows installers support optional signing. To sign MSI builds in CI, configure these GitHub Secrets:
+
+- `WINDOWS_CERTIFICATE_BASE64`
+- `WINDOWS_CERTIFICATE_PASSWORD`
+- `WINDOWS_CERTIFICATE_THUMBPRINT`
+
+If no certificate secrets are configured, the workflows still produce unsigned MSI builds.
+
 ### Icon Assets
 
 The app now uses the new flat `MD` logo design:
@@ -245,7 +279,7 @@ The project keeps macOS bundle configuration in place, but `.app` / DMG builds m
 | Item | Value |
 | --- | --- |
 | App name | MDView |
-| Version | 1.2.0 |
+| Version | 1.4.0 |
 | Author | Sunky |
 | Website | [www.sunky.net](https://www.sunky.net) |
 | License | GPL-3.0 |

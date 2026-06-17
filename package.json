@@ -11,6 +11,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "version:sync": "node scripts/sync-version.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.0",
     "@tauri-apps/cli": "^2.11.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
