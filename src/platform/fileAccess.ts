@@ -9,6 +9,11 @@ export type OpenedMarkdownFile = {
   content: string
 }
 
+export type LocalImageFile = {
+  path: string
+  dataUrl: string
+}
+
 export type FileAccess = {
   supportsNativeFiles: boolean
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
@@ -17,6 +22,7 @@ export type FileAccess = {
   saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<string | null>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
   printExportHtml: (html: string, title: string) => Promise<void>
+  readLocalImageFile: (path: string) => Promise<LocalImageFile>
   readStartupMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   listenForOpenedFiles: (callback: (file: OpenedMarkdownFile) => void) => Promise<UnlistenFn | null>
 }
@@ -95,6 +101,14 @@ export const tauriFileAccess: FileAccess = {
 
   async printExportHtml(html, title) {
     await printHtmlDocument(html, title)
+  },
+
+  async readLocalImageFile(path) {
+    if (!isTauriRuntime()) {
+      throw new Error('Local images are only available in the desktop app.')
+    }
+
+    return invoke<LocalImageFile>('read_image_file', { path })
   },
 
   async saveMarkdownFileAs(content, currentPath) {

@@ -308,6 +308,26 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Recent' })).toBeInTheDocument()
   })
 
+  it('opens a linked markdown file from the preview relative to the current file', async () => {
+    const user = userEvent.setup()
+    const openMarkdownFileAtPath = vi.fn(async (path: string) => file(path, '# Linked'))
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/docs/readme.md', '[Linked](linked.md#linked)'),
+        openMarkdownFileAtPath,
+      }),
+    })
+
+    await user.click(await screen.findByRole('link', { name: 'Linked' }))
+
+    expect(openMarkdownFileAtPath).toHaveBeenCalledWith('/tmp/docs/linked.md')
+    expect(await screen.findByRole('heading', { name: 'Linked' })).toBeInTheDocument()
+    expect(getStoredRecentFiles().map((file) => file.path)).toEqual([
+      '/tmp/docs/linked.md',
+      '/tmp/docs/readme.md',
+    ])
+  })
+
   it('removes a recent file when reopening it fails', async () => {
     const user = userEvent.setup()
     seedRecentFiles([recent('/tmp/missing.md', '2026-01-01T00:00:00.000Z')])
@@ -465,6 +485,7 @@ function createFileAccess(
     exportHtmlFile?: FileAccess['exportHtmlFile']
     printExportHtml?: FileAccess['printExportHtml']
     openMarkdownFileAtPath?: FileAccess['openMarkdownFileAtPath']
+    readLocalImageFile?: FileAccess['readLocalImageFile']
     listenForOpenedFiles?: FileAccess['listenForOpenedFiles']
   } = {},
 ): FileAccess {
@@ -477,6 +498,9 @@ function createFileAccess(
     saveMarkdownFileAs: overrides.saveMarkdownFileAs ?? vi.fn(async () => '/tmp/saved-as.md'),
     exportHtmlFile: overrides.exportHtmlFile ?? vi.fn(async () => '/tmp/export.html'),
     printExportHtml: overrides.printExportHtml ?? vi.fn(async () => undefined),
+    readLocalImageFile:
+      overrides.readLocalImageFile ??
+      vi.fn(async (path) => ({ path, dataUrl: 'data:image/png;base64,test' })),
     readStartupMarkdownFile: vi.fn(async () => overrides.startupFile ?? null),
     listenForOpenedFiles: overrides.listenForOpenedFiles ?? vi.fn(async () => null),
   }

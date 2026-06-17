@@ -74,6 +74,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [isOutlineOpen, setIsOutlineOpen] = useState(true)
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
+  const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
   const logoMenuRef = useRef<HTMLDivElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const outlineItems = useMemo(
@@ -133,6 +134,20 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   useEffect(() => {
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`
   }, [markdownDocument.isDirty, markdownDocument.title])
+
+  useEffect(() => {
+    if (!pendingHeadingId) {
+      return
+    }
+
+    const headingId = pendingHeadingId
+    const timeoutId = window.setTimeout(() => {
+      window.document.getElementById(headingId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setPendingHeadingId(null)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [markdownDocument.content, pendingHeadingId])
 
   useEffect(() => {
     if (!outlineResizeStart) {
@@ -228,6 +243,19 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     } catch {
       forgetRecentFile(path)
       setStatusMessage(t.recentFileOpenFailed)
+    }
+  }
+
+  async function handleOpenMarkdownLink(path: string, headingId?: string) {
+    if (!canDiscardUnsavedChanges()) {
+      return
+    }
+
+    try {
+      loadFile(await fileAccess.openMarkdownFileAtPath(path))
+      setPendingHeadingId(headingId ?? null)
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error))
     }
   }
 
@@ -608,7 +636,13 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           />
         </section>
         <section className="preview-panel" aria-label={t.previewPanel}>
-          <MarkdownPreview content={markdownDocument.content} previewRef={previewRef} />
+          <MarkdownPreview
+            content={markdownDocument.content}
+            previewRef={previewRef}
+            sourcePath={markdownDocument.path}
+            readLocalImageFile={fileAccess.readLocalImageFile}
+            onOpenMarkdownLink={handleOpenMarkdownLink}
+          />
         </section>
       </section>
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />

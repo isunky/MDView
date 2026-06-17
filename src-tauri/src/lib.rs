@@ -4,12 +4,20 @@ use std::{
   sync::Mutex,
 };
 
+use base64::{engine::general_purpose, Engine as _};
+use serde::Serialize;
 use tauri::State;
 
 #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 use tauri::{AppHandle, Emitter};
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
+
+#[derive(Serialize)]
+struct ImageFilePayload {
+  path: String,
+  data_url: String,
+}
 
 #[tauri::command]
 fn take_opened_files(opened_files: State<'_, OpenedFiles>) -> Vec<String> {
@@ -41,6 +49,20 @@ fn write_html_file(path: String, content: String) -> Result<(), String> {
   fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))
 }
 
+#[tauri::command]
+fn read_image_file(path: String) -> Result<ImageFilePayload, String> {
+  let path = PathBuf::from(path);
+  ensure_image_path(&path)?;
+  let bytes = fs::read(&path).map_err(|error| format!("Failed to read image: {error}"))?;
+  let mime_type = image_mime_type(&path)?;
+  let encoded = general_purpose::STANDARD.encode(bytes);
+
+  Ok(ImageFilePayload {
+    path: path.to_string_lossy().to_string(),
+    data_url: format!("data:{mime_type};base64,{encoded}"),
+  })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -50,7 +72,8 @@ pub fn run() {
       take_opened_files,
       read_markdown_file,
       write_markdown_file,
-      write_html_file
+      write_html_file,
+      read_image_file
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {
@@ -132,6 +155,10 @@ fn ensure_html_path(path: &Path) -> Result<(), String> {
   }
 }
 
+fn ensure_image_path(path: &Path) -> Result<(), String> {
+  image_mime_type(path).map(|_| ())
+}
+
 fn is_markdown_path(path: &Path) -> bool {
   path
     .extension()
@@ -146,6 +173,24 @@ fn is_html_path(path: &Path) -> bool {
     .and_then(|extension| extension.to_str())
     .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "html" | "htm"))
     .unwrap_or(false)
+}
+
+fn image_mime_type(path: &Path) -> Result<&'static str, String> {
+  match path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| extension.to_ascii_lowercase())
+    .as_deref()
+  {
+    Some("png") => Ok("image/png"),
+    Some("jpg") | Some("jpeg") => Ok("image/jpeg"),
+    Some("gif") => Ok("image/gif"),
+    Some("webp") => Ok("image/webp"),
+    Some("bmp") => Ok("image/bmp"),
+    Some("svg") => Ok("image/svg+xml"),
+    Some("avif") => Ok("image/avif"),
+    _ => Err("Only common image files are supported.".to_string()),
+  }
 }
 
 #[cfg(test)]
@@ -163,5 +208,16 @@ mod tests {
   fn rejects_non_html_export_paths() {
     assert!(ensure_html_path(Path::new("report.md")).is_err());
     assert!(ensure_html_path(Path::new("report")).is_err());
+  }
+
+  #[test]
+  fn accepts_supported_image_paths() {
+    assert!(ensure_image_path(Path::new("diagram.PNG")).is_ok());
+    assert!(ensure_image_path(Path::new("photo.webp")).is_ok());
+  }
+
+  #[test]
+  fn rejects_non_image_paths() {
+    assert!(ensure_image_path(Path::new("report.md")).is_err());
   }
 }
