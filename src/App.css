@@ -114,6 +114,7 @@
 .outline-close:focus-visible,
 .outline-reopen:focus-visible,
 .outline-resizer:focus-visible,
+.editor-toolbar button:focus-visible,
 .markdown-editor:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -309,6 +310,7 @@
 
 .editor-panel {
   display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--border);
   background: var(--editor-bg);
 }
@@ -587,9 +589,55 @@
   height: 14px;
 }
 
+.markdown-editor-shell {
+  min-height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.editor-toolbar {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--toolbar-bg);
+}
+
+.editor-toolbar button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--control-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.editor-toolbar button:hover {
+  border-color: var(--border);
+  background: var(--control-hover);
+}
+
+.editor-toolbar svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.15;
+}
+
+.editor-toolbar-spacer {
+  flex: 1;
+}
+
 .markdown-editor {
   width: 100%;
-  min-height: 100%;
+  min-height: 0;
+  flex: 1;
   resize: none;
   padding: 28px;
   border: 0;
@@ -597,6 +645,55 @@
   background: transparent;
   font: 14px/1.65 var(--mono-font);
   tab-size: 2;
+}
+
+.syntax-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, 0.22);
+}
+
+.syntax-dialog h2 {
+  margin: 0 42px 18px 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.syntax-reference-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.syntax-reference-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(120px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.syntax-reference-row code {
+  overflow-x: auto;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: var(--text-strong);
+  background: #f3f4f6;
+  font: 12px/1.5 var(--mono-font);
+  white-space: pre;
+}
+
+.syntax-reference-row span {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .markdown-preview {

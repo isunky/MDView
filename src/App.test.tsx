@@ -140,6 +140,26 @@ describe('App', () => {
     expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
   })
 
+  it('shows editor formatting tools in edit and split modes only', async () => {
+    const user = userEvent.setup()
+    renderApp({ fileAccess: createFileAccess() })
+
+    expect(screen.queryByRole('toolbar', { name: 'Markdown formatting' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+
+    expect(screen.getByRole('toolbar', { name: 'Markdown formatting' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Markdown syntax reference' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Split preview and source' }))
+
+    expect(screen.getByRole('toolbar', { name: 'Markdown formatting' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Preview markdown' }))
+
+    expect(screen.queryByRole('toolbar', { name: 'Markdown formatting' })).not.toBeInTheDocument()
+  })
+
   it('collapses and reopens the outline in preview mode', async () => {
     const user = userEvent.setup()
     renderApp({

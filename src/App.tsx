@@ -633,6 +633,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             value={markdownDocument.content}
             onChange={handleContentChange}
             label={t.markdownSource}
+            t={t}
+            showToolbar={viewMode !== 'preview'}
           />
         </section>
         <section className="preview-panel" aria-label={t.previewPanel}>
