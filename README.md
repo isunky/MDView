@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Version / 版本：</strong>1.2.0
+  <strong>Version / 版本：</strong>1.4.0
   ·
   <strong>Author / 作者：</strong>Sunky
   ·
