@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { open, save } from '@tauri-apps/plugin-dialog'
 import { createExportHtmlDefaultPath } from '../domain/exportHtml'
 import { ensureMarkdownExtension } from './markdownFiles'
@@ -183,42 +184,54 @@ async function printHtmlDocument(html: string, title: string) {
     throw new Error('Printing is only available in a browser window.')
   }
 
-  const iframe = document.createElement('iframe')
-  iframe.title = title
-  iframe.setAttribute('aria-hidden', 'true')
-  iframe.style.position = 'fixed'
-  iframe.style.right = '0'
-  iframe.style.bottom = '0'
-  iframe.style.width = '0'
-  iframe.style.height = '0'
-  iframe.style.border = '0'
-  iframe.style.opacity = '0'
-  document.body.append(iframe)
-
-  try {
-    const iframeDocument = iframe.contentDocument ?? iframe.contentWindow?.document
-    if (!iframeDocument) {
-      throw new Error('Unable to create print document.')
-    }
-
-    iframeDocument.open()
-    iframeDocument.write(html)
-    iframeDocument.close()
-
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
-
-    const iframeWindow = iframe.contentWindow
-    if (!iframeWindow) {
-      throw new Error('Unable to open print window.')
-    }
-
-    iframeWindow.focus()
-    iframeWindow.print()
-    window.setTimeout(() => iframe.remove(), 1000)
-  } catch (error) {
-    iframe.remove()
-    throw error
+  if (isTauriRuntime()) {
+    await printHtmlInTauriWindow(html, title)
+    return
   }
+
+  const printWindow = window.open('', '_blank', 'popup,width=900,height=700')
+  if (!printWindow) {
+    throw new Error('Unable to open print window.')
+  }
+
+  printWindow.document.open()
+  printWindow.document.write(html)
+  printWindow.document.close()
+  printWindow.focus()
+  printWindow.print()
+}
+
+async function printHtmlInTauriWindow(html: string, title: string) {
+  const label = `pdf-export-${Date.now()}`
+  const printWindow = new WebviewWindow(label, {
+    title,
+    url: createHtmlDataUrl(html),
+    width: 900,
+    height: 700,
+    center: true,
+    resizable: true,
+    focus: true,
+  })
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error('Unable to open print window.')), 5000)
+
+    printWindow.once('tauri://created', () => {
+      window.clearTimeout(timeout)
+      resolve()
+    })
+    printWindow.once('tauri://error', (event) => {
+      window.clearTimeout(timeout)
+      reject(new Error(String(event.payload)))
+    })
+  })
+
+  await new Promise<void>((resolve) => window.setTimeout(resolve, 500))
+  await invoke('plugin:webview|print', { label })
+}
+
+function createHtmlDataUrl(html: string): string {
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
 }
 
 function isTauriRuntime(): boolean {

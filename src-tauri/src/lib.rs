@@ -9,7 +9,7 @@ use serde::Serialize;
 use tauri::State;
 
 #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
