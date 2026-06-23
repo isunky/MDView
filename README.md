@@ -159,8 +159,13 @@ src-tauri/target/release/bundle/dmg/
 - PR 和主分支推送会自动执行单元测试、lint、前端构建和 Web E2E 测试。
 - CI 工作流也支持在 GitHub Actions 页面手动触发。
 - CI 会并行构建 Windows MSI 和兼容 Apple Silicon、Intel Mac 的 Universal DMG artifact。
-- 推送 `v*` 标签时会自动构建两个平台的安装包，并统一上传到 GitHub Releases。
+- 在 GitHub Actions 的 `Release` 工作流中选择 `patch`、`minor` 或 `major`，即可自动生成下一个版本号。
+- 发布流程会同步项目版本文件、提交版本变更、构建两个平台的安装包，并在构建成功后创建标准 Tag 和 GitHub Release。
+- 例如当前版本为 `1.5.0` 时，`patch` 生成 `1.5.1`，`minor` 生成 `1.6.0`，`major` 生成 `2.0.0`。
+- 也可以手动推送与项目版本一致的 `v1.2.3` 格式 Tag 来触发发布。
 - macOS CI 安装包默认未进行 Apple Developer 签名和公证。
+
+自动版本提交需要仓库允许 GitHub Actions 写入内容。如果默认分支启用了分支保护，请允许 `github-actions[bot]` 写入，或为发布流程配置对应规则。
 
 Windows 安装包支持可选签名。需要在 CI 中签名时，请配置：
 
@@ -326,8 +331,13 @@ The repository includes GitHub Actions workflows:
 - Pull requests and main branch pushes run unit tests, lint, frontend builds, and Web E2E tests.
 - The CI workflow can also be started manually from the GitHub Actions page.
 - CI builds a Windows MSI and a Universal DMG for both Apple Silicon and Intel Macs in parallel.
-- Pushing a `v*` tag builds both platform installers and publishes them together to GitHub Releases.
+- Run the `Release` workflow with a `patch`, `minor`, or `major` increment to generate the next version automatically.
+- The release workflow synchronizes version files, commits the version update, builds both installers, and creates a SemVer Tag and GitHub Release after both builds succeed.
+- From `1.5.0`, `patch` creates `1.5.1`, `minor` creates `1.6.0`, and `major` creates `2.0.0`.
+- A matching `v1.2.3` tag can also be pushed manually to trigger a release.
 - macOS CI artifacts are unsigned and not notarized by default.
+
+Automatic version commits require GitHub Actions content write access. If the default branch is protected, allow `github-actions[bot]` to write or configure an appropriate release rule.
 
 Windows installers support optional signing. Configure these secrets to sign MSI builds in CI:
 

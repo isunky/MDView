@@ -27,6 +27,14 @@ const files = [
       'src-tauri/Cargo.toml package version',
     ),
   ),
+  updateText('src-tauri/Cargo.lock', (content) =>
+    replaceRequired(
+      content,
+      /(\[\[package\]\]\r?\nname = "mdview"\r?\nversion = )"[^"]+"/,
+      `$1"${version}"`,
+      'src-tauri/Cargo.lock package version',
+    ),
+  ),
   updateText('src-tauri/tauri.conf.json', (content) =>
     replaceRequired(
       content,
