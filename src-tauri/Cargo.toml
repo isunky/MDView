@@ -1,6 +1,6 @@
 [package]
 name = "mdview"
-version = "1.4.0"
+version = "1.5.0"
 description = "A lightweight Markdown viewer and source editor."
 authors = ["MDView"]
 license = ""
@@ -26,3 +26,4 @@ tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 url = "2"
 base64 = "0.22"
+tauri-plugin-opener = "2"

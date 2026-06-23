@@ -129,4 +129,22 @@ describe('MarkdownPreview', () => {
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
   })
+
+  it('opens web links with the system browser handler', () => {
+    const onOpenExternalLink = vi.fn()
+
+    render(
+      <MarkdownPreview
+        content="[MDView](https://www.sunky.net/MDView?from=readme)"
+        onOpenExternalLink={onOpenExternalLink}
+      />,
+    )
+
+    const link = screen.getByRole('link', { name: 'MDView' })
+    fireEvent.click(link)
+
+    expect(onOpenExternalLink).toHaveBeenCalledWith('https://www.sunky.net/MDView?from=readme')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer')
+  })
 })

@@ -59,7 +59,7 @@ const files = [
     )
     nextContent = replaceRequired(
       nextContent,
-      /(\| Version \| )[0-9]+\.[0-9]+\.[0-9]+( \|)/,
+      /(\| (?:Current version|Version) \| )[0-9]+\.[0-9]+\.[0-9]+( \|)/,
       `$1${version}$2`,
       'README English version row',
     )

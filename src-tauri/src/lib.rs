@@ -69,6 +69,7 @@ pub fn run() {
   tauri::Builder::default()
     .manage(OpenedFiles(Mutex::new(collect_opened_files_from_args())))
     .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
       take_opened_files,
       read_markdown_file,

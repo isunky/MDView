@@ -10,6 +10,11 @@ import {
   resolveSameDocumentHeading,
 } from '../domain/localMarkdownResources'
 import { createHeadingIdCounts, createUniqueHeadingId } from '../domain/markdownOutline'
+import {
+  isExternalWebUrl,
+  openExternalLink,
+  type OpenExternalLink,
+} from '../platform/externalLinks'
 import type { FileAccess } from '../platform/fileAccess'
 
 type MarkdownPreviewProps = {
@@ -18,6 +23,7 @@ type MarkdownPreviewProps = {
   sourcePath?: string | null
   readLocalImageFile?: FileAccess['readLocalImageFile']
   onOpenMarkdownLink?: (path: string, headingId?: string) => void
+  onOpenExternalLink?: OpenExternalLink
 }
 
 export function MarkdownPreview({
@@ -26,6 +32,7 @@ export function MarkdownPreview({
   sourcePath,
   readLocalImageFile,
   onOpenMarkdownLink,
+  onOpenExternalLink = openExternalLink,
 }: MarkdownPreviewProps) {
   return (
     <article className="markdown-preview" aria-label="Markdown preview" ref={previewRef}>
@@ -48,11 +55,25 @@ export function MarkdownPreview({
               if (resource?.kind === 'markdown') {
                 event.preventDefault()
                 onOpenMarkdownLink?.(resource.path, resource.headingId)
+                return
+              }
+
+              if (isExternalWebUrl(href)) {
+                event.preventDefault()
+                void Promise.resolve(onOpenExternalLink(href)).catch((error) => {
+                  console.error('Failed to open external link', error)
+                })
               }
             }
 
             return (
-              <a href={href} onClick={handleClick} {...props}>
+              <a
+                href={href}
+                onClick={handleClick}
+                target={isExternalWebUrl(href) ? '_blank' : undefined}
+                rel={isExternalWebUrl(href) ? 'noreferrer' : undefined}
+                {...props}
+              >
                 {children}
               </a>
             )
