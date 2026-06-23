@@ -8,10 +8,49 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
-    name: Build and publish Windows MSI
+  quality:
+    name: Test, lint, build, and E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+  windows:
+    name: Build Windows MSI
     runs-on: windows-latest
+    needs: quality
+    timeout-minutes: 30
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
@@ -35,24 +74,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          key: windows-msi
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Install Playwright browser
-        run: npx playwright install chromium
-
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Run lint
-        run: npm run lint
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Run E2E tests
-        run: npm run test:e2e
 
       - name: Import Windows signing certificate
         if: ${{ env.WINDOWS_CERTIFICATE_BASE64 != '' && env.WINDOWS_CERTIFICATE_PASSWORD != '' && env.WINDOWS_CERTIFICATE_THUMBPRINT != '' }}
@@ -85,8 +110,77 @@ jobs:
             npm run tauri -- build --bundles msi --ci
           }
 
-      - name: Upload MSI to GitHub Release
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    name: Build macOS Universal DMG
+    runs-on: macos-latest
+    needs: quality
+    timeout-minutes: 45
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust with macOS targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: macos-universal
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build universal DMG
+        run: npm run tauri -- build --bundles dmg --target universal-apple-darwin --ci --no-sign
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-macos-universal-dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - windows
+      - macos
+    timeout-minutes: 10
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish Windows and macOS installers
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/target/release/bundle/msi/*.msi
+          files: |
+            release-assets/*.msi
+            release-assets/*.dmg
           fail_on_unmatched_files: true
+          generate_release_notes: true

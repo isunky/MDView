@@ -157,9 +157,10 @@ src-tauri/target/release/bundle/dmg/
 仓库包含 GitHub Actions 工作流：
 
 - PR 和主分支推送会自动执行单元测试、lint、前端构建和 Web E2E 测试。
-- Windows 工作流会构建 MSI artifact。
-- 推送 `v*` 标签时会自动构建 Windows MSI 并上传到 GitHub Releases。
-- macOS 版本可在 macOS 环境中构建并发布。
+- CI 工作流也支持在 GitHub Actions 页面手动触发。
+- CI 会并行构建 Windows MSI 和兼容 Apple Silicon、Intel Mac 的 Universal DMG artifact。
+- 推送 `v*` 标签时会自动构建两个平台的安装包，并统一上传到 GitHub Releases。
+- macOS CI 安装包默认未进行 Apple Developer 签名和公证。
 
 Windows 安装包支持可选签名。需要在 CI 中签名时，请配置：
 
@@ -323,9 +324,10 @@ src-tauri/target/release/bundle/dmg/
 The repository includes GitHub Actions workflows:
 
 - Pull requests and main branch pushes run unit tests, lint, frontend builds, and Web E2E tests.
-- The Windows workflow produces an MSI artifact.
-- Pushing a `v*` tag builds a Windows MSI and uploads it to GitHub Releases.
-- macOS releases can be built and published from a macOS environment.
+- The CI workflow can also be started manually from the GitHub Actions page.
+- CI builds a Windows MSI and a Universal DMG for both Apple Silicon and Intel Macs in parallel.
+- Pushing a `v*` tag builds both platform installers and publishes them together to GitHub Releases.
+- macOS CI artifacts are unsigned and not notarized by default.
 
 Windows installers support optional signing. Configure these secrets to sign MSI builds in CI:
 
