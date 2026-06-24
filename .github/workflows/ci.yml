@@ -50,7 +50,7 @@ jobs:
         run: npm run test:e2e
 
   msi:
-    name: Build Windows MSI
+    name: Build Windows MSI and portable ZIP
     runs-on: windows-latest
     needs: quality
     timeout-minutes: 30
@@ -112,11 +112,23 @@ jobs:
             npm run tauri -- build --bundles msi --ci
           }
 
+      - name: Build portable ZIP
+        shell: pwsh
+        run: npm run portable:windows
+
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
           name: mdview-windows-msi
           path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload portable ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-portable
+          path: src-tauri/target/release/bundle/portable/*.zip
           if-no-files-found: error
           retention-days: 14
 

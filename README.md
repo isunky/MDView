@@ -205,6 +205,7 @@ npx tauri icon src-tauri/app-icon.png
 MDView is a lightweight, focused cross-platform desktop app for opening, reading, and making simple edits to `.md` and `.markdown` files. It uses a preview-first interface while keeping source editing, document navigation, formatting tools, file associations, and export features close at hand.
 
 Current releases are available for **Windows** and **macOS**. Download them from [GitHub Releases](https://github.com/isunky/MDView/releases).
+Windows releases include both an MSI installer and a portable ZIP package.
 
 ### Features
 
@@ -295,11 +296,25 @@ Build MSI only:
 npm run desktop:build -- --bundles msi
 ```
 
+Build the Windows portable ZIP after the desktop release build:
+
+```bash
+npm run portable:windows
+```
+
 Default MSI output directory:
 
 ```text
 src-tauri/target/release/bundle/msi/
 ```
+
+Default portable ZIP output directory:
+
+```text
+src-tauri/target/release/bundle/portable/
+```
+
+The portable ZIP is extract-and-run only. It does not install MDView or register `.md` / `.markdown` file associations.
 
 ### macOS Packaging
 
@@ -330,9 +345,9 @@ The repository includes GitHub Actions workflows:
 
 - Pull requests and main branch pushes run unit tests, lint, frontend builds, and Web E2E tests.
 - The CI workflow can also be started manually from the GitHub Actions page.
-- CI builds a Windows MSI and a Universal DMG for both Apple Silicon and Intel Macs in parallel.
+- CI builds a Windows MSI, a Windows portable ZIP, and a Universal DMG for both Apple Silicon and Intel Macs in parallel.
 - Run the `Release` workflow with a `patch`, `minor`, or `major` increment to generate the next version automatically.
-- The release workflow synchronizes version files, commits the version update, builds both installers, and creates a SemVer Tag and GitHub Release after both builds succeed.
+- The release workflow synchronizes version files, commits the version update, builds the Windows MSI, Windows portable ZIP, and macOS DMG, then creates a SemVer Tag and GitHub Release after all builds succeed.
 - From `1.5.0`, `patch` creates `1.5.1`, `minor` creates `1.6.0`, and `major` creates `2.0.0`.
 - A matching `v1.2.3` tag can also be pushed manually to trigger a release.
 - macOS CI artifacts are unsigned and not notarized by default.
