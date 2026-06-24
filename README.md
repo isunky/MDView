@@ -383,4 +383,4 @@ npx tauri icon src-tauri/app-icon.png
 | Supported platforms | Windows, macOS |
 | Author | Sunky |
 | Website | [www.sunky.net](https://www.sunky.net) |
-| License | GPL-3.0 |
+| License | Apache-2.0 |
