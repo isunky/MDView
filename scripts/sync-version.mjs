@@ -5,7 +5,7 @@ const version = versionInput?.replace(/^v/, '')
 
 if (!version || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
   console.error('Usage: npm run version:sync -- <major.minor.patch>')
-  console.error('Example: npm run version:sync -- 1.4.1')
+  console.error('Example: npm run version:sync -- 1.6.2')
   process.exit(1)
 }
 
