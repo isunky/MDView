@@ -1,5 +1,13 @@
 import type { Content, Heading, PhrasingContent, Root } from 'mdast'
-import { useEffect, useState, type ComponentProps, type MouseEvent, type Ref } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useState,
+  type ComponentProps,
+  type MouseEvent,
+  type ReactNode,
+  type Ref,
+} from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
@@ -40,6 +48,28 @@ export function MarkdownPreview({
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
         rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
+          p({ children, ...props }) {
+            return <p {...props}>{renderColorPreviews(children)}</p>
+          },
+          li({ children, ...props }) {
+            return <li {...props}>{renderColorPreviews(children)}</li>
+          },
+          td({ children, ...props }) {
+            return <td {...props}>{renderColorPreviews(children)}</td>
+          },
+          th({ children, ...props }) {
+            return <th {...props}>{renderColorPreviews(children)}</th>
+          },
+          code({ children, className, ...props }) {
+            const codeText = getReactNodeText(children)
+            const isInlineColor = !className && isHexColorValue(codeText)
+
+            return (
+              <code className={className} {...props}>
+                {isInlineColor ? <ColorValuePreview value={codeText} /> : children}
+              </code>
+            )
+          },
           a({ href, children, ...props }) {
             function handleClick(event: MouseEvent<HTMLAnchorElement>) {
               const sameDocumentHeading = resolveSameDocumentHeading(href)
@@ -95,6 +125,71 @@ export function MarkdownPreview({
       </ReactMarkdown>
     </article>
   )
+}
+
+function renderColorPreviews(children: ReactNode): ReactNode {
+  if (typeof children === 'string') {
+    return renderTextWithColorPreviews(children)
+  }
+
+  if (Array.isArray(children)) {
+    return children.map((child, index) => (
+      <Fragment key={index}>{renderColorPreviews(child)}</Fragment>
+    ))
+  }
+
+  return children
+}
+
+function renderTextWithColorPreviews(text: string): ReactNode {
+  const colorPattern = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/g
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = colorPattern.exec(text))) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    parts.push(<ColorValuePreview key={`${match[0]}-${match.index}`} value={match[0]} />)
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : text
+}
+
+function ColorValuePreview({ value }: { value: string }) {
+  return (
+    <span className="color-preview-value">
+      {value}
+      <span
+        className="color-preview-swatch"
+        style={{ backgroundColor: value }}
+        aria-label={`Color preview ${value}`}
+      />
+    </span>
+  )
+}
+
+function isHexColorValue(value: string) {
+  return /^#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value)
+}
+
+function getReactNodeText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node)
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(getReactNodeText).join('')
+  }
+
+  return ''
 }
 
 type LocalMarkdownImageProps = Omit<ComponentProps<'img'>, 'src' | 'alt'> & {

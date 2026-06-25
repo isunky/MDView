@@ -147,4 +147,35 @@ describe('MarkdownPreview', () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noreferrer')
   })
+
+  it('shows color swatches for hex colors in preview text and table cells', () => {
+    render(
+      <MarkdownPreview
+        content={[
+          'Accent color #13B8C8 is used for charts.',
+          '',
+          '| System | Color |',
+          '| --- | --- |',
+          '| Portal | `#1769FF` |',
+        ].join('\n')}
+      />,
+    )
+
+    expect(screen.getByLabelText('Color preview #13B8C8')).toHaveStyle({
+      backgroundColor: '#13B8C8',
+    })
+    expect(screen.getByLabelText('Color preview #1769FF')).toHaveStyle({
+      backgroundColor: '#1769FF',
+    })
+  })
+
+  it('does not show color swatches inside fenced code blocks', () => {
+    render(
+      <MarkdownPreview
+        content={['```css', '.button { color: #1769FF; }', '```'].join('\n')}
+      />,
+    )
+
+    expect(screen.queryByLabelText('Color preview #1769FF')).not.toBeInTheDocument()
+  })
 })
