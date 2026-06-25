@@ -821,6 +821,54 @@
   background: transparent;
 }
 
+.mermaid-diagram,
+.mermaid-loading,
+.mermaid-error {
+  margin: 0 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+
+.mermaid-diagram {
+  overflow: auto;
+  padding: 18px;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.mermaid-loading {
+  padding: 14px 16px;
+  color: var(--text-muted);
+  font: 13px/1.45 var(--ui-font);
+}
+
+.mermaid-error {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.mermaid-error strong {
+  font: 700 14px/1.3 var(--ui-font);
+}
+
+.mermaid-error span {
+  font: 13px/1.45 var(--ui-font);
+}
+
+.mermaid-error pre {
+  margin: 4px 0 0;
+  background: white;
+}
+
 .markdown-preview input[type='checkbox'] {
   width: 16px;
   height: 16px;

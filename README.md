@@ -210,7 +210,7 @@ Windows releases include both an MSI installer and a portable ZIP package.
 ### Features
 
 - **Three view modes**: switch between Preview, Edit, and Split modes.
-- **Live Markdown preview**: renders headings, lists, blockquotes, links, images, tables, task lists, and highlighted code blocks.
+- **Live Markdown preview**: renders headings, lists, blockquotes, links, images, tables, task lists, highlighted code blocks, and Mermaid diagrams.
 - **Inline HTML rendering**: renders common HTML embedded directly in Markdown documents.
 - **Local resource support**: loads local images referenced by relative, absolute, and `file://` paths.
 - **Markdown document links**: opens linked local Markdown files and jumps to the requested heading.

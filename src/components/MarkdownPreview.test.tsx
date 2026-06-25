@@ -1,7 +1,17 @@
 import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import mermaid from 'mermaid'
 import { MarkdownPreview } from './MarkdownPreview'
+
+vi.mock('mermaid', () => ({
+  default: {
+    initialize: vi.fn(),
+    render: vi.fn(async (_id: string, chart: string) => ({
+      svg: `<svg data-chart="${chart}" />`,
+    })),
+  },
+}))
 
 describe('MarkdownPreview', () => {
   it('renders common GFM markdown for reading', () => {
@@ -177,5 +187,26 @@ describe('MarkdownPreview', () => {
     )
 
     expect(screen.queryByLabelText('Color preview #1769FF')).not.toBeInTheDocument()
+  })
+
+  it('renders Mermaid fenced code blocks as diagrams', async () => {
+    render(
+      <MarkdownPreview
+        content={['```mermaid', 'graph TD', '  A[Start] --> B[Done]', '```'].join('\n')}
+      />,
+    )
+
+    expect(await screen.findByRole('img', { name: 'Mermaid diagram' })).toBeInTheDocument()
+    expect(screen.queryByText(/graph TD/)).not.toBeInTheDocument()
+  })
+
+  it('shows Mermaid source when diagram rendering fails', async () => {
+    vi.mocked(mermaid.render).mockRejectedValueOnce(new Error('Invalid Mermaid syntax'))
+
+    render(<MarkdownPreview content={['```mermaid', 'graph TD', '  A -->', '```'].join('\n')} />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mermaid render failed')
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid Mermaid syntax')
+    expect(screen.getByText(/graph TD/)).toBeInTheDocument()
   })
 })

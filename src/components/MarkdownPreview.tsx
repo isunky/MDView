@@ -1,10 +1,12 @@
 import type { Content, Heading, PhrasingContent, Root } from 'mdast'
 import {
   Fragment,
+  useId,
   useEffect,
   useState,
   type ComponentProps,
   type MouseEvent,
+  type ReactElement,
   type ReactNode,
   type Ref,
 } from 'react'
@@ -48,6 +50,15 @@ export function MarkdownPreview({
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
         rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
+          pre({ children, ...props }) {
+            const mermaidChart = getMermaidChart(children)
+
+            if (mermaidChart) {
+              return <MermaidDiagram chart={mermaidChart} />
+            }
+
+            return <pre {...props}>{children}</pre>
+          },
           p({ children, ...props }) {
             return <p {...props}>{renderColorPreviews(children)}</p>
           },
@@ -60,7 +71,8 @@ export function MarkdownPreview({
           th({ children, ...props }) {
             return <th {...props}>{renderColorPreviews(children)}</th>
           },
-          code({ children, className, ...props }) {
+          code({ children, className, node, ...props }) {
+            void node
             const codeText = getReactNodeText(children)
             const isInlineColor = !className && isHexColorValue(codeText)
 
@@ -125,6 +137,90 @@ export function MarkdownPreview({
       </ReactMarkdown>
     </article>
   )
+}
+
+function MermaidDiagram({ chart }: { chart: string }) {
+  const diagramId = useId().replace(/:/g, '')
+  const [svg, setSvg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let canceled = false
+
+    async function renderDiagram() {
+      try {
+        setError(null)
+        const mermaid = (await import('mermaid')).default
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: 'default',
+        })
+        const result = await mermaid.render(`mdview-mermaid-${diagramId}`, chart)
+
+        if (!canceled) {
+          setSvg(result.svg)
+        }
+      } catch (renderError) {
+        if (!canceled) {
+          setSvg(null)
+          setError(renderError instanceof Error ? renderError.message : 'Unable to render diagram')
+        }
+      }
+    }
+
+    renderDiagram()
+
+    return () => {
+      canceled = true
+    }
+  }, [chart, diagramId])
+
+  if (error) {
+    return (
+      <div className="mermaid-error" role="alert">
+        <strong>Mermaid render failed</strong>
+        <span>{error}</span>
+        <pre>
+          <code>{chart}</code>
+        </pre>
+      </div>
+    )
+  }
+
+  if (!svg) {
+    return <div className="mermaid-loading">Rendering Mermaid diagram...</div>
+  }
+
+  return (
+    <div
+      className="mermaid-diagram"
+      role="img"
+      aria-label="Mermaid diagram"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  )
+}
+
+function getMermaidChart(children: ReactNode): string | null {
+  if (!isReactElementWithProps(children)) {
+    return null
+  }
+
+  const className = children.props.className
+  if (typeof className !== 'string' || !/\blanguage-mermaid\b/.test(className)) {
+    return null
+  }
+
+  const chart = getReactNodeText(children.props.children).trim()
+  return chart.length > 0 ? chart : null
+}
+
+function isReactElementWithProps(value: ReactNode): value is ReactElement<{
+  className?: unknown
+  children?: ReactNode
+}> {
+  return typeof value === 'object' && value !== null && 'props' in value
 }
 
 function renderColorPreviews(children: ReactNode): ReactNode {

@@ -100,6 +100,7 @@ describe('MarkdownEditor', () => {
     expect(screen.getByRole('dialog', { name: 'Markdown syntax reference' })).toBeInTheDocument()
     expect(screen.getByText('# Heading 1')).toBeInTheDocument()
     expect(screen.getByText('![Alt](image.png)')).toBeInTheDocument()
+    expect(screen.getByText(/```mermaid/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Close markdown syntax reference' }))
 

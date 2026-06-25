@@ -74,6 +74,7 @@ const syntaxReference = [
   ['- [ ] Task', 'Task list'],
   ['`code`', 'Inline code'],
   ['```js\nconsole.log("Hi")\n```', 'Code block'],
+  ['```mermaid\ngraph TD\n  A --> B\n```', 'Mermaid diagram'],
   ['| A | B |\n| --- | --- |', 'Table'],
   ['---', 'Divider'],
 ]
