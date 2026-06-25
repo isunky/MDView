@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Version / 版本：</strong>1.6.1
+  <strong>Version / 版本：</strong>1.7.0
   ·
   <strong>Author / 作者：</strong>Sunky
   ·
@@ -192,7 +192,7 @@ npx tauri icon src-tauri/app-icon.png
 | 项目 | 内容 |
 | --- | --- |
 | 应用名称 | MDView |
-| 当前版本 | 1.6.1 |
+| 当前版本 | 1.7.0 |
 | 支持平台 | Windows、macOS |
 | 作者 | Sunky |
 | 网站 | [www.sunky.net](https://www.sunky.net) |
@@ -379,7 +379,7 @@ npx tauri icon src-tauri/app-icon.png
 | Item | Value |
 | --- | --- |
 | App name | MDView |
-| Current version | 1.6.1 |
+| Current version | 1.7.0 |
 | Supported platforms | Windows, macOS |
 | Author | Sunky |
 | Website | [www.sunky.net](https://www.sunky.net) |
