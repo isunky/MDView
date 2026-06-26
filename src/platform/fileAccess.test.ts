@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { save } from '@tauri-apps/plugin-dialog'
 
 const invoke = vi.fn()
 const webviewWindows: Array<{
@@ -42,6 +43,7 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 describe('file access PDF export', () => {
   beforeEach(() => {
     invoke.mockReset()
+    vi.mocked(save).mockReset()
     webviewWindows.length = 0
     document.head.innerHTML = ''
     document.body.innerHTML = ''
@@ -51,6 +53,27 @@ describe('file access PDF export', () => {
       configurable: true,
       value: {},
     })
+  })
+
+  it('exports DOCX bytes through the native save dialog', async () => {
+    vi.mocked(save).mockResolvedValue('C:\\Docs\\report')
+    const { tauriFileAccess } = await import('./fileAccess')
+
+    const savedPath = await tauriFileAccess.exportDocxFile(
+      new Uint8Array([0x50, 0x4b]),
+      'C:\\Docs\\report.md',
+      'report.md',
+    )
+
+    expect(save).toHaveBeenCalledWith({
+      defaultPath: 'C:\\Docs\\report.docx',
+      filters: [{ name: 'Word Document', extensions: ['docx'] }],
+    })
+    expect(invoke).toHaveBeenCalledWith('write_docx_file', {
+      path: 'C:\\Docs\\report.docx',
+      bytes: [0x50, 0x4b],
+    })
+    expect(savedPath).toBe('C:\\Docs\\report.docx')
   })
 
   it('prints the exported markdown document through a dedicated Tauri window', async () => {

@@ -41,7 +41,7 @@ MDView 是一款轻量级 Markdown 桌面应用，适合快速打开、阅读和
 - **够用但不复杂的编辑能力**：提供常用格式按钮、Markdown 语法速查、快捷键、Tab 缩进、Shift+Tab 反向缩进和列表自动续写。
 - **本地文档和资源处理**：支持打开、保存、另存为、最近文件列表；本地图片可通过相对路径、绝对路径或 `file://` 路径正常显示。
 - **链接和文件关联**：Markdown 内的网页链接使用默认浏览器打开；本地 Markdown 链接可在应用内跳转；安装版可关联 `.md` / `.markdown` 文件。
-- **导出与跨平台发布**：支持导出独立 HTML，并可通过系统打印能力生成 PDF；项目已配置 Windows、macOS 和 GitHub Actions 自动构建发布流程。
+- **导出与跨平台发布**：支持导出独立 HTML、Word `.docx`，并可通过系统打印能力生成 PDF；项目已配置 Windows、macOS 和 GitHub Actions 自动构建发布流程。
 
 ### 常用快捷键
 
@@ -211,7 +211,7 @@ Current releases are available for **Windows** and **macOS** from [GitHub Releas
 - **Simple editing tools**: use formatting buttons, a Markdown syntax reference, keyboard shortcuts, Tab indentation, Shift+Tab outdentation, and automatic list continuation.
 - **Local file and asset support**: create, open, save, save as, and reopen recent files; display local images from relative paths, absolute paths, and `file://` URLs.
 - **Links and file associations**: open web links in the default browser; jump between local Markdown documents inside the app; associate `.md` and `.markdown` files in the installer build.
-- **Export and release tooling**: export self-contained HTML, create PDFs through the system print flow, and build Windows and macOS packages through GitHub Actions.
+- **Export and release tooling**: export self-contained HTML and Word `.docx`, create PDFs through the system print flow, and build Windows and macOS packages through GitHub Actions.
 
 ### Keyboard shortcuts
 

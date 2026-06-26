@@ -51,6 +51,13 @@ fn write_html_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn write_docx_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
+  let path = PathBuf::from(path);
+  ensure_docx_path(&path)?;
+  fs::write(&path, bytes).map_err(|error| format!("Failed to write file: {error}"))
+}
+
+#[tauri::command]
 fn read_image_file(path: String) -> Result<ImageFilePayload, String> {
   let path = PathBuf::from(path);
   ensure_image_path(&path)?;
@@ -75,6 +82,7 @@ pub fn run() {
       read_markdown_file,
       write_markdown_file,
       write_html_file,
+      write_docx_file,
       read_image_file
     ])
     .setup(|app| {
@@ -157,6 +165,14 @@ fn ensure_html_path(path: &Path) -> Result<(), String> {
   }
 }
 
+fn ensure_docx_path(path: &Path) -> Result<(), String> {
+  if is_docx_path(path) {
+    Ok(())
+  } else {
+    Err("Only Word documents with .docx extensions are supported.".to_string())
+  }
+}
+
 fn ensure_image_path(path: &Path) -> Result<(), String> {
   image_mime_type(path).map(|_| ())
 }
@@ -174,6 +190,14 @@ fn is_html_path(path: &Path) -> bool {
     .extension()
     .and_then(|extension| extension.to_str())
     .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "html" | "htm"))
+    .unwrap_or(false)
+}
+
+fn is_docx_path(path: &Path) -> bool {
+  path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| extension.eq_ignore_ascii_case("docx"))
     .unwrap_or(false)
 }
 
@@ -210,6 +234,18 @@ mod tests {
   fn rejects_non_html_export_paths() {
     assert!(ensure_html_path(Path::new("report.md")).is_err());
     assert!(ensure_html_path(Path::new("report")).is_err());
+  }
+
+  #[test]
+  fn accepts_docx_export_paths() {
+    assert!(ensure_docx_path(Path::new("report.docx")).is_ok());
+    assert!(ensure_docx_path(Path::new("REPORT.DOCX")).is_ok());
+  }
+
+  #[test]
+  fn rejects_non_docx_export_paths() {
+    assert!(ensure_docx_path(Path::new("report.doc")).is_err());
+    assert!(ensure_docx_path(Path::new("report.md")).is_err());
   }
 
   #[test]

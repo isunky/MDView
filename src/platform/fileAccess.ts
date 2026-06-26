@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { open, save } from '@tauri-apps/plugin-dialog'
+import { createExportDocxDefaultPath } from '../domain/exportDocx'
 import { createExportHtmlDefaultPath } from '../domain/exportHtml'
 import { ensureMarkdownExtension } from './markdownFiles'
 
@@ -22,6 +23,7 @@ export type FileAccess = {
   saveMarkdownFile: (path: string, content: string) => Promise<string>
   saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<string | null>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
+  exportDocxFile: (bytes: Uint8Array, currentPath: string | null, title: string) => Promise<string | null>
   printExportHtml: (html: string, title: string) => Promise<void>
   readLocalImageFile: (path: string) => Promise<LocalImageFile>
   readStartupMarkdownFile: () => Promise<OpenedMarkdownFile | null>
@@ -39,6 +41,13 @@ const htmlFilters = [
   {
     name: 'HTML',
     extensions: ['html', 'htm'],
+  },
+]
+
+const docxFilters = [
+  {
+    name: 'Word Document',
+    extensions: ['docx'],
   },
 ]
 
@@ -97,6 +106,25 @@ export const tauriFileAccess: FileAccess = {
 
     const path = ensureHtmlExtension(selected)
     await invoke('write_html_file', { path, content: html })
+    return path
+  },
+
+  async exportDocxFile(bytes, currentPath, title) {
+    if (!isTauriRuntime()) {
+      return null
+    }
+
+    const selected = await save({
+      defaultPath: createExportDocxDefaultPath(currentPath, title),
+      filters: docxFilters,
+    })
+
+    if (!selected) {
+      return null
+    }
+
+    const path = ensureDocxExtension(selected)
+    await invoke('write_docx_file', { path, bytes: Array.from(bytes) })
     return path
   },
 
@@ -174,9 +202,18 @@ function ensureHtmlExtension(path: string): string {
   return isHtmlPath(path) ? path : `${path}.html`
 }
 
+function ensureDocxExtension(path: string): string {
+  return isDocxPath(path) ? path : `${path}.docx`
+}
+
 function isHtmlPath(path: string): boolean {
   const extension = path.split('.').at(-1)?.toLowerCase()
   return extension !== undefined && extension !== path.toLowerCase() && htmlFilters[0].extensions.includes(extension)
+}
+
+function isDocxPath(path: string): boolean {
+  const extension = path.split('.').at(-1)?.toLowerCase()
+  return extension === 'docx'
 }
 
 async function printHtmlDocument(html: string, title: string) {

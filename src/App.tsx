@@ -29,6 +29,7 @@ import {
   replaceDocumentContent,
   updateDocumentDraft,
 } from './domain/documentState'
+import { buildExportDocx } from './domain/exportDocx'
 import { buildExportHtml } from './domain/exportHtml'
 import { extractMarkdownOutline } from './domain/markdownOutline'
 import {
@@ -285,6 +286,27 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     }
   }
 
+  async function handleExportDocx() {
+    setIsFileMenuOpen(false)
+
+    try {
+      const bytes = await buildExportDocx({
+        title: markdownDocument.title,
+        content: markdownDocument.content,
+        sourcePath: markdownDocument.path,
+        readLocalImageFile: fileAccess.readLocalImageFile,
+      })
+      const savedPath = await fileAccess.exportDocxFile(
+        bytes,
+        markdownDocument.path,
+        markdownDocument.title,
+      )
+      setStatusMessage(savedPath ? t.exportDocxSaved : t.exportCanceled)
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error))
+    }
+  }
+
   function buildCurrentExportHtml(): string {
     const previewElement = previewRef.current
     if (!previewElement) {
@@ -526,6 +548,14 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                   role="menuitem"
                 >
                   {t.exportAsPdf}
+                </button>
+                <button
+                  type="button"
+                  className="file-menu-item"
+                  onClick={handleExportDocx}
+                  role="menuitem"
+                >
+                  {t.exportAsDocx}
                 </button>
               </div>
             ) : null}
