@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MarkdownEditor } from './MarkdownEditor'
 
 const labels = {
@@ -21,6 +21,10 @@ const labels = {
 }
 
 describe('MarkdownEditor', () => {
+  beforeEach(() => {
+    setNavigatorPlatform('Win32')
+  })
+
   it('formats selected text from the toolbar', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
@@ -44,6 +48,34 @@ describe('MarkdownEditor', () => {
     fireEvent.keyDown(editor, { key: 'b', ctrlKey: true })
 
     expect(onChange).toHaveBeenCalledWith('**hello**')
+  })
+
+  it('uses the platform-specific modifier key for formatting shortcuts', () => {
+    const onChange = vi.fn()
+    const { unmount } = render(
+      <MarkdownEditor value="hello" onChange={onChange} label="Markdown source" t={labels} />,
+    )
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    fireEvent.keyDown(editor, { key: 'b', metaKey: true })
+
+    expect(onChange).not.toHaveBeenCalled()
+
+    unmount()
+    setNavigatorPlatform('MacIntel')
+    render(<MarkdownEditor value="hello" onChange={onChange} label="Markdown source" t={labels} />)
+
+    const macEditor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    macEditor.setSelectionRange(0, 5)
+    fireEvent.keyDown(macEditor, { key: 'b', metaKey: true })
+
+    expect(onChange).toHaveBeenCalledWith('**hello**')
+
+    onChange.mockClear()
+    fireEvent.keyDown(macEditor, { key: 'b', ctrlKey: true })
+
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('indents and outdents selected lines with Tab', () => {
@@ -109,3 +141,10 @@ describe('MarkdownEditor', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+function setNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  })
+}

@@ -19,6 +19,11 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
+import {
+  detectShortcutPlatform,
+  matchesShortcut,
+  withShortcutTitle,
+} from '../platform/keyboardShortcuts'
 
 export type MarkdownEditorLabels = {
   toolbarLabel: string
@@ -83,6 +88,7 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingSelectionRef = useRef<SelectionRange | null>(null)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
+  const shortcutPlatform = detectShortcutPlatform()
 
   useEffect(() => {
     const pendingSelection = pendingSelectionRef.current
@@ -147,34 +153,31 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    const isMod = event.ctrlKey || event.metaKey
-    const key = event.key.toLowerCase()
-
-    if (isMod && key === 'b') {
+    if (matchesShortcut(event, { key: 'b' }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('bold')
       return
     }
 
-    if (isMod && key === 'i') {
+    if (matchesShortcut(event, { key: 'i' }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('italic')
       return
     }
 
-    if (isMod && key === 'k') {
+    if (matchesShortcut(event, { key: 'k' }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('link')
       return
     }
 
-    if (isMod && event.shiftKey && event.key === '7') {
+    if (matchesShortcut(event, { key: '7', shiftKey: true }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('ordered-list')
       return
     }
 
-    if (isMod && event.shiftKey && event.key === '8') {
+    if (matchesShortcut(event, { key: '8', shiftKey: true }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('unordered-list')
       return
@@ -201,16 +204,28 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
           <EditorButton label={t.headingLabel} onClick={() => runCommand('heading')}>
             <Heading1 aria-hidden="true" />
           </EditorButton>
-          <EditorButton label={t.boldLabel} onClick={() => runCommand('bold')}>
+          <EditorButton
+            label={t.boldLabel}
+            title={withShortcutTitle(t.boldLabel, { key: 'b' }, shortcutPlatform)}
+            onClick={() => runCommand('bold')}
+          >
             <Bold aria-hidden="true" />
           </EditorButton>
-          <EditorButton label={t.italicLabel} onClick={() => runCommand('italic')}>
+          <EditorButton
+            label={t.italicLabel}
+            title={withShortcutTitle(t.italicLabel, { key: 'i' }, shortcutPlatform)}
+            onClick={() => runCommand('italic')}
+          >
             <Italic aria-hidden="true" />
           </EditorButton>
           <EditorButton label={t.codeLabel} onClick={() => runCommand('code')}>
             <Code2 aria-hidden="true" />
           </EditorButton>
-          <EditorButton label={t.linkLabel} onClick={() => runCommand('link')}>
+          <EditorButton
+            label={t.linkLabel}
+            title={withShortcutTitle(t.linkLabel, { key: 'k' }, shortcutPlatform)}
+            onClick={() => runCommand('link')}
+          >
             <Link aria-hidden="true" />
           </EditorButton>
           <EditorButton label={t.imageLabel} onClick={() => runCommand('image')}>
@@ -219,10 +234,18 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
           <EditorButton label={t.quoteLabel} onClick={() => runCommand('quote')}>
             <Quote aria-hidden="true" />
           </EditorButton>
-          <EditorButton label={t.unorderedListLabel} onClick={() => runCommand('unordered-list')}>
+          <EditorButton
+            label={t.unorderedListLabel}
+            title={withShortcutTitle(t.unorderedListLabel, { key: '8', shiftKey: true }, shortcutPlatform)}
+            onClick={() => runCommand('unordered-list')}
+          >
             <List aria-hidden="true" />
           </EditorButton>
-          <EditorButton label={t.orderedListLabel} onClick={() => runCommand('ordered-list')}>
+          <EditorButton
+            label={t.orderedListLabel}
+            title={withShortcutTitle(t.orderedListLabel, { key: '7', shiftKey: true }, shortcutPlatform)}
+            onClick={() => runCommand('ordered-list')}
+          >
             <ListOrdered aria-hidden="true" />
           </EditorButton>
           <EditorButton label={t.taskListLabel} onClick={() => runCommand('task-list')}>
@@ -257,15 +280,17 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
 
 function EditorButton({
   label,
+  title,
   onClick,
   children,
 }: {
   label: string
+  title?: string
   onClick: () => void
   children: ReactNode
 }) {
   return (
-    <button type="button" aria-label={label} title={label} onClick={onClick}>
+    <button type="button" aria-label={label} title={title ?? label} onClick={onClick}>
       {children}
     </button>
   )

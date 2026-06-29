@@ -10,6 +10,7 @@ import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 describe('App', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    setNavigatorPlatform('Win32')
   })
 
   it('loads a markdown file passed by the desktop shell at startup', async () => {
@@ -266,6 +267,60 @@ describe('App', () => {
       'title',
       '/tmp/saved-as.md',
     )
+  })
+
+  it('runs common Windows file shortcuts from anywhere in the app', async () => {
+    const saveMarkdownFile = vi.fn(async (path: string) => path)
+    const saveMarkdownFileAs = vi.fn(async () => '/tmp/saved-as.md')
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/draft.md', '# Draft'),
+        openFile: file('/tmp/opened.md', '# Opened'),
+        saveMarkdownFile,
+        saveMarkdownFileAs,
+      }),
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Draft' })).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true })
+    await waitFor(() => {
+      expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/draft.md', '# Draft')
+    })
+    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent('Saved')
+
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true, shiftKey: true })
+    await waitFor(() => {
+      expect(saveMarkdownFileAs).toHaveBeenCalledWith('# Draft', '/tmp/draft.md')
+    })
+
+    fireEvent.keyDown(window, { key: 'n', ctrlKey: true })
+    expect(screen.getByText('Untitled.md')).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'o', ctrlKey: true })
+    expect(await screen.findByRole('heading', { name: 'Opened' })).toBeInTheDocument()
+  })
+
+  it('uses Command instead of Ctrl for macOS file shortcuts', async () => {
+    setNavigatorPlatform('MacIntel')
+    const saveMarkdownFile = vi.fn(async (path: string) => path)
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/mac.md', '# Mac'),
+        saveMarkdownFile,
+      }),
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Mac' })).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true })
+    expect(saveMarkdownFile).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(window, { key: 's', metaKey: true })
+    await waitFor(() => {
+      expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/mac.md', '# Mac')
+    })
+    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent('Saved')
   })
 
   it('disables the file menu when native files are unavailable', () => {
@@ -570,4 +625,11 @@ function seedRecentFiles(recentFiles: RecentFile[]) {
 
 function getStoredRecentFiles(): RecentFile[] {
   return JSON.parse(window.localStorage.getItem(RECENT_FILES_STORAGE_KEY) ?? '[]') as RecentFile[]
+}
+
+function setNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  })
 }

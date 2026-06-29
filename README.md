@@ -47,6 +47,10 @@ MDView 是一款轻量级 Markdown 桌面应用，适合快速打开、阅读和
 
 | 操作 | Windows | macOS |
 | --- | --- | --- |
+| 新建 | `Ctrl+N` | `Command+N` |
+| 打开 | `Ctrl+O` | `Command+O` |
+| 保存 | `Ctrl+S` | `Command+S` |
+| 另存为 | `Ctrl+Shift+S` | `Command+Shift+S` |
 | 粗体 | `Ctrl+B` | `Command+B` |
 | 斜体 | `Ctrl+I` | `Command+I` |
 | 插入链接 | `Ctrl+K` | `Command+K` |
@@ -217,6 +221,10 @@ Current releases are available for **Windows** and **macOS** from [GitHub Releas
 
 | Action | Windows | macOS |
 | --- | --- | --- |
+| New | `Ctrl+N` | `Command+N` |
+| Open | `Ctrl+O` | `Command+O` |
+| Save | `Ctrl+S` | `Command+S` |
+| Save As | `Ctrl+Shift+S` | `Command+Shift+S` |
 | Bold | `Ctrl+B` | `Command+B` |
 | Italic | `Ctrl+I` | `Command+I` |
 | Insert link | `Ctrl+K` | `Command+K` |

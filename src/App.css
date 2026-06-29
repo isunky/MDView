@@ -289,6 +289,21 @@
   border-color: rgba(180, 83, 9, 0.28);
 }
 
+.shortcut-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 10px 14px;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 8px;
+  color: #0f3f3b;
+  background: #e8f7f5;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18);
+  font: 700 13px/1.2 var(--ui-font);
+}
+
 .workspace {
   min-height: 0;
   flex: 1;

@@ -45,6 +45,11 @@ import {
   type AppLanguage,
 } from './i18n'
 import { tauriFileAccess, type FileAccess, type OpenedMarkdownFile } from './platform/fileAccess'
+import {
+  detectShortcutPlatform,
+  matchesShortcut,
+  withShortcutTitle,
+} from './platform/keyboardShortcuts'
 
 type ViewMode = 'preview' | 'edit' | 'split'
 
@@ -63,6 +68,11 @@ type OutlineResizeStart = {
   width: number
 } | null
 
+type ShortcutToast = {
+  id: number
+  message: string
+} | null
+
 function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [markdownDocument, setMarkdownDocument] = useState(createInitialDocument)
@@ -76,8 +86,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
+  const [shortcutToast, setShortcutToast] = useState<ShortcutToast>(null)
   const logoMenuRef = useRef<HTMLDivElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
+  const shortcutPlatform = useMemo(() => detectShortcutPlatform(), [])
   const outlineItems = useMemo(
     () => extractMarkdownOutline(markdownDocument.content),
     [markdownDocument.content],
@@ -205,6 +217,60 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     }
   }, [isLogoMenuOpen])
 
+  useEffect(() => {
+    if (!shortcutToast) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setShortcutToast(null), 1800)
+    return () => window.clearTimeout(timeoutId)
+  }, [shortcutToast])
+
+  useEffect(() => {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      const isNewShortcut = matchesShortcut(event, { key: 'n' }, shortcutPlatform)
+      const isOpenShortcut = matchesShortcut(event, { key: 'o' }, shortcutPlatform)
+      const isSaveShortcut = matchesShortcut(event, { key: 's' }, shortcutPlatform)
+      const isSaveAsShortcut = matchesShortcut(event, { key: 's', shiftKey: true }, shortcutPlatform)
+
+      if (!isNewShortcut && !isOpenShortcut && !isSaveShortcut && !isSaveAsShortcut) {
+        return
+      }
+
+      event.preventDefault()
+      setIsFileMenuOpen(false)
+      setIsLogoMenuOpen(false)
+
+      if (isNewShortcut) {
+        void handleNewDocument()
+        return
+      }
+
+      if (!fileAccess.supportsNativeFiles) {
+        return
+      }
+
+      if (isOpenShortcut) {
+        void handleOpenFile()
+        return
+      }
+
+      if (isSaveAsShortcut) {
+        void handleSaveFileAs()
+        return
+      }
+
+      void handleSaveFile().then((saved) => {
+        if (saved) {
+          showShortcutToast(t.saved)
+        }
+      })
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
+
   async function handleNewDocument() {
     if (!canDiscardUnsavedChanges()) {
       return
@@ -320,7 +386,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     })
   }
 
-  async function handleSaveFile() {
+  async function handleSaveFile(): Promise<boolean> {
     try {
       const currentPath = markdownDocument.path
       const isSaveAs = !currentPath
@@ -334,10 +400,13 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
         if (isSaveAs) {
           rememberRecentFile(savedPath)
         }
+        return true
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
     }
+
+    return false
   }
 
   async function handleSaveFileAs() {
@@ -370,6 +439,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       !markdownDocument.isDirty ||
       window.confirm(t.discardUnsaved)
     )
+  }
+
+  function showShortcutToast(message: string) {
+    setShortcutToast({ id: Date.now(), message })
   }
 
   function handleOpenAboutFromLogoMenu() {
@@ -417,6 +490,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const nativeFileTitle = fileAccess.supportsNativeFiles
     ? undefined
     : t.nativeFileUnavailable
+  const newTitle = withShortcutTitle(t.createNewLabel, { key: 'n' }, shortcutPlatform)
+  const openTitle = withShortcutTitle(t.openLabel, { key: 'o' }, shortcutPlatform)
+  const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
+  const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
   const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
 
   return (
@@ -475,7 +552,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
         </div>
 
         <nav className="toolbar" aria-label={t.documentActions}>
-          <button type="button" onClick={handleNewDocument} aria-label={t.createNewLabel}>
+          <button type="button" onClick={handleNewDocument} aria-label={t.createNewLabel} title={newTitle}>
             <FilePlus2 aria-hidden="true" />
             <span>{t.createNew}</span>
           </button>
@@ -489,7 +566,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
               aria-haspopup="menu"
               aria-expanded={isFileMenuOpen}
               disabled={!fileAccess.supportsNativeFiles}
-              title={nativeFileTitle}
+              title={nativeFileTitle ?? openTitle}
             >
               <FolderOpen aria-hidden="true" />
               <span>{t.open}</span>
@@ -565,7 +642,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             onClick={handleSaveFile}
             aria-label={t.saveLabel}
             disabled={!fileAccess.supportsNativeFiles}
-            title={nativeFileTitle}
+            title={nativeFileTitle ?? saveTitle}
           >
             <Save aria-hidden="true" />
             <span>{t.save}</span>
@@ -575,7 +652,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             onClick={handleSaveFileAs}
             aria-label={t.saveAsLabel}
             disabled={!fileAccess.supportsNativeFiles}
-            title={nativeFileTitle}
+            title={nativeFileTitle ?? saveAsTitle}
           >
             <SaveAll aria-hidden="true" />
             <span>{t.saveAs}</span>
@@ -677,6 +754,11 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           />
         </section>
       </section>
+      {shortcutToast ? (
+        <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
+          {shortcutToast.message}
+        </div>
+      ) : null}
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
     </main>
   )
