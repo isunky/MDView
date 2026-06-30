@@ -36,10 +36,29 @@ describe('MarkdownPreview', () => {
     expect(screen.getByRole('heading', { name: 'Project' })).toBeInTheDocument()
     expect(screen.getByRole('checkbox')).toBeChecked()
     expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByRole('table').parentElement).toHaveClass('table-scroll')
     expect(screen.getByText('Windows')).toBeInTheDocument()
+    expect(screen.getByText('TypeScript')).toBeInTheDocument()
     expect(screen.getByText((_, element) => element?.tagName === 'CODE')).toHaveTextContent(
       'const ready = true',
     )
+  })
+
+  it('copies fenced code blocks from the preview', async () => {
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    render(<MarkdownPreview content={['```ts', 'const ready = true', '```'].join('\n')} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('const ready = true')
+    })
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })
 
   it('adds stable ids to rendered headings', () => {
@@ -77,6 +96,7 @@ describe('MarkdownPreview', () => {
 
     const image = screen.getByRole('img', { name: 'Diagram' })
     expect(image).toHaveAttribute('src', 'data:image/png;base64,abc')
+    expect(screen.getByText('Diagram')).toHaveClass('markdown-image-caption')
 
     fireEvent.click(image)
 

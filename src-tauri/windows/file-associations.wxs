@@ -1,0 +1,86 @@
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?if $(sys.BUILDARCH)="x86"?>
+    <?define MdViewWin64 = "no"?>
+  <?else?>
+    <?define MdViewWin64 = "yes"?>
+  <?endif?>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="FileAssociationRegistry" Guid="d81a245f-2ed7-4826-9908-41878b8d4b38" Win64="$(var.MdViewWin64)">
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\MDView.md\DefaultIcon"
+          Type="string"
+          Value="[INSTALLDIR]mdview.exe,0"
+          KeyPath="yes" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\MDView.markdown\DefaultIcon"
+          Type="string"
+          Value="[INSTALLDIR]mdview.exe,0" />
+
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\Applications\mdview.exe"
+          Name="FriendlyAppName"
+          Type="string"
+          Value="MDView" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\Applications\mdview.exe"
+          Name="ApplicationIcon"
+          Type="string"
+          Value="[INSTALLDIR]mdview.exe,0" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\Applications\mdview.exe\shell\open\command"
+          Type="string"
+          Value="&quot;[INSTALLDIR]mdview.exe&quot; &quot;%1&quot;" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\Applications\mdview.exe\SupportedTypes"
+          Name=".md"
+          Type="string"
+          Value="" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\Classes\Applications\mdview.exe\SupportedTypes"
+          Name=".markdown"
+          Type="string"
+          Value="" />
+
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MDView\Capabilities"
+          Name="ApplicationName"
+          Type="string"
+          Value="MDView" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MDView\Capabilities"
+          Name="ApplicationDescription"
+          Type="string"
+          Value="Lightweight Markdown viewer and source editor." />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MDView\Capabilities\FileAssociations"
+          Name=".md"
+          Type="string"
+          Value="MDView.md" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MDView\Capabilities\FileAssociations"
+          Name=".markdown"
+          Type="string"
+          Value="MDView.markdown" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\RegisteredApplications"
+          Name="MDView"
+          Type="string"
+          Value="Software\MDView\Capabilities" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

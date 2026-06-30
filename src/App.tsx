@@ -751,6 +751,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             sourcePath={markdownDocument.path}
             readLocalImageFile={fileAccess.readLocalImageFile}
             onOpenMarkdownLink={handleOpenMarkdownLink}
+            labels={t.previewLabels}
           />
         </section>
       </section>

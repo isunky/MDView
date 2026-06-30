@@ -3,6 +3,9 @@
   --toolbar-bg: #fbfcfd;
   --editor-bg: #ffffff;
   --preview-bg: #f8fafb;
+  --preview-paper: #ffffff;
+  --preview-paper-border: rgba(148, 163, 184, 0.22);
+  --preview-paper-shadow: 0 18px 54px rgba(31, 41, 55, 0.08);
   --segmented-bg: #eef2f4;
   --control-hover: #eef4f6;
   --brand-bg: #0f766e;
@@ -23,14 +26,17 @@
   --link: #1d4ed8;
   --quote-bg: #edf7f6;
   --table-head: #eef4f6;
+  --table-row-alt: #fbfdfe;
+  --code-block-bg: #f6f8fa;
+  --code-block-header: #eef3f6;
   --inline-code-bg: #e9eef2;
   --inline-code: #9f1239;
   --ui-font:
-    Inter, 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC',
-    'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    Inter, 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei',
+    'PingFang SC', 'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --content-font:
-    'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC',
-    'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei',
+    'PingFang SC', 'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --mono-font:
     'SFMono-Regular', Consolas, 'Cascadia Mono', 'Microsoft YaHei UI', 'Liberation Mono', Menlo,
     ui-monospace, monospace;

@@ -10,7 +10,12 @@ describe('export html', () => {
     const html = buildExportHtml({
       title: '<Report & Summary>',
       lang: 'zh-CN',
-      contentHtml: '<h1>标题</h1><pre><code>const ready = true</code></pre>',
+      contentHtml: [
+        '<h1>标题</h1>',
+        '<figure class="code-block"><figcaption class="code-block-header"><span>TypeScript</span><button>Copy</button></figcaption><pre><code>const ready = true</code></pre></figure>',
+        '<div class="table-scroll"><table><thead><tr><th>A</th></tr></thead></table></div>',
+        '<span class="markdown-image"><img src="diagram.png" alt="Diagram"><span class="markdown-image-caption">Diagram</span></span>',
+      ].join(''),
     })
 
     expect(html).toContain('<!doctype html>')
@@ -20,6 +25,9 @@ describe('export html', () => {
     expect(html).toContain('<article class="markdown-preview" aria-label="Markdown preview">')
     expect(html).toContain('<h1>标题</h1>')
     expect(html).toContain('hljs')
+    expect(html).toContain('.code-block-header')
+    expect(html).toContain('.table-scroll')
+    expect(html).toContain('.markdown-image-caption')
   })
 
   it('creates default export paths from source markdown paths', () => {

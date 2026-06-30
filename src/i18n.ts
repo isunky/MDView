@@ -79,6 +79,18 @@ export const translations = {
     syntaxReferenceTitle: 'Markdown syntax reference',
     closeSyntaxReference: 'Close markdown syntax reference',
     fileOperationFailed: 'File operation failed',
+    previewLabels: {
+      copyCode: 'Copy',
+      copiedCode: 'Copied',
+      plainCodeBlock: 'Code block',
+      codeBlock: (language: string) => `${language} code block`,
+      mermaidDiagram: 'Mermaid diagram',
+      mermaidLoading: 'Rendering Mermaid diagram...',
+      mermaidError: 'Mermaid render failed',
+      imagePreview: 'Image preview',
+      closeImagePreview: 'Close image preview',
+      imagePreviewAlt: (alt: string) => `${alt} preview`,
+    },
   },
   zh: {
     languageLabel: '界面语言',
@@ -156,6 +168,18 @@ export const translations = {
     syntaxReferenceTitle: 'Markdown 语法参考',
     closeSyntaxReference: '关闭 Markdown 语法参考',
     fileOperationFailed: '文件操作失败',
+    previewLabels: {
+      copyCode: '复制',
+      copiedCode: '已复制',
+      plainCodeBlock: '代码块',
+      codeBlock: (language: string) => `${language} 代码块`,
+      mermaidDiagram: 'Mermaid 图表',
+      mermaidLoading: '正在渲染 Mermaid 图表...',
+      mermaidError: 'Mermaid 渲染失败',
+      imagePreview: '图片预览',
+      closeImagePreview: '关闭图片预览',
+      imagePreviewAlt: (alt: string) => `${alt} 预览`,
+    },
   },
 }
 

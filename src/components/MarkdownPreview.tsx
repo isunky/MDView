@@ -3,6 +3,7 @@ import {
   Fragment,
   useId,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
   type MouseEvent,
@@ -34,6 +35,20 @@ type MarkdownPreviewProps = {
   readLocalImageFile?: FileAccess['readLocalImageFile']
   onOpenMarkdownLink?: (path: string, headingId?: string) => void
   onOpenExternalLink?: OpenExternalLink
+  labels?: MarkdownPreviewLabels
+}
+
+export type MarkdownPreviewLabels = {
+  copyCode: string
+  copiedCode: string
+  plainCodeBlock: string
+  codeBlock: (language: string) => string
+  mermaidDiagram: string
+  mermaidLoading: string
+  mermaidError: string
+  imagePreview: string
+  closeImagePreview: string
+  imagePreviewAlt: (alt: string) => string
 }
 
 export function MarkdownPreview({
@@ -43,6 +58,7 @@ export function MarkdownPreview({
   readLocalImageFile,
   onOpenMarkdownLink,
   onOpenExternalLink = openExternalLink,
+  labels = defaultPreviewLabels,
 }: MarkdownPreviewProps) {
   return (
     <article className="markdown-preview" aria-label="Markdown preview" ref={previewRef}>
@@ -50,25 +66,44 @@ export function MarkdownPreview({
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
         rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
-          pre({ children, ...props }) {
+          pre({ children, node, ...props }) {
+            void node
             const mermaidChart = getMermaidChart(children)
 
             if (mermaidChart) {
-              return <MermaidDiagram chart={mermaidChart} />
+              return <MermaidDiagram chart={mermaidChart} labels={labels} />
             }
 
-            return <pre {...props}>{children}</pre>
+            const codeMetadata = getCodeBlockMetadata(children)
+            return (
+              <CodeBlock
+                code={codeMetadata.code}
+                language={codeMetadata.language}
+                labels={labels}
+                {...props}
+              >
+                {children}
+              </CodeBlock>
+            )
           },
-          p({ children, ...props }) {
+          table({ children, node, ...props }) {
+            void node
+            return <MarkdownTable {...props}>{children}</MarkdownTable>
+          },
+          p({ children, node, ...props }) {
+            void node
             return <p {...props}>{renderColorPreviews(children)}</p>
           },
-          li({ children, ...props }) {
+          li({ children, node, ...props }) {
+            void node
             return <li {...props}>{renderColorPreviews(children)}</li>
           },
-          td({ children, ...props }) {
+          td({ children, node, ...props }) {
+            void node
             return <td {...props}>{renderColorPreviews(children)}</td>
           },
-          th({ children, ...props }) {
+          th({ children, node, ...props }) {
+            void node
             return <th {...props}>{renderColorPreviews(children)}</th>
           },
           code({ children, className, node, ...props }) {
@@ -120,13 +155,15 @@ export function MarkdownPreview({
               </a>
             )
           },
-          img({ src, alt, ...props }) {
+          img({ src, alt, node, ...props }) {
+            void node
             return (
               <LocalMarkdownImage
                 src={src}
                 alt={alt}
                 sourcePath={sourcePath}
                 readLocalImageFile={readLocalImageFile}
+                labels={labels}
                 {...props}
               />
             )
@@ -139,7 +176,124 @@ export function MarkdownPreview({
   )
 }
 
-function MermaidDiagram({ chart }: { chart: string }) {
+const defaultPreviewLabels: MarkdownPreviewLabels = {
+  copyCode: 'Copy',
+  copiedCode: 'Copied',
+  plainCodeBlock: 'Code block',
+  codeBlock: (language) => `${language} code block`,
+  mermaidDiagram: 'Mermaid diagram',
+  mermaidLoading: 'Rendering Mermaid diagram...',
+  mermaidError: 'Mermaid render failed',
+  imagePreview: 'Image preview',
+  closeImagePreview: 'Close image preview',
+  imagePreviewAlt: (alt) => `${alt} preview`,
+}
+
+function CodeBlock({
+  children,
+  code,
+  language,
+  labels,
+  ...props
+}: ComponentProps<'pre'> & {
+  code: string
+  language: string | null
+  labels: MarkdownPreviewLabels
+}) {
+  const [copied, setCopied] = useState(false)
+  const copiedTimeoutRef = useRef<number | null>(null)
+  const visibleLanguage = language ? normalizeLanguageLabel(language) : null
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) {
+        window.clearTimeout(copiedTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  async function handleCopy() {
+    await copyTextToClipboard(code.replace(/\n$/, ''))
+    setCopied(true)
+
+    if (copiedTimeoutRef.current) {
+      window.clearTimeout(copiedTimeoutRef.current)
+    }
+
+    copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1600)
+  }
+
+  return (
+    <figure className="code-block">
+      <figcaption className="code-block-header">
+        <span>{visibleLanguage ?? labels.plainCodeBlock}</span>
+        <button type="button" onClick={handleCopy}>
+          {copied ? labels.copiedCode : labels.copyCode}
+        </button>
+      </figcaption>
+      <pre
+        aria-label={visibleLanguage ? labels.codeBlock(visibleLanguage) : labels.plainCodeBlock}
+        {...props}
+      >
+        {children}
+      </pre>
+    </figure>
+  )
+}
+
+function MarkdownTable({ children, ...props }: ComponentProps<'table'>) {
+  return (
+    <div className="table-scroll" role="region" tabIndex={0}>
+      <table {...props}>{children}</table>
+    </div>
+  )
+}
+
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.append(textarea)
+  textarea.select()
+
+  try {
+    document.execCommand('copy')
+  } finally {
+    textarea.remove()
+  }
+}
+
+function normalizeLanguageLabel(language: string) {
+  const languageAliases: Record<string, string> = {
+    js: 'JavaScript',
+    jsx: 'JSX',
+    ts: 'TypeScript',
+    tsx: 'TSX',
+    py: 'Python',
+    sh: 'Shell',
+    bash: 'Bash',
+    zsh: 'Zsh',
+    ps1: 'PowerShell',
+    md: 'Markdown',
+    html: 'HTML',
+    css: 'CSS',
+    json: 'JSON',
+    yaml: 'YAML',
+    yml: 'YAML',
+    rs: 'Rust',
+  }
+
+  return languageAliases[language.toLowerCase()] ?? language.toUpperCase()
+}
+
+function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPreviewLabels }) {
   const diagramId = useId().replace(/:/g, '')
   const [svg, setSvg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +318,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
       } catch (renderError) {
         if (!canceled) {
           setSvg(null)
-          setError(renderError instanceof Error ? renderError.message : 'Unable to render diagram')
+          setError(renderError instanceof Error ? renderError.message : labels.mermaidError)
         }
       }
     }
@@ -174,12 +328,12 @@ function MermaidDiagram({ chart }: { chart: string }) {
     return () => {
       canceled = true
     }
-  }, [chart, diagramId])
+  }, [chart, diagramId, labels.mermaidError])
 
   if (error) {
     return (
       <div className="mermaid-error" role="alert">
-        <strong>Mermaid render failed</strong>
+        <strong>{labels.mermaidError}</strong>
         <span>{error}</span>
         <pre>
           <code>{chart}</code>
@@ -189,17 +343,36 @@ function MermaidDiagram({ chart }: { chart: string }) {
   }
 
   if (!svg) {
-    return <div className="mermaid-loading">Rendering Mermaid diagram...</div>
+    return <div className="mermaid-loading">{labels.mermaidLoading}</div>
   }
 
   return (
     <div
       className="mermaid-diagram"
       role="img"
-      aria-label="Mermaid diagram"
+      aria-label={labels.mermaidDiagram}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   )
+}
+
+function getCodeBlockMetadata(children: ReactNode): { language: string | null; code: string } {
+  if (!isReactElementWithProps(children)) {
+    return { language: null, code: getReactNodeText(children) }
+  }
+
+  const className = children.props.className
+  return {
+    language: typeof className === 'string' ? getLanguageFromClassName(className) : null,
+    code: getReactNodeText(children.props.children),
+  }
+}
+
+function getLanguageFromClassName(className: string): string | null {
+  return className
+    .split(/\s+/)
+    .find((classPart) => classPart.startsWith('language-'))
+    ?.replace(/^language-/, '') ?? null
 }
 
 function getMermaidChart(children: ReactNode): string | null {
@@ -285,6 +458,10 @@ function getReactNodeText(node: ReactNode): string {
     return node.map(getReactNodeText).join('')
   }
 
+  if (isReactElementWithProps(node)) {
+    return getReactNodeText(node.props.children)
+  }
+
   return ''
 }
 
@@ -293,6 +470,7 @@ type LocalMarkdownImageProps = Omit<ComponentProps<'img'>, 'src' | 'alt'> & {
   alt?: string
   sourcePath?: string | null
   readLocalImageFile?: FileAccess['readLocalImageFile']
+  labels: MarkdownPreviewLabels
 }
 
 function LocalMarkdownImage({
@@ -300,6 +478,7 @@ function LocalMarkdownImage({
   alt,
   sourcePath,
   readLocalImageFile,
+  labels,
   ...props
 }: LocalMarkdownImageProps) {
   const [resolvedSrc, setResolvedSrc] = useState(src)
@@ -351,22 +530,25 @@ function LocalMarkdownImage({
 
   return (
     <>
-      <img
-        src={resolvedSrc}
-        alt={alt}
-        onClick={() => {
-          if (resolvedSrc) {
-            setPreviewSrc(resolvedSrc)
-          }
-        }}
-        {...props}
-      />
+      <span className="markdown-image">
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          onClick={() => {
+            if (resolvedSrc) {
+              setPreviewSrc(resolvedSrc)
+            }
+          }}
+          {...props}
+        />
+        {alt ? <span className="markdown-image-caption">{alt}</span> : null}
+      </span>
       {previewSrc ? (
         <div
           className="image-preview-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-label="Image preview"
+          aria-label={labels.imagePreview}
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) {
               setPreviewSrc(null)
@@ -377,11 +559,15 @@ function LocalMarkdownImage({
             type="button"
             className="image-preview-close"
             onClick={() => setPreviewSrc(null)}
-            aria-label="Close image preview"
+            aria-label={labels.closeImagePreview}
           >
             ×
           </button>
-          <img className="image-preview-image" src={previewSrc} alt={`${alt ?? 'Image'} preview`} />
+          <img
+            className="image-preview-image"
+            src={previewSrc}
+            alt={labels.imagePreviewAlt(alt ?? 'Image')}
+          />
         </div>
       ) : null}
     </>
