@@ -81,7 +81,8 @@ test('saves edited markdown content', async ({ page }) => {
   await page
     .getByRole('textbox', { name: 'Markdown source' })
     .fill('# Saved from E2E\n\nUpdated by Playwright.\n')
-  await page.getByRole('button', { exact: true, name: 'Save markdown file' }).click()
+  await page.getByRole('button', { exact: true, name: 'File' }).click()
+  await page.getByRole('menuitem', { exact: true, name: 'Save' }).click()
 
   await expect(page.locator('.save-state')).toHaveText('Saved')
   await expect
@@ -89,19 +90,19 @@ test('saves edited markdown content', async ({ page }) => {
     .toContain('# Saved from E2E')
 })
 
-test('switches the interface language from the logo menu', async ({ page }) => {
-  await page.getByRole('button', { name: 'Open application menu' }).click()
+test('switches the interface language from the App menu', async ({ page }) => {
+  await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { name: '中文' }).click()
 
-  await expect(page.getByRole('button', { exact: true, name: '打开' })).toBeVisible()
+  await expect(page.getByRole('button', { exact: true, name: '文件' })).toBeVisible()
 
-  await page.getByRole('button', { name: '打开应用菜单' }).click()
+  await page.getByRole('button', { name: '应用' }).click()
   await expect(page.getByText('界面语言')).toBeVisible()
   await expect(page.getByRole('menuitem', { name: '关于' })).toBeVisible()
 })
 
-test('opens the About dialog from the logo menu', async ({ page }) => {
-  await page.getByRole('button', { name: 'Open application menu' }).click()
+test('opens the About dialog from the App menu', async ({ page }) => {
+  await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { name: 'About' }).click()
 
   await expect(page.getByRole('dialog', { name: 'About MDView' })).toBeVisible()
@@ -109,7 +110,7 @@ test('opens the About dialog from the logo menu', async ({ page }) => {
 })
 
 async function openMarkdownFile(page: Page) {
-  await page.getByRole('button', { exact: true, name: 'Open' }).click()
+  await page.getByRole('button', { exact: true, name: 'File' }).click()
   await page.getByRole('menuitem', { name: 'Open Markdown File' }).click()
 }
 

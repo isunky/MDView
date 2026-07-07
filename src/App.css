@@ -110,6 +110,7 @@
 .view-controls button:focus-visible,
 .logo-menu-trigger:focus-visible,
 .logo-menu-item:focus-visible,
+.action-menu-item:focus-visible,
 .about-close:focus-visible,
 .outline-close:focus-visible,
 .outline-reopen:focus-visible,
@@ -134,12 +135,14 @@
   stroke-width: 2.1;
 }
 
-.file-menu {
+.file-menu,
+.action-menu {
   position: relative;
   display: inline-flex;
 }
 
-.file-menu-panel {
+.file-menu-panel,
+.action-menu-panel {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -154,7 +157,12 @@
   box-shadow: 0 16px 42px rgba(16, 24, 40, 0.16);
 }
 
-.toolbar .file-menu-item {
+.action-menu-panel-compact {
+  width: min(240px, 80vw);
+}
+
+.toolbar .file-menu-item,
+.toolbar .action-menu-item {
   width: 100%;
   height: auto;
   min-height: 32px;
@@ -171,26 +179,36 @@
   white-space: nowrap;
 }
 
-.toolbar .file-menu-clear {
+.toolbar .file-menu-clear,
+.toolbar .action-menu-clear {
   color: var(--text-muted);
 }
 
 .file-menu-empty,
-.file-menu-section-label {
+.file-menu-section-label,
+.action-menu-empty,
+.action-menu-section-label {
   padding: 8px 9px;
   color: var(--text-muted);
   font: 13px/1.35 var(--ui-font);
 }
 
-.file-menu-section-label {
+.file-menu-section-label,
+.action-menu-section-label {
   padding-bottom: 3px;
   font-weight: 760;
 }
 
-.file-menu-divider {
+.file-menu-divider,
+.action-menu-divider {
   height: 1px;
   margin: 4px 0;
   background: var(--border);
+}
+
+.action-menu-item.active {
+  color: var(--text-strong);
+  background: var(--segmented-bg);
 }
 
 .logo-menu-panel {
