@@ -8,13 +8,12 @@ import {
 } from 'react'
 import {
   ChevronDown,
+  Download,
   Eye,
-  FilePlus2,
   FolderOpen,
   PanelLeftOpen,
   PencilLine,
-  Save,
-  SaveAll,
+  Settings,
   SplitSquareHorizontal,
 } from 'lucide-react'
 import './App.css'
@@ -52,6 +51,7 @@ import {
 } from './platform/keyboardShortcuts'
 
 type ViewMode = 'preview' | 'edit' | 'split'
+type MenuId = 'file' | 'export' | 'app'
 
 type AppProps = {
   fileAccess?: FileAccess
@@ -79,15 +79,14 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
-  const [isFileMenuOpen, setIsFileMenuOpen] = useState(false)
-  const [isLogoMenuOpen, setIsLogoMenuOpen] = useState(false)
+  const [activeMenu, setActiveMenu] = useState<MenuId | null>(null)
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
   const [isOutlineOpen, setIsOutlineOpen] = useState(true)
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
   const [shortcutToast, setShortcutToast] = useState<ShortcutToast>(null)
-  const logoMenuRef = useRef<HTMLDivElement | null>(null)
+  const menuBarRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const shortcutPlatform = useMemo(() => detectShortcutPlatform(), [])
   const outlineItems = useMemo(
@@ -189,22 +188,22 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }, [outlineResizeStart])
 
   useEffect(() => {
-    if (!isLogoMenuOpen) {
+    if (!activeMenu) {
       return
     }
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target
-      if (target instanceof Node && logoMenuRef.current?.contains(target)) {
+      if (target instanceof Node && menuBarRef.current?.contains(target)) {
         return
       }
 
-      setIsLogoMenuOpen(false)
+      setActiveMenu(null)
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        setIsLogoMenuOpen(false)
+        setActiveMenu(null)
       }
     }
 
@@ -215,7 +214,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       window.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isLogoMenuOpen])
+  }, [activeMenu])
 
   useEffect(() => {
     if (!shortcutToast) {
@@ -238,8 +237,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       }
 
       event.preventDefault()
-      setIsFileMenuOpen(false)
-      setIsLogoMenuOpen(false)
+      setActiveMenu(null)
 
       if (isNewShortcut) {
         void handleNewDocument()
@@ -276,6 +274,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       return
     }
 
+    setActiveMenu(null)
     setMarkdownDocument(createInitialDocument())
     setViewMode('edit')
     setStatusMessage('saved')
@@ -286,7 +285,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       return
     }
 
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
 
     try {
       const file = await fileAccess.openMarkdownFile()
@@ -303,7 +302,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       return
     }
 
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
 
     try {
       loadFile(await fileAccess.openMarkdownFileAtPath(path))
@@ -327,7 +326,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   async function handleExportHtml() {
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
 
     try {
       const savedPath = await fileAccess.exportHtmlFile(
@@ -342,7 +341,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   async function handleExportPdf() {
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
 
     try {
       await fileAccess.printExportHtml(buildCurrentExportHtml(), markdownDocument.title)
@@ -353,7 +352,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   async function handleExportDocx() {
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
 
     try {
       const bytes = await buildExportDocx({
@@ -387,6 +386,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   async function handleSaveFile(): Promise<boolean> {
+    setActiveMenu(null)
+
     try {
       const currentPath = markdownDocument.path
       const isSaveAs = !currentPath
@@ -410,6 +411,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   async function handleSaveFileAs() {
+    setActiveMenu(null)
+
     try {
       const savedPath = await fileAccess.saveMarkdownFileAs(
         markdownDocument.content,
@@ -445,20 +448,24 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     setShortcutToast({ id: Date.now(), message })
   }
 
-  function handleOpenAboutFromLogoMenu() {
-    setIsLogoMenuOpen(false)
+  function handleOpenAboutFromAppMenu() {
+    setActiveMenu(null)
     setIsAboutOpen(true)
   }
 
   function handleLanguageSelect(nextLanguage: AppLanguage) {
     setLanguage(nextLanguage)
-    setIsLogoMenuOpen(false)
+    setActiveMenu(null)
   }
 
   function handleClearRecentFiles() {
     clearRecentFiles()
     setRecentFiles([])
-    setIsFileMenuOpen(false)
+    setActiveMenu(null)
+  }
+
+  function toggleMenu(menuId: MenuId) {
+    setActiveMenu((currentMenu) => (currentMenu === menuId ? null : menuId))
   }
 
   function handleOutlineJump(id: string) {
@@ -500,50 +507,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
       <header className="topbar">
         <div className="brand-block">
-          <div className="logo-menu" ref={logoMenuRef}>
-            <button
-              type="button"
-              className="app-mark logo-menu-trigger"
-              onClick={() => {
-                setIsFileMenuOpen(false)
-                setIsLogoMenuOpen((isOpen) => !isOpen)
-              }}
-              aria-label={t.logoMenuLabel}
-              aria-haspopup="menu"
-              aria-expanded={isLogoMenuOpen}
-            >
-              <AppLogo />
-            </button>
-            {isLogoMenuOpen ? (
-              <div className="logo-menu-panel" role="menu">
-                <button
-                  type="button"
-                  className="logo-menu-item"
-                  onClick={handleOpenAboutFromLogoMenu}
-                  role="menuitem"
-                >
-                  {t.about}
-                </button>
-                <div className="logo-menu-divider" />
-                <div className="logo-menu-label">{t.languageLabel}</div>
-                <button
-                  type="button"
-                  className={`logo-menu-item ${language === 'en' ? 'active' : ''}`}
-                  onClick={() => handleLanguageSelect('en')}
-                  role="menuitem"
-                >
-                  {t.languageEnglish}
-                </button>
-                <button
-                  type="button"
-                  className={`logo-menu-item ${language === 'zh' ? 'active' : ''}`}
-                  onClick={() => handleLanguageSelect('zh')}
-                  role="menuitem"
-                >
-                  {t.languageChinese}
-                </button>
-              </div>
-            ) : null}
+          <div className="app-mark" aria-hidden="true">
+            <AppLogo />
           </div>
           <div>
             <h1>MDView</h1>
@@ -551,46 +516,49 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           </div>
         </div>
 
-        <nav className="toolbar" aria-label={t.documentActions}>
-          <button type="button" onClick={handleNewDocument} aria-label={t.createNewLabel} title={newTitle}>
-            <FilePlus2 aria-hidden="true" />
-            <span>{t.createNew}</span>
-          </button>
-          <div className="file-menu">
+        <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
+          <div className="action-menu">
             <button
               type="button"
-              onClick={() => {
-                setIsLogoMenuOpen(false)
-                setIsFileMenuOpen((isOpen) => !isOpen)
-              }}
+              onClick={() => toggleMenu('file')}
               aria-haspopup="menu"
-              aria-expanded={isFileMenuOpen}
-              disabled={!fileAccess.supportsNativeFiles}
-              title={nativeFileTitle ?? openTitle}
+              aria-expanded={activeMenu === 'file'}
             >
               <FolderOpen aria-hidden="true" />
-              <span>{t.open}</span>
+              <span>{t.fileMenu}</span>
               <ChevronDown aria-hidden="true" />
             </button>
-            {isFileMenuOpen && fileAccess.supportsNativeFiles ? (
-              <div className="file-menu-panel" role="menu">
+            {activeMenu === 'file' ? (
+              <div className="action-menu-panel" role="menu">
                 <button
                   type="button"
-                  className="file-menu-item"
+                  className="action-menu-item"
+                  onClick={handleNewDocument}
+                  title={newTitle}
+                  role="menuitem"
+                >
+                  {t.createNew}
+                </button>
+                <button
+                  type="button"
+                  className="action-menu-item"
                   onClick={handleOpenFile}
+                  disabled={!fileAccess.supportsNativeFiles}
+                  title={nativeFileTitle ?? openTitle}
                   role="menuitem"
                 >
                   {t.openMarkdownFile}
                 </button>
-                <div className="file-menu-divider" />
-                <div className="file-menu-section-label">{t.recentFiles}</div>
+                <div className="action-menu-divider" />
+                <div className="action-menu-section-label">{t.recentFiles}</div>
                 {recentFiles.length > 0 ? (
                   recentFiles.map((file) => (
                     <button
                       key={file.path}
                       type="button"
-                      className="file-menu-item recent-file-item"
+                      className="action-menu-item recent-file-item"
                       onClick={() => handleOpenRecentFile(file.path)}
+                      disabled={!fileAccess.supportsNativeFiles}
                       title={file.path}
                       role="menuitem"
                     >
@@ -598,21 +566,59 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                     </button>
                   ))
                 ) : (
-                  <div className="file-menu-empty">{t.noRecentFiles}</div>
+                  <div className="action-menu-empty">{t.noRecentFiles}</div>
                 )}
                 <button
                   type="button"
-                  className="file-menu-item file-menu-clear"
+                  className="action-menu-item action-menu-clear"
                   onClick={handleClearRecentFiles}
                   disabled={recentFiles.length === 0}
                   role="menuitem"
                 >
                   {t.clearRecentFiles}
                 </button>
-                <div className="file-menu-divider" />
                 <button
                   type="button"
-                  className="file-menu-item"
+                  className="action-menu-item"
+                  onClick={() => void handleSaveFile()}
+                  disabled={!fileAccess.supportsNativeFiles}
+                  title={nativeFileTitle ?? saveTitle}
+                  role="menuitem"
+                >
+                  {t.save}
+                </button>
+                <button
+                  type="button"
+                  className="action-menu-item"
+                  onClick={handleSaveFileAs}
+                  disabled={!fileAccess.supportsNativeFiles}
+                  title={nativeFileTitle ?? saveAsTitle}
+                  role="menuitem"
+                >
+                  {t.saveAs}
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="action-menu">
+            <button
+              type="button"
+              onClick={() => toggleMenu('export')}
+              aria-haspopup="menu"
+              aria-expanded={activeMenu === 'export'}
+              disabled={!fileAccess.supportsNativeFiles}
+              title={nativeFileTitle}
+            >
+              <Download aria-hidden="true" />
+              <span>{t.exportMenu}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {activeMenu === 'export' && fileAccess.supportsNativeFiles ? (
+              <div className="action-menu-panel action-menu-panel-compact" role="menu">
+                <button
+                  type="button"
+                  className="action-menu-item"
                   onClick={handleExportHtml}
                   role="menuitem"
                 >
@@ -620,7 +626,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                 </button>
                 <button
                   type="button"
-                  className="file-menu-item"
+                  className="action-menu-item"
                   onClick={handleExportPdf}
                   role="menuitem"
                 >
@@ -628,7 +634,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                 </button>
                 <button
                   type="button"
-                  className="file-menu-item"
+                  className="action-menu-item"
                   onClick={handleExportDocx}
                   role="menuitem"
                 >
@@ -637,26 +643,49 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={handleSaveFile}
-            aria-label={t.saveLabel}
-            disabled={!fileAccess.supportsNativeFiles}
-            title={nativeFileTitle ?? saveTitle}
-          >
-            <Save aria-hidden="true" />
-            <span>{t.save}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveFileAs}
-            aria-label={t.saveAsLabel}
-            disabled={!fileAccess.supportsNativeFiles}
-            title={nativeFileTitle ?? saveAsTitle}
-          >
-            <SaveAll aria-hidden="true" />
-            <span>{t.saveAs}</span>
-          </button>
+
+          <div className="action-menu">
+            <button
+              type="button"
+              onClick={() => toggleMenu('app')}
+              aria-haspopup="menu"
+              aria-expanded={activeMenu === 'app'}
+            >
+              <Settings aria-hidden="true" />
+              <span>{t.appMenu}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {activeMenu === 'app' ? (
+              <div className="action-menu-panel action-menu-panel-compact" role="menu">
+                <div className="action-menu-section-label">{t.languageLabel}</div>
+                <button
+                  type="button"
+                  className={`action-menu-item ${language === 'en' ? 'active' : ''}`}
+                  onClick={() => handleLanguageSelect('en')}
+                  role="menuitem"
+                >
+                  {t.languageEnglish}
+                </button>
+                <button
+                  type="button"
+                  className={`action-menu-item ${language === 'zh' ? 'active' : ''}`}
+                  onClick={() => handleLanguageSelect('zh')}
+                  role="menuitem"
+                >
+                  {t.languageChinese}
+                </button>
+                <div className="action-menu-divider" />
+                <button
+                  type="button"
+                  className="action-menu-item"
+                  onClick={handleOpenAboutFromAppMenu}
+                  role="menuitem"
+                >
+                  {t.about}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </nav>
 
         <div className="view-controls" aria-label={t.viewMode}>

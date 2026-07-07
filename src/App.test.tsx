@@ -23,7 +23,7 @@ describe('App', () => {
     })
   })
 
-  it('opens a markdown file from the toolbar', async () => {
+  it('opens a markdown file from the File menu', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess({ openFile: file('/tmp/readme.md', '# Readme') }) })
 
@@ -51,7 +51,8 @@ describe('App', () => {
 
     expect(screen.getByText('Unsaved')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Save markdown file' }))
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Save' }))
 
     await waitFor(() => {
       expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/draft.md', '# Changed')
@@ -81,7 +82,7 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Open about dialog' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Interface language')).not.toBeInTheDocument()
 
-    await openLogoMenu(user)
+    await openAppMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'About' }))
 
     const dialog = screen.getByRole('dialog', { name: 'About MDView' })
@@ -99,11 +100,11 @@ describe('App', () => {
     expect(screen.queryByRole('dialog', { name: 'About MDView' })).not.toBeInTheDocument()
   })
 
-  it('opens a compact logo menu with about and language actions', async () => {
+  it('opens an App menu with about and language actions', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })
 
-    await openLogoMenu(user)
+    await openAppMenu(user)
 
     expect(screen.getByRole('menuitem', { name: 'About' })).toBeInTheDocument()
     expect(screen.getByText('Interface language')).toBeInTheDocument()
@@ -244,9 +245,20 @@ describe('App', () => {
 
     await openFileMenu(user)
 
+    expect(screen.getByRole('menuitem', { name: 'New' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Open Markdown File' })).toBeInTheDocument()
     expect(screen.getByText('Recent files')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'recent.md' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Save As' })).toBeInTheDocument()
+  })
+
+  it('shows export actions together in the Export menu', async () => {
+    const user = userEvent.setup()
+    renderApp({ fileAccess: createFileAccess() })
+
+    await openExportMenu(user)
+
     expect(screen.getByRole('menuitem', { name: 'Export as HTML' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Export as PDF' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Export as Word (.docx)' })).toBeInTheDocument()
@@ -260,7 +272,8 @@ describe('App', () => {
       }),
     })
 
-    await user.click(screen.getByRole('button', { name: 'Save markdown file as' }))
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Save As' }))
     await openFileMenu(user)
 
     expect(screen.getByRole('menuitem', { name: 'saved-as.md' })).toHaveAttribute(
@@ -323,46 +336,50 @@ describe('App', () => {
     expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent('Saved')
   })
 
-  it('disables the file menu when native files are unavailable', () => {
+  it('keeps the file menu available but disables native file actions when unavailable', async () => {
+    const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess({ supportsNativeFiles: false }) })
 
-    expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Open' })).toHaveAttribute(
-      'title',
-      'Native file dialogs are available after launching the desktop app.',
-    )
+    await openFileMenu(user)
+
+    expect(screen.getByRole('menuitem', { name: 'New' })).toBeEnabled()
+    expect(screen.getByRole('menuitem', { name: 'Open Markdown File' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Save' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Save As' })).toBeDisabled()
   })
 
   it('uses Chinese interface text when the system language is Chinese and can switch languages', async () => {
     const user = userEvent.setup()
     render(<App fileAccess={createFileAccess()} initialLanguage="zh" />)
 
-    expect(screen.getByRole('button', { name: '新建 Markdown 文件' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '预览 Markdown' })).toBeInTheDocument()
     expect(screen.getByText('已保存')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: '打开应用菜单' }))
+    await user.click(screen.getByRole('button', { name: '文件' }))
+    expect(screen.getByRole('menuitem', { name: '新建' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '应用' }))
 
     expect(screen.getByRole('menuitem', { name: '关于' })).toBeInTheDocument()
     expect(screen.getByText('界面语言')).toBeInTheDocument()
 
     await user.click(screen.getByRole('menuitem', { name: 'English' }))
 
-    expect(screen.getByRole('button', { name: 'Create new markdown file' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'File' })).toBeInTheDocument()
     expect(screen.getByText('Saved')).toBeInTheDocument()
   })
 
-  it('closes the logo menu with Escape and outside clicks', async () => {
+  it('closes open menus with Escape and outside clicks', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })
 
-    await openLogoMenu(user)
+    await openAppMenu(user)
     expect(screen.getByRole('menuitem', { name: 'About' })).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menuitem', { name: 'About' })).not.toBeInTheDocument()
 
-    await openLogoMenu(user)
+    await openAppMenu(user)
     expect(screen.getByRole('menuitem', { name: 'About' })).toBeInTheDocument()
 
     await user.click(screen.getByText('Untitled.md'))
@@ -440,12 +457,10 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App fileAccess={createFileAccess()} initialLanguage="zh" />)
 
-    await user.click(screen.getByRole('button', { name: '打开' }))
+    await user.click(screen.getByRole('button', { name: '文件' }))
 
     expect(screen.getByText('没有最近文件')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '清空最近文件' })).toBeDisabled()
-    expect(screen.getByRole('menuitem', { name: '导出为 HTML' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: '导出为 PDF' })).toBeInTheDocument()
   })
 
   it('exports the current preview as self-contained HTML', async () => {
@@ -463,7 +478,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Exported' })).toBeInTheDocument()
 
-    await openFileMenu(user)
+    await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as HTML' }))
 
     await waitFor(() => {
@@ -488,7 +503,7 @@ describe('App', () => {
       }),
     })
 
-    await openFileMenu(user)
+    await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as HTML' }))
 
     expect(await screen.findByText('Export canceled')).toBeInTheDocument()
@@ -504,7 +519,7 @@ describe('App', () => {
       }),
     })
 
-    await openFileMenu(user)
+    await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as HTML' }))
 
     expect(await screen.findByText('export failed')).toBeInTheDocument()
@@ -522,7 +537,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Printable' })).toBeInTheDocument()
 
-    await openFileMenu(user)
+    await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as PDF' }))
 
     await waitFor(() => {
@@ -548,7 +563,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Report' })).toBeInTheDocument()
 
-    await openFileMenu(user)
+    await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as Word (.docx)' }))
 
     await waitFor(() => {
@@ -567,11 +582,15 @@ function renderApp(props: ComponentProps<typeof App>) {
 }
 
 async function openFileMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Open' }))
+  await user.click(screen.getByRole('button', { name: 'File' }))
 }
 
-async function openLogoMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Open application menu' }))
+async function openExportMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Export' }))
+}
+
+async function openAppMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'App' }))
 }
 
 function file(path: string, content: string): OpenedMarkdownFile {
