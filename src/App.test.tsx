@@ -142,6 +142,60 @@ describe('App', () => {
     expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
   })
 
+  it('zooms the preview with Ctrl + mouse wheel', () => {
+    renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/zoom.md', '# Zoom') }) })
+
+    const previewPanel = screen.getByLabelText('Preview panel')
+    expect(previewPanel).toHaveStyle('--preview-zoom: 1')
+
+    const zoomInEvent = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: -100,
+    })
+
+    act(() => {
+      previewPanel.dispatchEvent(zoomInEvent)
+    })
+
+    expect(zoomInEvent.defaultPrevented).toBe(true)
+    expect(previewPanel).toHaveStyle('--preview-zoom: 1.1')
+
+    const zoomOutEvent = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: 100,
+    })
+
+    act(() => {
+      previewPanel.dispatchEvent(zoomOutEvent)
+    })
+
+    expect(zoomOutEvent.defaultPrevented).toBe(true)
+    expect(previewPanel).toHaveStyle('--preview-zoom: 1')
+  })
+
+  it('keeps normal preview wheel scrolling unchanged', () => {
+    renderApp({ fileAccess: createFileAccess() })
+
+    const previewPanel = screen.getByLabelText('Preview panel')
+    const scrollEvent = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: false,
+      deltaY: 100,
+    })
+
+    act(() => {
+      previewPanel.dispatchEvent(scrollEvent)
+    })
+
+    expect(scrollEvent.defaultPrevented).toBe(false)
+    expect(previewPanel).toHaveStyle('--preview-zoom: 1')
+  })
+
   it('shows editor formatting tools in edit and split modes only', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })

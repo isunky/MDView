@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import {
@@ -62,6 +63,10 @@ const DEFAULT_OUTLINE_WIDTH = 260
 const MIN_OUTLINE_WIDTH = 180
 const MAX_OUTLINE_WIDTH = 420
 const OUTLINE_KEYBOARD_STEP = 16
+const DEFAULT_PREVIEW_ZOOM = 1
+const MIN_PREVIEW_ZOOM = 0.6
+const MAX_PREVIEW_ZOOM = 2
+const PREVIEW_ZOOM_STEP = 0.1
 
 type OutlineResizeStart = {
   pointerX: number
@@ -84,9 +89,11 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [isOutlineOpen, setIsOutlineOpen] = useState(true)
   const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
+  const [previewZoom, setPreviewZoom] = useState(DEFAULT_PREVIEW_ZOOM)
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
   const [shortcutToast, setShortcutToast] = useState<ShortcutToast>(null)
   const menuBarRef = useRef<HTMLElement | null>(null)
+  const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const shortcutPlatform = useMemo(() => detectShortcutPlatform(), [])
   const outlineItems = useMemo(
@@ -215,6 +222,29 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [activeMenu])
+
+  useEffect(() => {
+    const previewPanel = previewPanelRef.current
+    if (!previewPanel) {
+      return
+    }
+
+    function handleWheel(event: WheelEvent) {
+      if (!event.ctrlKey) {
+        return
+      }
+
+      event.preventDefault()
+      setPreviewZoom((currentZoom) =>
+        clampPreviewZoom(
+          currentZoom + (event.deltaY < 0 ? PREVIEW_ZOOM_STEP : -PREVIEW_ZOOM_STEP),
+        ),
+      )
+    }
+
+    previewPanel.addEventListener('wheel', handleWheel, { passive: false })
+    return () => previewPanel.removeEventListener('wheel', handleWheel)
+  }, [])
 
   useEffect(() => {
     if (!shortcutToast) {
@@ -502,6 +532,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
   const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
   const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
+  const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
 
   return (
     <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
@@ -773,7 +804,12 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             showToolbar={viewMode !== 'preview'}
           />
         </section>
-        <section className="preview-panel" aria-label={t.previewPanel}>
+        <section
+          className="preview-panel"
+          aria-label={t.previewPanel}
+          ref={previewPanelRef}
+          style={previewPanelStyle}
+        >
           <MarkdownPreview
             content={markdownDocument.content}
             previewRef={previewRef}
@@ -816,6 +852,10 @@ function translateStatus(statusMessage: 'saved' | 'opened' | string, t: (typeof 
 
 function clampOutlineWidth(width: number): number {
   return Math.min(Math.max(width, MIN_OUTLINE_WIDTH), MAX_OUTLINE_WIDTH)
+}
+
+function clampPreviewZoom(zoom: number): number {
+  return Number(Math.min(Math.max(zoom, MIN_PREVIEW_ZOOM), MAX_PREVIEW_ZOOM).toFixed(2))
 }
 
 export default App

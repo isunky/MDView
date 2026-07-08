@@ -734,6 +734,7 @@
 }
 
 .markdown-preview {
+  zoom: var(--preview-zoom, 1);
   width: min(940px, calc(100% - 64px));
   margin: 32px auto 72px;
   padding: clamp(34px, 5vw, 56px) clamp(26px, 5vw, 58px) clamp(48px, 7vw, 76px);
