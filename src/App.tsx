@@ -87,6 +87,7 @@ type OutlineResizeStart = {
 type ShortcutToast = {
   id: number
   message: string
+  placement: 'app' | 'preview'
 } | null
 
 function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
@@ -108,6 +109,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const menuBarRef = useRef<HTMLElement | null>(null)
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
+  const previewZoomRef = useRef(DEFAULT_PREVIEW_ZOOM)
   const outlineHeadingPositionsRef = useRef<OutlineHeadingPosition[]>([])
   const outlineJumpLockRef = useRef<string | null>(null)
   const outlineJumpSettleTimeoutRef = useRef<number | null>(null)
@@ -422,11 +424,16 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       }
 
       event.preventDefault()
-      setPreviewZoom((currentZoom) =>
-        clampPreviewZoom(
-          currentZoom + (event.deltaY < 0 ? PREVIEW_ZOOM_STEP : -PREVIEW_ZOOM_STEP),
-        ),
+      const nextZoom = clampPreviewZoom(
+        previewZoomRef.current + (event.deltaY < 0 ? PREVIEW_ZOOM_STEP : -PREVIEW_ZOOM_STEP),
       )
+      previewZoomRef.current = nextZoom
+      setPreviewZoom(nextZoom)
+      setShortcutToast({
+        id: Date.now(),
+        message: `${Math.round(nextZoom * 100)}%`,
+        placement: 'preview',
+      })
     }
 
     previewPanel.addEventListener('wheel', handleWheel, { passive: false })
@@ -655,7 +662,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   function showShortcutToast(message: string) {
-    setShortcutToast({ id: Date.now(), message })
+    setShortcutToast({ id: Date.now(), message, placement: 'app' })
   }
 
   function handleOpenAboutFromAppMenu() {
@@ -1007,8 +1014,19 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             labels={t.previewLabels}
           />
         </section>
+        {shortcutToast?.placement === 'preview' && viewMode !== 'edit' ? (
+          <div className="zoom-toast-layer">
+            <div
+              className="shortcut-toast zoom-toast"
+              role="status"
+              aria-label={t.shortcutNotification}
+            >
+              {shortcutToast.message}
+            </div>
+          </div>
+        ) : null}
       </section>
-      {shortcutToast ? (
+      {shortcutToast?.placement === 'app' ? (
         <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
           {shortcutToast.message}
         </div>

@@ -325,10 +325,36 @@
 }
 
 .workspace {
+  position: relative;
   min-height: 0;
   flex: 1;
   display: grid;
   grid-template-columns: minmax(320px, 42%) minmax(0, 1fr);
+}
+
+.zoom-toast-layer {
+  position: absolute;
+  right: 0;
+  bottom: 24px;
+  left: 0;
+  z-index: 40;
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.workspace.outline-open .zoom-toast-layer {
+  grid-column: 3;
+}
+
+.workspace.outline-collapsed .zoom-toast-layer {
+  grid-column: 2;
+}
+
+.zoom-toast {
+  position: static;
 }
 
 .outline-panel,

@@ -183,6 +183,10 @@ describe('App', () => {
 
     expect(zoomInEvent.defaultPrevented).toBe(true)
     expect(previewPanel).toHaveStyle('--preview-zoom: 1.1')
+    const zoomToast = screen.getByRole('status', { name: 'Shortcut notification' })
+    expect(zoomToast).toHaveTextContent('110%')
+    expect(zoomToast).toHaveClass('zoom-toast')
+    expect(zoomToast.parentElement).toHaveClass('zoom-toast-layer')
 
     const zoomOutEvent = new WheelEvent('wheel', {
       bubbles: true,
@@ -197,6 +201,9 @@ describe('App', () => {
 
     expect(zoomOutEvent.defaultPrevented).toBe(true)
     expect(previewPanel).toHaveStyle('--preview-zoom: 1')
+    expect(
+      screen.getByRole('status', { name: 'Shortcut notification' }),
+    ).toHaveTextContent('100%')
   })
 
   it('keeps normal preview wheel scrolling unchanged', () => {
