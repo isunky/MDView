@@ -4,12 +4,13 @@ import type { Translation } from '../i18n'
 
 type DocumentOutlineProps = {
   items: MarkdownOutlineItem[]
+  activeId?: string | null
   onJump: (id: string) => void
   onClose: () => void
   t: Translation
 }
 
-export function DocumentOutline({ items, onJump, onClose, t }: DocumentOutlineProps) {
+export function DocumentOutline({ items, activeId, onJump, onClose, t }: DocumentOutlineProps) {
   return (
     <nav className="document-outline" aria-label={t.outlineNav}>
       <div className="outline-header">
@@ -25,18 +26,23 @@ export function DocumentOutline({ items, onJump, onClose, t }: DocumentOutlinePr
       </div>
       {items.length > 0 ? (
         <ol className="outline-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={`outline-link depth-${item.level}`}
-                onClick={() => onJump(item.id)}
-                aria-label={t.jumpTo(item.text)}
-              >
-                {item.text}
-              </button>
-            </li>
-          ))}
+          {items.map((item) => {
+            const isActive = item.id === activeId
+
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`outline-link depth-${item.level}${isActive ? ' active' : ''}`}
+                  onClick={() => onJump(item.id)}
+                  aria-label={t.jumpTo(item.text)}
+                  aria-current={isActive ? 'location' : undefined}
+                >
+                  {item.text}
+                </button>
+              </li>
+            )
+          })}
         </ol>
       ) : (
         <p className="outline-empty">{t.noHeadings}</p>

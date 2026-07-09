@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "version:sync": "node scripts/sync-version.mjs",
+    "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
     "portable:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-windows-portable.ps1",
     "tauri": "tauri"
   },

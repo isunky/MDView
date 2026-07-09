@@ -2,7 +2,10 @@ import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import mermaid from 'mermaid'
-import { MarkdownPreview } from './MarkdownPreview'
+import {
+  MarkdownPreview,
+  type MarkdownPreviewLabels,
+} from './MarkdownPreview'
 
 vi.mock('mermaid', () => ({
   default: {
@@ -14,6 +17,33 @@ vi.mock('mermaid', () => ({
 }))
 
 describe('MarkdownPreview', () => {
+  it('does not parse the document again when its props are unchanged', () => {
+    const codeBlockLabel = vi.fn((language: string) => `${language} code block`)
+    const labels: MarkdownPreviewLabels = {
+      copyCode: 'Copy',
+      copiedCode: 'Copied',
+      plainCodeBlock: 'Code block',
+      codeBlock: codeBlockLabel,
+      mermaidDiagram: 'Mermaid diagram',
+      mermaidLoading: 'Rendering Mermaid diagram...',
+      mermaidError: 'Mermaid render failed',
+      imagePreview: 'Image preview',
+      closeImagePreview: 'Close image preview',
+      imagePreviewAlt: (alt) => `${alt} preview`,
+    }
+    const props = {
+      content: ['```ts', 'const ready = true', '```'].join('\n'),
+      labels,
+    }
+    const { rerender } = render(<MarkdownPreview {...props} />)
+    const initialCalls = codeBlockLabel.mock.calls.length
+
+    rerender(<MarkdownPreview {...props} />)
+
+    expect(initialCalls).toBeGreaterThan(0)
+    expect(codeBlockLabel).toHaveBeenCalledTimes(initialCalls)
+  })
+
   it('renders common GFM markdown for reading', () => {
     render(
       <MarkdownPreview

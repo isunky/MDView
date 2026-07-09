@@ -40,6 +40,17 @@ import {
   saveRecentFiles,
 } from './domain/recentFiles'
 import {
+  MAX_OUTLINE_WIDTH,
+  MIN_OUTLINE_WIDTH,
+  clampOutlineWidth,
+  loadOutlinePreferences,
+  saveOutlinePreferences,
+} from './domain/outlinePreferences'
+import {
+  findActiveOutlineId,
+  type OutlineHeadingPosition,
+} from './domain/outlineScroll'
+import {
   detectSystemLanguage,
   translations,
   type AppLanguage,
@@ -59,10 +70,10 @@ type AppProps = {
   initialLanguage?: AppLanguage
 }
 
-const DEFAULT_OUTLINE_WIDTH = 260
-const MIN_OUTLINE_WIDTH = 180
-const MAX_OUTLINE_WIDTH = 420
 const OUTLINE_KEYBOARD_STEP = 16
+const PREVIEW_HEADING_SCROLL_OFFSET = 16
+const PREVIEW_HEADING_ACTIVE_OFFSET = 24
+const OUTLINE_JUMP_SETTLE_DELAY_MS = 120
 const DEFAULT_PREVIEW_ZOOM = 1
 const MIN_PREVIEW_ZOOM = 0.6
 const MAX_PREVIEW_ZOOM = 2
@@ -86,21 +97,66 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null)
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
-  const [isOutlineOpen, setIsOutlineOpen] = useState(true)
-  const [outlineWidth, setOutlineWidth] = useState(DEFAULT_OUTLINE_WIDTH)
+  const initialOutlinePreferences = useMemo(() => loadOutlinePreferences(), [])
+  const [isOutlineOpen, setIsOutlineOpen] = useState(initialOutlinePreferences.isOpen)
+  const [outlineWidth, setOutlineWidth] = useState(initialOutlinePreferences.width)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const [previewZoom, setPreviewZoom] = useState(DEFAULT_PREVIEW_ZOOM)
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
+  const [activeOutlineId, setActiveOutlineId] = useState<string | null>(null)
   const [shortcutToast, setShortcutToast] = useState<ShortcutToast>(null)
   const menuBarRef = useRef<HTMLElement | null>(null)
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
+  const outlineHeadingPositionsRef = useRef<OutlineHeadingPosition[]>([])
+  const outlineJumpLockRef = useRef<string | null>(null)
+  const outlineJumpSettleTimeoutRef = useRef<number | null>(null)
   const shortcutPlatform = useMemo(() => detectShortcutPlatform(), [])
   const outlineItems = useMemo(
     () => extractMarkdownOutline(markdownDocument.content),
     [markdownDocument.content],
   )
+  const outlineIds = useMemo(() => outlineItems.map((item) => item.id), [outlineItems])
   const t = translations[language]
+  const canDiscardUnsavedChanges = useCallback((): boolean => {
+    return !markdownDocument.isDirty || window.confirm(t.discardUnsaved)
+  }, [markdownDocument.isDirty, t.discardUnsaved])
+
+  const updateActiveOutlineFromPreview = useCallback(() => {
+    const previewPanel = previewPanelRef.current
+    if (viewMode !== 'preview' || !previewPanel) {
+      setActiveOutlineId(null)
+      return
+    }
+
+    const nextActiveId = findActiveOutlineId(
+      outlineHeadingPositionsRef.current,
+      previewPanel.scrollTop,
+      PREVIEW_HEADING_ACTIVE_OFFSET,
+    )
+    setActiveOutlineId((currentId) => currentId === nextActiveId ? currentId : nextActiveId)
+  }, [viewMode])
+
+  const releaseOutlineJumpLock = useCallback(() => {
+    if (outlineJumpSettleTimeoutRef.current !== null) {
+      window.clearTimeout(outlineJumpSettleTimeoutRef.current)
+      outlineJumpSettleTimeoutRef.current = null
+    }
+
+    outlineJumpLockRef.current = null
+    updateActiveOutlineFromPreview()
+  }, [updateActiveOutlineFromPreview])
+
+  const scheduleOutlineJumpRelease = useCallback(() => {
+    if (outlineJumpSettleTimeoutRef.current !== null) {
+      window.clearTimeout(outlineJumpSettleTimeoutRef.current)
+    }
+
+    outlineJumpSettleTimeoutRef.current = window.setTimeout(
+      releaseOutlineJumpLock,
+      OUTLINE_JUMP_SETTLE_DELAY_MS,
+    )
+  }, [releaseOutlineJumpLock])
 
   const rememberRecentFile = useCallback((path: string) => {
     setRecentFiles((currentFiles) => {
@@ -155,18 +211,39 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }, [markdownDocument.isDirty, markdownDocument.title])
 
   useEffect(() => {
+    saveOutlinePreferences({ width: outlineWidth, isOpen: isOutlineOpen })
+  }, [isOutlineOpen, outlineWidth])
+
+  useEffect(() => {
+    return () => {
+      if (outlineJumpSettleTimeoutRef.current !== null) {
+        window.clearTimeout(outlineJumpSettleTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (!pendingHeadingId) {
       return
     }
 
     const headingId = pendingHeadingId
     const timeoutId = window.setTimeout(() => {
-      window.document.getElementById(headingId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const previewPanel = previewPanelRef.current
+      if (outlineIds.includes(headingId)) {
+        setActiveOutlineId(headingId)
+        outlineJumpLockRef.current = headingId
+        scheduleOutlineJumpRelease()
+      }
+
+      if (!previewPanel || !scrollPreviewHeadingIntoView(previewPanel, headingId)) {
+        window.document.getElementById(headingId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
       setPendingHeadingId(null)
     }, 0)
 
     return () => window.clearTimeout(timeoutId)
-  }, [markdownDocument.content, pendingHeadingId])
+  }, [markdownDocument.content, outlineIds, pendingHeadingId, scheduleOutlineJumpRelease])
 
   useEffect(() => {
     if (!outlineResizeStart) {
@@ -193,6 +270,116 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
       window.removeEventListener('pointerup', handlePointerUp)
     }
   }, [outlineResizeStart])
+
+  useEffect(() => {
+    const previewPanel = previewPanelRef.current
+    const preview = previewRef.current
+    if (viewMode !== 'preview' || !previewPanel || outlineIds.length === 0) {
+      outlineHeadingPositionsRef.current = []
+      return
+    }
+
+    const activePreviewPanel = previewPanel
+    let frameId: number | null = null
+
+    function measureHeadingPositions() {
+      frameId = null
+      const panelTop = activePreviewPanel.getBoundingClientRect().top
+      outlineHeadingPositionsRef.current = outlineIds.flatMap((id) => {
+        const heading = window.document.getElementById(id)
+        if (!(heading instanceof HTMLElement) || !activePreviewPanel.contains(heading)) {
+          return []
+        }
+
+        return [{
+          id,
+          top: activePreviewPanel.scrollTop + heading.getBoundingClientRect().top - panelTop,
+        }]
+      })
+      updateActiveOutlineFromPreview()
+    }
+
+    function scheduleHeadingMeasurement() {
+      if (frameId === null) {
+        frameId = window.requestAnimationFrame(measureHeadingPositions)
+      }
+    }
+
+    scheduleHeadingMeasurement()
+    window.addEventListener('resize', scheduleHeadingMeasurement)
+
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(scheduleHeadingMeasurement)
+    resizeObserver?.observe(activePreviewPanel)
+    if (preview) {
+      resizeObserver?.observe(preview)
+    }
+
+    return () => {
+      window.removeEventListener('resize', scheduleHeadingMeasurement)
+      resizeObserver?.disconnect()
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+  }, [
+    isOutlineOpen,
+    outlineIds,
+    outlineWidth,
+    previewZoom,
+    updateActiveOutlineFromPreview,
+    viewMode,
+  ])
+
+  useEffect(() => {
+    const previewPanel = previewPanelRef.current
+    if (viewMode !== 'preview' || !previewPanel || outlineIds.length === 0) {
+      outlineJumpLockRef.current = null
+      setActiveOutlineId(null)
+      return
+    }
+
+    const activePreviewPanel = previewPanel
+    let frameId: number | null = null
+
+    function updateActiveOutlineId() {
+      frameId = null
+      if (outlineJumpLockRef.current) {
+        return
+      }
+
+      updateActiveOutlineFromPreview()
+    }
+
+    function scheduleActiveOutlineUpdate() {
+      if (outlineJumpLockRef.current) {
+        scheduleOutlineJumpRelease()
+        return
+      }
+
+      if (frameId !== null) {
+        return
+      }
+
+      frameId = window.requestAnimationFrame(updateActiveOutlineId)
+    }
+
+    scheduleActiveOutlineUpdate()
+    activePreviewPanel.addEventListener('scroll', scheduleActiveOutlineUpdate, { passive: true })
+
+    return () => {
+      activePreviewPanel.removeEventListener('scroll', scheduleActiveOutlineUpdate)
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+  }, [
+    outlineIds,
+    scheduleOutlineJumpRelease,
+    updateActiveOutlineFromPreview,
+    viewMode,
+  ])
 
   useEffect(() => {
     if (!activeMenu) {
@@ -342,7 +529,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     }
   }
 
-  async function handleOpenMarkdownLink(path: string, headingId?: string) {
+  const handleOpenMarkdownLink = useCallback(async (path: string, headingId?: string) => {
     if (!canDiscardUnsavedChanges()) {
       return
     }
@@ -353,7 +540,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
     }
-  }
+  }, [canDiscardUnsavedChanges, fileAccess, loadFile])
 
   async function handleExportHtml() {
     setActiveMenu(null)
@@ -467,13 +654,6 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     })
   }
 
-  function canDiscardUnsavedChanges(): boolean {
-    return (
-      !markdownDocument.isDirty ||
-      window.confirm(t.discardUnsaved)
-    )
-  }
-
   function showShortcutToast(message: string) {
     setShortcutToast({ id: Date.now(), message })
   }
@@ -499,7 +679,14 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   }
 
   function handleOutlineJump(id: string) {
-    window.document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const previewPanel = previewPanelRef.current
+    setActiveOutlineId(id)
+    outlineJumpLockRef.current = id
+    scheduleOutlineJumpRelease()
+
+    if (!previewPanel || !scrollPreviewHeadingIntoView(previewPanel, id)) {
+      window.document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   function handleOutlineResizeKey(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -763,6 +950,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           >
             <DocumentOutline
               items={outlineItems}
+              activeId={activeOutlineId}
               onJump={handleOutlineJump}
               onClose={() => setIsOutlineOpen(false)}
               t={t}
@@ -850,12 +1038,29 @@ function translateStatus(statusMessage: 'saved' | 'opened' | string, t: (typeof 
   return statusMessage
 }
 
-function clampOutlineWidth(width: number): number {
-  return Math.min(Math.max(width, MIN_OUTLINE_WIDTH), MAX_OUTLINE_WIDTH)
-}
-
 function clampPreviewZoom(zoom: number): number {
   return Number(Math.min(Math.max(zoom, MIN_PREVIEW_ZOOM), MAX_PREVIEW_ZOOM).toFixed(2))
+}
+
+function scrollPreviewHeadingIntoView(previewPanel: HTMLElement, headingId: string): boolean {
+  const heading = window.document.getElementById(headingId)
+  if (!(heading instanceof HTMLElement) || !previewPanel.contains(heading)) {
+    return false
+  }
+
+  const targetTop = Math.max(
+    0,
+    previewPanel.scrollTop +
+      heading.getBoundingClientRect().top -
+      previewPanel.getBoundingClientRect().top -
+      PREVIEW_HEADING_SCROLL_OFFSET,
+  )
+  if (typeof previewPanel.scrollTo === 'function') {
+    previewPanel.scrollTo({ top: targetTop, behavior: 'smooth' })
+  } else {
+    previewPanel.scrollTop = targetTop
+  }
+  return true
 }
 
 export default App

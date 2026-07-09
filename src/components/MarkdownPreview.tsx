@@ -1,6 +1,7 @@
 import type { Content, Heading, PhrasingContent, Root } from 'mdast'
 import {
   Fragment,
+  memo,
   useId,
   useEffect,
   useRef,
@@ -51,7 +52,7 @@ export type MarkdownPreviewLabels = {
   imagePreviewAlt: (alt: string) => string
 }
 
-export function MarkdownPreview({
+export const MarkdownPreview = memo(function MarkdownPreview({
   content,
   previewRef,
   sourcePath,
@@ -174,7 +175,7 @@ export function MarkdownPreview({
       </ReactMarkdown>
     </article>
   )
-}
+})
 
 const defaultPreviewLabels: MarkdownPreviewLabels = {
   copyCode: 'Copy',

@@ -474,6 +474,7 @@
   overflow: hidden;
   padding: 7px 8px;
   border: 1px solid transparent;
+  border-left-width: 3px;
   border-radius: 7px;
   color: var(--control-text);
   background: transparent;
@@ -487,6 +488,14 @@
 .outline-link:hover {
   border-color: var(--border);
   background: var(--control-hover);
+}
+
+.outline-link.active {
+  border-color: rgba(15, 118, 110, 0.22);
+  border-left-color: var(--accent);
+  color: var(--text);
+  background: rgba(15, 118, 110, 0.1);
+  font-weight: 740;
 }
 
 .outline-link:focus-visible {

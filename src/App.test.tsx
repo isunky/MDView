@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { appInfo } from './appInfo'
 import { RECENT_FILES_STORAGE_KEY, type RecentFile } from './domain/recentFiles'
+import { OUTLINE_PREFERENCES_STORAGE_KEY } from './domain/outlinePreferences'
 import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 
 describe('App', () => {
@@ -128,10 +129,31 @@ describe('App', () => {
     expect(await screen.findByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Jump to Project Plan' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Jump to Scope' })).toBeInTheDocument()
+    const previewPanel = screen.getByLabelText('Preview panel')
+    const scrollTo = vi.fn()
+    previewPanel.scrollTop = 200
+    previewPanel.scrollTo = scrollTo
+    mockElementTop(previewPanel, 100)
+    mockElementTop(screen.getByRole('heading', { name: 'Project Plan' }), 100)
+    mockElementTop(screen.getByRole('heading', { name: 'Scope' }), 320)
+    mockElementTop(screen.getByRole('heading', { name: 'Details' }), 520)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Jump to Project Plan' })).toHaveAttribute(
+        'aria-current',
+        'location',
+      )
+    })
 
     await user.click(screen.getByRole('button', { name: 'Jump to Scope' }))
 
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(scrollTo).toHaveBeenCalledWith({ top: 404, behavior: 'smooth' })
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Jump to Scope' })).toHaveAttribute(
+        'aria-current',
+        'location',
+      )
+    })
 
     await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
 
@@ -229,10 +251,12 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Collapse document outline' }))
 
     expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
+    expect(getStoredOutlinePreferences()).toMatchObject({ isOpen: false })
 
     await user.click(screen.getByRole('button', { name: 'Expand document outline' }))
 
     expect(screen.getByRole('navigation', { name: 'Document outline' })).toBeInTheDocument()
+    expect(getStoredOutlinePreferences()).toMatchObject({ isOpen: true })
   })
 
   it('resizes the outline with the preview separator', async () => {
@@ -253,6 +277,114 @@ describe('App', () => {
       expect(separator).toHaveAttribute('aria-valuenow', '340')
       expect(screen.getByLabelText('Outline panel')).toHaveStyle({ width: '340px' })
     })
+    expect(getStoredOutlinePreferences()).toMatchObject({ width: 340 })
+  })
+
+  it('restores saved outline preferences on startup', async () => {
+    window.localStorage.setItem(
+      OUTLINE_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({ width: 360, isOpen: false }),
+    )
+
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/outline.md', '# Project Plan\n\n## Scope'),
+      }),
+    })
+
+    expect(await screen.findByRole('button', { name: 'Expand document outline' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Document outline' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expand document outline' }))
+
+    expect(screen.getByLabelText('Outline panel')).toHaveStyle({ width: '360px' })
+  })
+
+  it('syncs the active outline item with preview scrolling', async () => {
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/outline.md', '# Intro\n\n## First\n\n## Second'),
+      }),
+    })
+
+    const previewPanel = await screen.findByLabelText('Preview panel')
+    const firstHeading = screen.getByRole('heading', { name: 'First' })
+    const secondHeading = screen.getByRole('heading', { name: 'Second' })
+    mockElementTop(previewPanel, 100)
+    mockElementTop(firstHeading, 80)
+    mockElementTop(secondHeading, 130)
+
+    fireEvent.scroll(previewPanel)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Jump to First' })).toHaveAttribute(
+        'aria-current',
+        'location',
+      )
+    })
+  })
+
+  it('keeps the clicked outline item active while smooth preview scrolling is in progress', async () => {
+    const user = userEvent.setup()
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/outline.md', '# Intro\n\n## First\n\n## Second'),
+      }),
+    })
+
+    const previewPanel = await screen.findByLabelText('Preview panel')
+    const scrollTo = vi.fn()
+    previewPanel.scrollTo = scrollTo
+    mockElementTop(previewPanel, 100)
+    mockElementTop(screen.getByRole('heading', { name: 'First' }), 80)
+    mockElementTop(screen.getByRole('heading', { name: 'Second' }), 360)
+    fireEvent.scroll(previewPanel)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Jump to First' })).toHaveAttribute(
+        'aria-current',
+        'location',
+      )
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Jump to Second' }))
+    expect(screen.getByRole('button', { name: 'Jump to Second' })).toHaveAttribute(
+      'aria-current',
+      'location',
+    )
+
+    mockElementTop(screen.getByRole('heading', { name: 'First' }), 80)
+    mockElementTop(screen.getByRole('heading', { name: 'Second' }), 180)
+    fireEvent.scroll(previewPanel)
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 50))
+    })
+
+    expect(screen.getByRole('button', { name: 'Jump to Second' })).toHaveAttribute(
+      'aria-current',
+      'location',
+    )
+    expect(screen.getByRole('button', { name: 'Jump to First' })).not.toHaveAttribute(
+      'aria-current',
+    )
+
+    mockElementTop(screen.getByRole('heading', { name: 'First' }), 80)
+    mockElementTop(screen.getByRole('heading', { name: 'Second' }), 117)
+    previewPanel.scrollTop = 243
+    fireEvent.scroll(previewPanel)
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 160))
+    })
+
+    expect(screen.getByRole('button', { name: 'Jump to Second' })).toHaveAttribute(
+      'aria-current',
+      'location',
+    )
+    expect(screen.getByRole('button', { name: 'Jump to First' })).not.toHaveAttribute(
+      'aria-current',
+    )
   })
 
   it('adds opened markdown files to the recent files menu', async () => {
@@ -698,6 +830,27 @@ function seedRecentFiles(recentFiles: RecentFile[]) {
 
 function getStoredRecentFiles(): RecentFile[] {
   return JSON.parse(window.localStorage.getItem(RECENT_FILES_STORAGE_KEY) ?? '[]') as RecentFile[]
+}
+
+function getStoredOutlinePreferences(): Record<string, unknown> {
+  return JSON.parse(window.localStorage.getItem(OUTLINE_PREFERENCES_STORAGE_KEY) ?? '{}') as Record<
+    string,
+    unknown
+  >
+}
+
+function mockElementTop(element: Element, top: number) {
+  element.getBoundingClientRect = vi.fn(() => ({
+    x: 0,
+    y: top,
+    top,
+    left: 0,
+    right: 0,
+    bottom: top,
+    width: 0,
+    height: 0,
+    toJSON: () => ({}),
+  }))
 }
 
 function setNavigatorPlatform(platform: string) {
