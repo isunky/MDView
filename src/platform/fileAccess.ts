@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { open, save } from '@tauri-apps/plugin-dialog'
-import { createExportDocxDefaultPath } from '../domain/exportDocx'
+import { createExportDocxDefaultPath } from '../domain/exportDocxPath'
 import { createExportHtmlDefaultPath } from '../domain/exportHtml'
 import { ensureMarkdownExtension } from './markdownFiles'
 

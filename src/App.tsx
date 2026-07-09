@@ -29,7 +29,6 @@ import {
   replaceDocumentContent,
   updateDocumentDraft,
 } from './domain/documentState'
-import { buildExportDocx } from './domain/exportDocx'
 import { buildExportHtml } from './domain/exportHtml'
 import { extractMarkdownOutline } from './domain/markdownOutline'
 import {
@@ -78,6 +77,7 @@ const DEFAULT_PREVIEW_ZOOM = 1
 const MIN_PREVIEW_ZOOM = 0.6
 const MAX_PREVIEW_ZOOM = 2
 const PREVIEW_ZOOM_STEP = 0.1
+const SPLIT_PREVIEW_DEBOUNCE_MS = 120
 
 type OutlineResizeStart = {
   pointerX: number
@@ -103,6 +103,9 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const [outlineWidth, setOutlineWidth] = useState(initialOutlinePreferences.width)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const [previewZoom, setPreviewZoom] = useState(DEFAULT_PREVIEW_ZOOM)
+  const [debouncedPreviewContent, setDebouncedPreviewContent] = useState(
+    () => markdownDocument.content,
+  )
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
   const [activeOutlineId, setActiveOutlineId] = useState<string | null>(null)
   const [shortcutToast, setShortcutToast] = useState<ShortcutToast>(null)
@@ -211,6 +214,18 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   useEffect(() => {
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`
   }, [markdownDocument.isDirty, markdownDocument.title])
+
+  useEffect(() => {
+    if (viewMode !== 'split') {
+      return
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setDebouncedPreviewContent(markdownDocument.content),
+      SPLIT_PREVIEW_DEBOUNCE_MS,
+    )
+    return () => window.clearTimeout(timeoutId)
+  }, [markdownDocument.content, viewMode])
 
   useEffect(() => {
     saveOutlinePreferences({ width: outlineWidth, isOpen: isOutlineOpen })
@@ -577,8 +592,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
 
   async function handleExportDocx() {
     setActiveMenu(null)
+    setStatusMessage(t.exportDocxPreparing)
 
     try {
+      const { buildExportDocx } = await import('./domain/exportDocx')
       const bytes = await buildExportDocx({
         title: markdownDocument.title,
         content: markdownDocument.content,
@@ -727,6 +744,9 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
   const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
   const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
+  const previewContent = viewMode === 'split'
+    ? debouncedPreviewContent
+    : markdownDocument.content
 
   return (
     <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
@@ -935,7 +955,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           <button
             type="button"
             className={viewMode === 'split' ? 'active' : ''}
-            onClick={() => setViewMode('split')}
+            onClick={() => {
+              setDebouncedPreviewContent(markdownDocument.content)
+              setViewMode('split')
+            }}
             aria-label={t.splitLabel}
           >
             <SplitSquareHorizontal aria-hidden="true" />
@@ -1006,7 +1029,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           style={previewPanelStyle}
         >
           <MarkdownPreview
-            content={markdownDocument.content}
+            content={previewContent}
             previewRef={previewRef}
             sourcePath={markdownDocument.path}
             readLocalImageFile={fileAccess.readLocalImageFile}

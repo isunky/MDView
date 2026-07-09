@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildExportDocx, createExportDocxDefaultPath } from './exportDocx'
+import { buildExportDocx } from './exportDocx'
+import { createExportDocxDefaultPath } from './exportDocxPath'
 
 describe('exportDocx', () => {
   it('creates a docx default path from the current markdown file path', () => {

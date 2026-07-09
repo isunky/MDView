@@ -225,6 +225,34 @@ describe('App', () => {
     expect(previewPanel).toHaveStyle('--preview-zoom: 1')
   })
 
+  it('debounces preview updates while editing in split mode', () => {
+    vi.useFakeTimers()
+
+    try {
+      renderApp({ fileAccess: createFileAccess() })
+      fireEvent.click(screen.getByRole('button', { name: 'Split preview and source' }))
+
+      const editor = screen.getByRole('textbox', { name: 'Markdown source' })
+      fireEvent.change(editor, { target: { value: '# Debounced preview' } })
+
+      expect(editor).toHaveValue('# Debounced preview')
+      expect(screen.getByRole('heading', { name: 'Untitled' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'Debounced preview' })).not.toBeInTheDocument()
+
+      act(() => {
+        vi.advanceTimersByTime(119)
+      })
+      expect(screen.queryByRole('heading', { name: 'Debounced preview' })).not.toBeInTheDocument()
+
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
+      expect(screen.getByRole('heading', { name: 'Debounced preview' })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('shows editor formatting tools in edit and split modes only', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })
@@ -744,7 +772,12 @@ describe('App', () => {
 
   it('exports the current markdown document as DOCX', async () => {
     const user = userEvent.setup()
-    const exportDocxFile = vi.fn<FileAccess['exportDocxFile']>(async () => '/tmp/report.docx')
+    let completeExport: ((path: string | null) => void) | null = null
+    const exportDocxFile = vi.fn<FileAccess['exportDocxFile']>(
+      () => new Promise((resolve) => {
+        completeExport = resolve
+      }),
+    )
     renderApp({
       fileAccess: {
         ...createFileAccess({
@@ -762,11 +795,16 @@ describe('App', () => {
     await waitFor(() => {
       expect(exportDocxFile).toHaveBeenCalledTimes(1)
     })
+    expect(screen.getByText('Generating Word document...')).toBeInTheDocument()
     const [bytes, currentPath, title] = exportDocxFile.mock.calls[0]
     expect(bytes).toBeInstanceOf(Uint8Array)
     expect(currentPath).toBe('/tmp/report.md')
     expect(title).toBe('report.md')
-    expect(screen.getByText('Word exported')).toBeInTheDocument()
+
+    act(() => {
+      completeExport?.('/tmp/report.docx')
+    })
+    expect(await screen.findByText('Word exported')).toBeInTheDocument()
   })
 })
 
