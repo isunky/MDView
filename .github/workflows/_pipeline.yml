@@ -1,0 +1,197 @@
+name: Verify and build
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref or commit SHA to build
+        required: true
+        type: string
+      build_installers:
+        description: Build Windows and macOS installers
+        required: true
+        type: boolean
+      retention_days:
+        description: Artifact retention period
+        required: false
+        default: 7
+        type: number
+    secrets:
+      WINDOWS_CERTIFICATE_BASE64:
+        required: false
+      WINDOWS_CERTIFICATE_PASSWORD:
+        required: false
+      WINDOWS_CERTIFICATE_THUMBPRINT:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Test, lint, build, and E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+  windows:
+    name: Build Windows MSI and portable ZIP
+    if: ${{ inputs.build_installers }}
+    runs-on: windows-latest
+    needs: quality
+    timeout-minutes: 30
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: windows-msi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Import Windows signing certificate
+        if: ${{ env.WINDOWS_CERTIFICATE_BASE64 != '' && env.WINDOWS_CERTIFICATE_PASSWORD != '' && env.WINDOWS_CERTIFICATE_THUMBPRINT != '' }}
+        shell: pwsh
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP "mdview-code-signing.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $password = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
+          Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password | Out-Null
+
+          $configPath = Join-Path $env:RUNNER_TEMP "tauri-signing.json"
+          @{
+            bundle = @{
+              windows = @{
+                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+                digestAlgorithm = "sha256"
+                timestampUrl = "http://timestamp.digicert.com"
+              }
+            }
+          } | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
+
+          "TAURI_SIGNING_CONFIG=$configPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          if ($env:TAURI_SIGNING_CONFIG) {
+            npm run tauri -- build --bundles msi --ci --config "$env:TAURI_SIGNING_CONFIG"
+          } else {
+            npm run tauri -- build --bundles msi --ci
+          }
+
+      - name: Build portable ZIP
+        shell: pwsh
+        run: npm run portable:windows
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+      - name: Upload portable ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-portable
+          path: src-tauri/target/release/bundle/portable/*.zip
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+  macos:
+    name: Build macOS Universal DMG
+    if: ${{ inputs.build_installers }}
+    runs-on: macos-latest
+    needs: quality
+    timeout-minutes: 45
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust with macOS targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: macos-universal
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build universal DMG
+        run: npm run tauri -- build --bundles dmg --target universal-apple-darwin --ci --no-sign
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-macos-universal-dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}

@@ -106,10 +106,12 @@
 
 ### 构建环境稳定性
 
+状态：CI 与 Release 公共构建流水线已完成（2026-07-10），工具链版本固定仍待处理。
+
 - [ ] 固定 Node.js 主版本，增加 `.node-version` 或 `.nvmrc`。
 - [ ] 在 `package.json` 中声明 Node.js `engines`。
 - [ ] 增加版本一致性检查，覆盖 npm、Tauri、Cargo 和 About 信息。
-- [ ] 抽取 CI 与 Release 中重复的安装、测试和构建步骤。
+- [x] 抽取 CI 与 Release 中重复的安装、测试和构建步骤。
 
 完成标准：本地、CI 和 Release 使用一致工具链，版本信息不会漂移。
 

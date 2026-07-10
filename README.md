@@ -162,6 +162,7 @@ src-tauri/target/release/bundle/dmg/
 
 - PR 和主分支推送会执行单元测试、lint、前端构建和 Web E2E 测试。
 - CI 可手动触发，并会构建 Windows MSI、Windows 绿色版 ZIP 和 macOS Universal DMG。
+- 普通 PR 和主分支推送不会生成安装包；CI 与 Release 共用同一套验证和跨平台构建流水线。
 - `Release` 工作流可选择 `patch`、`minor` 或 `major` 自动生成下一个版本号。
 - 发布流程会同步版本文件、提交版本变更、构建发布产物，并在成功后创建 SemVer Tag 和 GitHub Release。
 - 也可以手动推送与项目版本一致的 `v1.2.3` 格式 Tag 来触发发布。
@@ -336,6 +337,7 @@ The repository includes GitHub Actions workflows:
 
 - Pull requests and main branch pushes run unit tests, lint, frontend builds, and Web E2E tests.
 - CI can also be started manually, and builds a Windows MSI, Windows portable ZIP, and macOS Universal DMG.
+- Regular pull requests and main branch pushes do not build installers; CI and Release share the same verification and cross-platform build pipeline.
 - The `Release` workflow can generate the next version with a `patch`, `minor`, or `major` increment.
 - The release workflow updates version files, commits the version change, builds release assets, and creates a SemVer Tag and GitHub Release after all builds succeed.
 - A matching `v1.2.3` tag can also be pushed manually to trigger a release.
