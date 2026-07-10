@@ -14,6 +14,7 @@ const SPLIT_PREVIEW_DEBOUNCE_MS = 120
 
 type UsePreviewControllerOptions = {
   content: string
+  isPreview: boolean
   isSplit: boolean
   previewPanelRef: RefObject<HTMLElement | null>
   onZoomChange: (message: string) => void
@@ -21,12 +22,13 @@ type UsePreviewControllerOptions = {
 
 export function usePreviewController({
   content,
+  isPreview,
   isSplit,
   previewPanelRef,
   onZoomChange,
 }: UsePreviewControllerOptions) {
   const [previewZoom, setPreviewZoom] = useState(DEFAULT_PREVIEW_ZOOM)
-  const [debouncedPreviewContent, setDebouncedPreviewContent] = useState(content)
+  const [storedPreviewContent, setStoredPreviewContent] = useState(content)
   const previewZoomRef = useRef(DEFAULT_PREVIEW_ZOOM)
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function usePreviewController({
     }
 
     const timeoutId = window.setTimeout(
-      () => setDebouncedPreviewContent(content),
+      () => setStoredPreviewContent(content),
       SPLIT_PREVIEW_DEBOUNCE_MS,
     )
     return () => window.clearTimeout(timeoutId)
@@ -66,11 +68,16 @@ export function usePreviewController({
   }, [onZoomChange, previewPanelRef])
 
   const prepareSplitPreview = useCallback(() => {
-    setDebouncedPreviewContent(content)
+    setStoredPreviewContent(content)
+  }, [content])
+
+  const freezePreview = useCallback(() => {
+    setStoredPreviewContent(content)
   }, [content])
 
   return {
-    previewContent: isSplit ? debouncedPreviewContent : content,
+    freezePreview,
+    previewContent: isPreview ? content : storedPreviewContent,
     previewZoom,
     prepareSplitPreview,
   }

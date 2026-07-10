@@ -24,6 +24,7 @@ const OUTLINE_KEYBOARD_STEP = 16
 const PREVIEW_HEADING_SCROLL_OFFSET = 16
 const PREVIEW_HEADING_ACTIVE_OFFSET = 24
 const OUTLINE_JUMP_SETTLE_DELAY_MS = 120
+const EMPTY_OUTLINE_ITEMS: ReturnType<typeof extractMarkdownOutline> = []
 
 type OutlineResizeStart = {
   pointerX: number
@@ -54,7 +55,10 @@ export function useOutlineNavigation({
   const headingPositionsRef = useRef<OutlineHeadingPosition[]>([])
   const jumpLockRef = useRef<string | null>(null)
   const jumpSettleTimeoutRef = useRef<number | null>(null)
-  const outlineItems = useMemo(() => extractMarkdownOutline(content), [content])
+  const outlineItems = useMemo(
+    () => isPreview ? extractMarkdownOutline(content) : EMPTY_OUTLINE_ITEMS,
+    [content, isPreview],
+  )
   const outlineIds = useMemo(() => outlineItems.map((item) => item.id), [outlineItems])
 
   const updateActiveOutlineFromPreview = useCallback(() => {

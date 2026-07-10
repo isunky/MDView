@@ -47,4 +47,18 @@ describe('document state', () => {
     expect(saved.savedContent).toBe('# Final')
     expect(saved.isDirty).toBe(false)
   })
+
+  it('keeps newer edits dirty when an older snapshot finishes saving', () => {
+    const saving = updateDocumentDraft(createInitialDocument(), '# Saving snapshot')
+    const editedWhileSaving = updateDocumentDraft(saving, '# Edited after save started')
+    const saved = markDocumentSaved(
+      editedWhileSaving,
+      '/Users/hao/final.md',
+      '# Saving snapshot',
+    )
+
+    expect(saved.content).toBe('# Edited after save started')
+    expect(saved.savedContent).toBe('# Saving snapshot')
+    expect(saved.isDirty).toBe(true)
+  })
 })

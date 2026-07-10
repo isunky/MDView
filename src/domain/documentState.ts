@@ -47,13 +47,14 @@ export function updateDocumentDraft(
 export function markDocumentSaved(
   document: MarkdownDocument,
   path: string,
+  savedContent = document.content,
 ): MarkdownDocument {
   return {
     ...document,
     title: getTitleFromPath(path),
     path,
-    savedContent: document.content,
-    isDirty: false,
+    savedContent,
+    isDirty: document.content !== savedContent,
   }
 }
 

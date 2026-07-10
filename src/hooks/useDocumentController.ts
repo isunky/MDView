@@ -168,13 +168,14 @@ export function useDocumentController({
 
     try {
       const currentPath = markdownDocument.path
+      const contentToSave = markdownDocument.content
       const isSaveAs = !currentPath
       const savedPath = isSaveAs
-        ? await fileAccess.saveMarkdownFileAs(markdownDocument.content, currentPath)
-        : await fileAccess.saveMarkdownFile(currentPath, markdownDocument.content)
+        ? await fileAccess.saveMarkdownFileAs(contentToSave, currentPath)
+        : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
 
       if (savedPath) {
-        setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
+        setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
         setStatusMessage('saved')
         if (isSaveAs) {
           rememberRecentFile(savedPath)
@@ -199,13 +200,14 @@ export function useDocumentController({
     onCloseMenu()
 
     try {
+      const contentToSave = markdownDocument.content
       const savedPath = await fileAccess.saveMarkdownFileAs(
-        markdownDocument.content,
+        contentToSave,
         markdownDocument.path,
       )
 
       if (savedPath) {
-        setMarkdownDocument((current) => markDocumentSaved(current, savedPath))
+        setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
         setStatusMessage('saved')
         rememberRecentFile(savedPath)
       }

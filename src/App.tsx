@@ -97,11 +97,13 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     onSaveSuccess: () => showAppToast(t.saved),
   })
   const {
+    freezePreview,
     previewContent,
     previewZoom,
     prepareSplitPreview,
   } = usePreviewController({
     content: markdownDocument.content,
+    isPreview: viewMode === 'preview',
     isSplit: viewMode === 'split',
     previewPanelRef,
     onZoomChange: showPreviewToast,
@@ -419,7 +421,10 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           <button
             type="button"
             className={viewMode === 'edit' ? 'active' : ''}
-            onClick={() => setViewMode('edit')}
+            onClick={() => {
+              freezePreview()
+              setViewMode('edit')
+            }}
             aria-label={t.editLabel}
           >
             <PencilLine aria-hidden="true" />

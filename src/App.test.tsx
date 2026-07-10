@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { appInfo } from './appInfo'
+import * as markdownOutline from './domain/markdownOutline'
 import { RECENT_FILES_STORAGE_KEY, type RecentFile } from './domain/recentFiles'
 import { OUTLINE_PREFERENCES_STORAGE_KEY } from './domain/outlinePreferences'
 import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
@@ -59,6 +60,43 @@ describe('App', () => {
       expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/draft.md', '# Changed')
     })
     expect(screen.getByText('Saved')).toBeInTheDocument()
+  })
+
+  it('keeps edits made during an in-flight save marked as unsaved', async () => {
+    const user = userEvent.setup()
+    let completeSave: ((path: string) => void) | undefined
+    const saveMarkdownFile = vi.fn(
+      () => new Promise<string>((resolve) => {
+        completeSave = resolve
+      }),
+    )
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/draft.md', '# Draft'),
+        saveMarkdownFile,
+      }),
+    })
+
+    await screen.findByRole('heading', { name: 'Draft' })
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' })
+    fireEvent.change(editor, { target: { value: '# Saving snapshot' } })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Save' }))
+    await waitFor(() => {
+      expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/draft.md', '# Saving snapshot')
+    })
+
+    fireEvent.change(editor, { target: { value: '# Edited after save started' } })
+    await act(async () => {
+      completeSave?.('/tmp/draft.md')
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsaved')).toBeInTheDocument()
+    })
   })
 
   it('returns to saved state when edits match the saved content again', async () => {
@@ -251,6 +289,30 @@ describe('App', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('does not update hidden preview or parse the outline while editing', async () => {
+    const user = userEvent.setup()
+    const extractOutline = vi.spyOn(markdownOutline, 'extractMarkdownOutline')
+    renderApp({ fileAccess: createFileAccess() })
+
+    expect(screen.getByRole('heading', { name: 'Untitled' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+    extractOutline.mockClear()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Markdown source' }), {
+      target: { value: '# Edit only' },
+    })
+
+    expect(screen.getByRole('heading', { name: 'Untitled' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Edit only' })).not.toBeInTheDocument()
+    expect(extractOutline).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Preview markdown' }))
+
+    expect(screen.getByRole('heading', { name: 'Edit only' })).toBeInTheDocument()
+    expect(extractOutline).toHaveBeenCalledTimes(1)
+    extractOutline.mockRestore()
   })
 
   it('shows editor formatting tools in edit and split modes only', async () => {
