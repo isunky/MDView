@@ -14,6 +14,7 @@ const SPLIT_PREVIEW_DEBOUNCE_MS = 120
 
 type UsePreviewControllerOptions = {
   content: string
+  isEnabled: boolean
   isPreview: boolean
   isSplit: boolean
   previewPanelRef: RefObject<HTMLElement | null>
@@ -22,6 +23,7 @@ type UsePreviewControllerOptions = {
 
 export function usePreviewController({
   content,
+  isEnabled,
   isPreview,
   isSplit,
   previewPanelRef,
@@ -44,6 +46,10 @@ export function usePreviewController({
   }, [content, isSplit])
 
   useEffect(() => {
+    if (!isEnabled) {
+      return
+    }
+
     const previewPanel = previewPanelRef.current
     if (!previewPanel) {
       return
@@ -65,7 +71,7 @@ export function usePreviewController({
 
     previewPanel.addEventListener('wheel', handleWheel, { passive: false })
     return () => previewPanel.removeEventListener('wheel', handleWheel)
-  }, [onZoomChange, previewPanelRef])
+  }, [isEnabled, onZoomChange, previewPanelRef])
 
   const prepareSplitPreview = useCallback(() => {
     setStoredPreviewContent(content)

@@ -36,6 +36,7 @@ export function useDocumentController({
   const [markdownDocument, setMarkdownDocument] = useState(createInitialDocument)
   const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
+  const [isWelcomeVisible, setIsWelcomeVisible] = useState(true)
 
   const canDiscardUnsavedChanges = useCallback((): boolean => {
     return !markdownDocument.isDirty || window.confirm(discardUnsavedMessage)
@@ -59,6 +60,7 @@ export function useDocumentController({
 
   const loadFile = useCallback((file: OpenedMarkdownFile) => {
     setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path))
+    setIsWelcomeVisible(false)
     onViewModeChange('preview')
     setStatusMessage('opened')
     rememberRecentFile(file.path)
@@ -99,6 +101,7 @@ export function useDocumentController({
     }
 
     onCloseMenu()
+    setIsWelcomeVisible(false)
     setMarkdownDocument(createInitialDocument())
     onViewModeChange('edit')
     setStatusMessage('saved')
@@ -224,6 +227,7 @@ export function useDocumentController({
   ])
 
   const handleContentChange = useCallback((content: string) => {
+    setIsWelcomeVisible(false)
     setMarkdownDocument((current) => {
       const nextDocument = updateDocumentDraft(current, content)
       setStatusMessage(nextDocument.isDirty ? 'unsaved' : 'saved')
@@ -245,6 +249,7 @@ export function useDocumentController({
     handleOpenRecentFile,
     handleSaveFile,
     handleSaveFileAs,
+    isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
     recentFiles,

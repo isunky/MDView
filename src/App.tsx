@@ -20,6 +20,7 @@ import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
 import { MarkdownPreview } from './components/MarkdownPreview'
 import { MarkdownEditor } from './components/MarkdownEditor'
+import { WelcomeWorkspace } from './components/WelcomeWorkspace'
 import { buildExportHtml } from './domain/exportHtml'
 import {
   detectSystemLanguage,
@@ -74,6 +75,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     handleOpenRecentFile,
     handleSaveFile,
     handleSaveFileAs,
+    isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
     recentFiles,
@@ -103,7 +105,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     prepareSplitPreview,
   } = usePreviewController({
     content: markdownDocument.content,
-    isPreview: viewMode === 'preview',
+    isEnabled: !isWelcomeVisible,
+    isPreview: !isWelcomeVisible && viewMode === 'preview',
     isSplit: viewMode === 'split',
     previewPanelRef,
     onZoomChange: showPreviewToast,
@@ -121,7 +124,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     queueHeadingJump,
   } = useOutlineNavigation({
     content: markdownDocument.content,
-    isPreview: viewMode === 'preview',
+    isPreview: !isWelcomeVisible && viewMode === 'preview',
     previewZoom,
     previewPanelRef,
     previewRef,
@@ -216,6 +219,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const nativeFileTitle = fileAccess.supportsNativeFiles
     ? undefined
     : t.nativeFileUnavailable
+  const documentActionTitle = isWelcomeVisible ? t.welcomeDocumentRequired : nativeFileTitle
   const newTitle = withShortcutTitle(t.createNewLabel, { key: 'n' }, shortcutPlatform)
   const openTitle = withShortcutTitle(t.openLabel, { key: 'o' }, shortcutPlatform)
   const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
@@ -223,8 +227,15 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
   const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
   const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
 
+  const welcomeStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
+    ? statusMessage
+    : null
+
   return (
-    <main className={`app-shell view-${viewMode}`} lang={language === 'zh' ? 'zh-CN' : 'en'}>
+    <main
+      className={`app-shell view-${viewMode} ${isWelcomeVisible ? 'welcome-open' : ''}`}
+      lang={language === 'zh' ? 'zh-CN' : 'en'}
+    >
       <header className="topbar">
         <div className="brand-block">
           <div className="app-mark" aria-hidden="true">
@@ -232,7 +243,9 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           </div>
           <div>
             <h1>MDView</h1>
-            <p title={markdownDocument.path ?? markdownDocument.title}>{markdownDocument.title}</p>
+            <p title={isWelcomeVisible ? t.welcomeBrand : markdownDocument.path ?? markdownDocument.title}>
+              {isWelcomeVisible ? t.welcomeBrand : markdownDocument.title}
+            </p>
           </div>
         </div>
 
@@ -301,8 +314,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                   type="button"
                   className="action-menu-item"
                   onClick={() => void handleSaveFile()}
-                  disabled={!fileAccess.supportsNativeFiles}
-                  title={nativeFileTitle ?? saveTitle}
+                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles}
+                  title={documentActionTitle ?? saveTitle}
                   role="menuitem"
                 >
                   {t.save}
@@ -311,8 +324,8 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                   type="button"
                   className="action-menu-item"
                   onClick={handleSaveFileAs}
-                  disabled={!fileAccess.supportsNativeFiles}
-                  title={nativeFileTitle ?? saveAsTitle}
+                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles}
+                  title={documentActionTitle ?? saveAsTitle}
                   role="menuitem"
                 >
                   {t.saveAs}
@@ -321,7 +334,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             ) : null}
           </div>
 
-          <div className="action-menu">
+          {!isWelcomeVisible ? <div className="action-menu">
             <button
               type="button"
               onClick={() => toggleMenu('export')}
@@ -362,7 +375,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                 </button>
               </div>
             ) : null}
-          </div>
+          </div> : null}
 
           <div className="action-menu">
             <button
@@ -408,7 +421,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
           </div>
         </nav>
 
-        <div className="view-controls" aria-label={t.viewMode}>
+        {!isWelcomeVisible ? <div className="view-controls" aria-label={t.viewMode}>
           <button
             type="button"
             className={viewMode === 'preview' ? 'active' : ''}
@@ -442,14 +455,25 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             <SplitSquareHorizontal aria-hidden="true" />
             <span>{t.split}</span>
           </button>
-        </div>
+        </div> : null}
 
-        <div className={`save-state ${markdownDocument.isDirty ? 'dirty' : ''}`}>
+        {!isWelcomeVisible ? <div className={`save-state ${markdownDocument.isDirty ? 'dirty' : ''}`}>
           {visibleStatus}
-        </div>
+        </div> : null}
       </header>
 
-      <section className={workspaceClasses} aria-label={t.workspace}>
+      {isWelcomeVisible ? (
+        <WelcomeWorkspace
+          recentFiles={recentFiles}
+          canOpenFiles={fileAccess.supportsNativeFiles}
+          statusMessage={welcomeStatus}
+          onNew={handleNewDocument}
+          onOpen={handleOpenFile}
+          onOpenRecent={handleOpenRecentFile}
+          onClearRecent={handleClearRecentFiles}
+          t={t}
+        />
+      ) : <section className={workspaceClasses} aria-label={t.workspace}>
         {isOutlineVisible ? (
           <aside
             className="outline-panel"
@@ -524,7 +548,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
             </div>
           </div>
         ) : null}
-      </section>
+      </section>}
       {shortcutToast?.placement === 'app' ? (
         <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
           {shortcutToast.message}

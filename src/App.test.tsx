@@ -62,6 +62,38 @@ describe('App', () => {
     expect(screen.getByText('Saved')).toBeInTheDocument()
   })
 
+  it('shows a welcome workspace before a document is opened or created', async () => {
+    const user = userEvent.setup()
+    renderWelcomeApp({ fileAccess: createFileAccess() })
+
+    expect(screen.getByRole('heading', { name: 'Open a Markdown file' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Markdown File' })).toBeInTheDocument()
+    expect(screen.getByText('No recent files')).toBeInTheDocument()
+    expect(screen.queryByLabelText('View mode')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Create new markdown file' }))
+
+    expect(screen.queryByRole('heading', { name: 'Open a Markdown file' })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Markdown source' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit markdown source' })).toHaveClass('active')
+  })
+
+  it('opens recent files directly from the welcome workspace', async () => {
+    const user = userEvent.setup()
+    const openMarkdownFileAtPath = vi.fn(async (path: string) => file(path, '# Recent document'))
+    seedRecentFiles([recent('/tmp/recent.md', '2026-07-10T08:00:00.000Z')])
+    renderWelcomeApp({
+      fileAccess: createFileAccess({ openMarkdownFileAtPath }),
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open recent file recent.md' }))
+
+    expect(openMarkdownFileAtPath).toHaveBeenCalledWith('/tmp/recent.md')
+    expect(await screen.findByRole('heading', { name: 'Recent document' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Open a Markdown file' })).not.toBeInTheDocument()
+  })
+
   it('keeps edits made during an in-flight save marked as unsaved', async () => {
     const user = userEvent.setup()
     let completeSave: ((path: string) => void) | undefined
@@ -633,7 +665,7 @@ describe('App', () => {
 
   it('uses Chinese interface text when the system language is Chinese and can switch languages', async () => {
     const user = userEvent.setup()
-    render(<App fileAccess={createFileAccess()} initialLanguage="zh" />)
+    renderApp({ fileAccess: createFileAccess(), initialLanguage: 'zh' })
 
     expect(screen.getByRole('button', { name: '预览 Markdown' })).toBeInTheDocument()
     expect(screen.getByText('已保存')).toBeInTheDocument()
@@ -738,7 +770,7 @@ describe('App', () => {
 
   it('shows Chinese recent file labels and empty state', async () => {
     const user = userEvent.setup()
-    render(<App fileAccess={createFileAccess()} initialLanguage="zh" />)
+    renderApp({ fileAccess: createFileAccess(), initialLanguage: 'zh' })
 
     await user.click(screen.getByRole('button', { name: '文件' }))
 
@@ -871,6 +903,13 @@ describe('App', () => {
 })
 
 function renderApp(props: ComponentProps<typeof App>) {
+  const result = renderWelcomeApp(props)
+  fireEvent.click(screen.getByRole('button', { name: /Create new markdown file|新建 Markdown 文件/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Preview markdown|预览 Markdown/ }))
+  return result
+}
+
+function renderWelcomeApp(props: ComponentProps<typeof App>) {
   return render(<App {...props} initialLanguage={props.initialLanguage ?? 'en'} />)
 }
 

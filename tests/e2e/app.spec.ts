@@ -67,6 +67,18 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
+test('starts from a welcome workspace and creates a new document', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: 'Open a Markdown file' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Open Markdown File' })).toBeEnabled()
+  await expect(page.getByText('No recent files')).toBeVisible()
+  await expect(page.getByLabel('View mode')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+
+  await expect(page.getByRole('textbox', { name: 'Markdown source' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Edit markdown source' })).toHaveClass(/active/)
+})
+
 test('opens a markdown file through the file menu', async ({ page }) => {
   await openMarkdownFile(page)
 
