@@ -71,19 +71,50 @@ fn read_image_file(path: String) -> Result<ImageFilePayload, String> {
   })
 }
 
+#[tauri::command]
+fn get_app_distribution() -> &'static str {
+  #[cfg(target_os = "windows")]
+  {
+    return if is_portable_distribution() {
+      "windows-portable"
+    } else {
+      "windows-installed"
+    };
+  }
+
+  #[cfg(not(target_os = "windows"))]
+  {
+    "unsupported"
+  }
+}
+
+#[cfg(target_os = "windows")]
+fn is_portable_distribution() -> bool {
+  std::env::current_exe()
+    .ok()
+    .and_then(|executable| executable.parent().map(Path::to_path_buf))
+    .is_some_and(|directory| directory.join("MDView.portable").is_file())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  tauri::Builder::default()
+  let builder = tauri::Builder::default()
     .manage(OpenedFiles(Mutex::new(collect_opened_files_from_args())))
     .plugin(tauri_plugin_dialog::init())
-    .plugin(tauri_plugin_opener::init())
+    .plugin(tauri_plugin_opener::init());
+
+  #[cfg(target_os = "windows")]
+  let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+
+  builder
     .invoke_handler(tauri::generate_handler![
       take_opened_files,
       read_markdown_file,
       write_markdown_file,
       write_html_file,
       write_docx_file,
-      read_image_file
+      read_image_file,
+      get_app_distribution
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

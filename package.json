@@ -21,6 +21,7 @@
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "docx": "^9.7.1",
     "highlight.js": "^11.11.1",
     "lucide-react": "^1.17.0",

@@ -34,6 +34,8 @@ MDView 是一款轻量级 Markdown 桌面应用，适合快速打开、阅读和
 
 当前已提供 **Windows** 和 **macOS** 版本，可前往 [GitHub Releases](https://github.com/isunky/MDView/releases) 下载。Windows 同时提供 MSI 安装包和绿色版 ZIP。
 
+Windows MSI 安装版可在“应用 > 检查更新”中手动下载并安装正式版更新。绿色版会提示并跳转到 Release 下载新版 ZIP，以保持便携使用方式；macOS 自动更新将在完成 Apple 签名和公证后提供。
+
 ### 主要功能
 
 - **顺手的 Markdown 阅读体验**：支持预览、编辑、分屏三种模式，预览区可渲染表格、任务列表、代码高亮、内嵌 HTML、Mermaid 图表和颜色值预览。
@@ -132,6 +134,7 @@ src-tauri/target/release/bundle/portable/
 ```
 
 绿色版 ZIP 可解压后直接运行，但不会安装 MDView，也不会注册 `.md` / `.markdown` 文件关联。
+检查更新时，绿色版只会打开 GitHub Release 下载新版 ZIP，不会转为 MSI 安装版。
 
 ### macOS 打包
 
@@ -178,6 +181,11 @@ Windows 安装包支持可选签名。需要在 CI 中签名时，请配置：
 
 未配置证书时，工作流仍会生成未签名 MSI。
 
+Windows 自动更新还需要配置以下 Tauri 更新签名密钥。私钥不能提交到仓库，丢失后已发布版本将无法接受后续更新：
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
 ### 图标资源
 
 - 前端图标：`src/assets/app-icon.png`
@@ -208,6 +216,8 @@ npx tauri icon src-tauri/app-icon.png
 MDView is a lightweight desktop app for opening, reading, and making small edits to `.md` and `.markdown` files. It keeps the reading view clean, while still giving you source editing, document navigation, local image preview, export, and file association support when you need them.
 
 Current releases are available for **Windows** and **macOS** from [GitHub Releases](https://github.com/isunky/MDView/releases). Windows releases include both an MSI installer and a portable ZIP package.
+
+The Windows MSI installation can manually download and install stable updates through **App > Check for Updates**. The portable package opens the matching GitHub Release so it remains extract-and-run; macOS automatic updates will be enabled after Apple signing and notarization are in place.
 
 ### Features
 
@@ -307,6 +317,7 @@ src-tauri/target/release/bundle/portable/
 ```
 
 The portable ZIP is extract-and-run only. It does not install MDView or register `.md` / `.markdown` file associations.
+When an update is available, it opens the GitHub Release for a newer portable ZIP instead of running the MSI installer.
 
 ### macOS packaging
 
@@ -352,6 +363,11 @@ Windows installers support optional signing. Configure these secrets to sign MSI
 - `WINDOWS_CERTIFICATE_THUMBPRINT`
 
 Without certificate secrets, the workflow still produces unsigned MSI builds.
+
+Windows automatic updates also require these Tauri updater signing secrets. Never commit the private key; losing it prevents future releases from updating installed copies of MDView:
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
 ### Icon assets
 

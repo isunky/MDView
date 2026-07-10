@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJCRjJFQ0NEN0MwQjVGRjcKUldUM1h3dDh6ZXp5SzVSVVFJa01XbEtyaEdhb2RHM1VNQ3RCN25zMDBjRTNicHNsZkdhcVZaaFMK",
+      "endpoints": [
+        "https://github.com/isunky/MDView/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

@@ -11,6 +11,11 @@ on:
         description: Build Windows and macOS installers
         required: true
         type: boolean
+      build_updater_artifacts:
+        description: Create signed Windows updater artifacts
+        required: false
+        default: false
+        type: boolean
       retention_days:
         description: Artifact retention period
         required: false
@@ -22,6 +27,10 @@ on:
       WINDOWS_CERTIFICATE_PASSWORD:
         required: false
       WINDOWS_CERTIFICATE_THUMBPRINT:
+        required: false
+      TAURI_SIGNING_PRIVATE_KEY:
+        required: false
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
         required: false
 
 permissions:
@@ -74,6 +83,8 @@ jobs:
       WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
       WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -121,14 +132,40 @@ jobs:
 
           "TAURI_SIGNING_CONFIG=$configPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Validate updater signing secrets
+        if: ${{ inputs.build_updater_artifacts }}
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) -or [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
+            throw "TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD must be configured for release updater artifacts."
+          }
+
+      - name: Clean previous Windows bundle outputs
+        shell: pwsh
+        run: |
+          Remove-Item -LiteralPath src-tauri\target\release\bundle\msi -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath src-tauri\target\release\bundle\portable -Recurse -Force -ErrorAction SilentlyContinue
+
       - name: Build MSI
         shell: pwsh
         run: |
+          $configPaths = @()
           if ($env:TAURI_SIGNING_CONFIG) {
-            npm run tauri -- build --bundles msi --ci --config "$env:TAURI_SIGNING_CONFIG"
-          } else {
-            npm run tauri -- build --bundles msi --ci
+            $configPaths += $env:TAURI_SIGNING_CONFIG
           }
+
+          if ('${{ inputs.build_updater_artifacts }}' -eq 'true') {
+            $updaterConfigPath = Join-Path $env:RUNNER_TEMP "tauri-updater-artifacts.json"
+            @{ bundle = @{ createUpdaterArtifacts = $true } } | ConvertTo-Json -Depth 4 | Set-Content -Path $updaterConfigPath -Encoding UTF8
+            $configPaths += $updaterConfigPath
+          }
+
+          $configArgs = @()
+          foreach ($configPath in $configPaths) {
+            $configArgs += @('--config', $configPath)
+          }
+
+          npm run tauri -- build --bundles msi --ci @configArgs
 
       - name: Build portable ZIP
         shell: pwsh
@@ -139,6 +176,15 @@ jobs:
         with:
           name: mdview-windows-msi
           path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+      - name: Upload updater signature artifact
+        if: ${{ inputs.build_updater_artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-updater-signature
+          path: src-tauri/target/release/bundle/msi/*.msi.sig
           if-no-files-found: error
           retention-days: ${{ inputs.retention_days }}
 
@@ -184,6 +230,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Clean previous macOS bundle output
+        run: rm -rf src-tauri/target/universal-apple-darwin/release/bundle/dmg
 
       - name: Build universal DMG
         run: npm run tauri -- build --bundles dmg --target universal-apple-darwin --ci --no-sign

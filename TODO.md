@@ -95,12 +95,15 @@
 
 ### 自动更新
 
-- [ ] 接入 Tauri Updater。
-- [ ] 在 GitHub Release 生成签名更新清单。
-- [ ] 支持检查、下载和安装新版本。
-- [ ] 下载或安装失败时保留当前版本并提示原因。
+状态：Windows 实现完成（2026-07-10），macOS 等待 Apple 签名和公证。
 
-完成标准：Windows 和 macOS 可以从正式 Release 安全更新到新版本。
+- [x] Windows 接入 Tauri Updater，并支持手动检查更新。
+- [x] GitHub Release 生成签名 MSI、`latest.json` 和 `windows-x86_64` 更新清单。
+- [x] MSI 安装版支持检查、下载和安装新版本；绿色版跳转 Release 下载新版 ZIP。
+- [x] 下载或安装失败时保留当前版本并提示原因；未保存文档时阻止安装。
+- [ ] macOS 完成 Apple 签名、公证后接入 updater `.app.tar.gz` 产物和更新清单。
+
+完成标准：Windows MSI 可以从正式 Release 安全更新到新版本；macOS 在完成签名和公证后达到同等能力。
 
 ## P3：工程与测试
 

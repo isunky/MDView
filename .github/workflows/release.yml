@@ -14,7 +14,7 @@ on:
           - major
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -121,6 +121,7 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.sha }}
       build_installers: true
+      build_updater_artifacts: true
       retention_days: 7
     secrets: inherit
 
@@ -133,11 +134,40 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Checkout release scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
+
+      - name: Generate Windows updater manifest
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          msi_path="$(find release-assets -maxdepth 1 -type f -name "*_${RELEASE_VERSION}_*.msi" -print -quit)"
+          signature_path="${msi_path}.sig"
+
+          if [[ -z "$msi_path" || ! -f "$signature_path" ]]; then
+            echo "::error::Expected a Windows MSI and matching updater signature artifact."
+            exit 1
+          fi
+
+          node scripts/generate-updater-manifest.mjs \
+            --version "$RELEASE_VERSION" \
+            --tag "$RELEASE_TAG" \
+            --repository "$RELEASE_REPOSITORY" \
+            --msi "$msi_path" \
+            --signature "$signature_path" \
+            --output release-assets/latest.json
 
       - name: Publish Windows and macOS installers
         uses: softprops/action-gh-release@v2
@@ -147,7 +177,9 @@ jobs:
           target_commitish: ${{ needs.prepare.outputs.sha }}
           files: |
             release-assets/*.msi
+            release-assets/*.msi.sig
             release-assets/*.zip
             release-assets/*.dmg
+            release-assets/latest.json
           fail_on_unmatched_files: true
           generate_release_notes: true

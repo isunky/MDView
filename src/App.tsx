@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
+import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
 import { MarkdownPreview } from './components/MarkdownPreview'
@@ -33,10 +34,12 @@ import {
   useOutlineNavigation,
 } from './hooks/useOutlineNavigation'
 import { useAppMenu } from './hooks/useAppMenu'
+import { useAppUpdater } from './hooks/useAppUpdater'
 import { useDocumentController } from './hooks/useDocumentController'
 import { usePreviewController } from './hooks/usePreviewController'
 import { useTransientToast } from './hooks/useTransientToast'
 import { tauriFileAccess, type FileAccess } from './platform/fileAccess'
+import { tauriAppUpdateClient, type AppUpdateClient } from './platform/appUpdates'
 import {
   withShortcutTitle,
 } from './platform/keyboardShortcuts'
@@ -45,11 +48,16 @@ import { useFileShortcuts } from './hooks/useFileShortcuts'
 type ViewMode = 'preview' | 'edit' | 'split'
 
 type AppProps = {
+  appUpdateClient?: AppUpdateClient
   fileAccess?: FileAccess
   initialLanguage?: AppLanguage
 }
 
-function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
+function App({
+  appUpdateClient = tauriAppUpdateClient,
+  fileAccess = tauriFileAccess,
+  initialLanguage,
+}: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
@@ -88,6 +96,23 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     fileOperationFailedMessage: t.fileOperationFailed,
     onCloseMenu: closeMenu,
     onViewModeChange: setViewMode,
+  })
+  const {
+    checkForUpdates,
+    dismiss: dismissUpdateDialog,
+    distribution,
+    errorMessage: updateErrorMessage,
+    installUpdate,
+    openPortableDownload,
+    phase: updatePhase,
+    progress: updateProgress,
+    update: availableUpdate,
+  } = useAppUpdater({
+    client: appUpdateClient,
+    checkFailedMessage: t.updateCheckFailed,
+    installFailedMessage: t.updateInstallFailed,
+    releaseOpenFailedMessage: t.updateReleaseOpenFailed,
+    unsupportedMessage: t.updateUnavailable,
   })
   const shortcutPlatform = useFileShortcuts({
     supportsNativeFiles: fileAccess.supportsNativeFiles,
@@ -207,6 +232,23 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     closeMenu()
   }
 
+  async function handleCheckForUpdates() {
+    closeMenu()
+    const result = await checkForUpdates()
+    if (result === 'latest') {
+      showAppToast(t.updateNoUpdate)
+    }
+  }
+
+  async function handleInstallUpdate() {
+    if (markdownDocument.isDirty) {
+      showAppToast(t.updateSaveFirst)
+      return
+    }
+
+    await installUpdate()
+  }
+
   const isOutlineVisible = viewMode === 'preview' && isOutlineOpen
   const workspaceClasses = [
     'workspace',
@@ -220,6 +262,7 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
     ? undefined
     : t.nativeFileUnavailable
   const documentActionTitle = isWelcomeVisible ? t.welcomeDocumentRequired : nativeFileTitle
+  const updateActionTitle = distribution === 'unsupported' ? t.updateUnavailable : undefined
   const newTitle = withShortcutTitle(t.createNewLabel, { key: 'n' }, shortcutPlatform)
   const openTitle = withShortcutTitle(t.openLabel, { key: 'o' }, shortcutPlatform)
   const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
@@ -411,6 +454,16 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
                 <button
                   type="button"
                   className="action-menu-item"
+                  onClick={() => void handleCheckForUpdates()}
+                  disabled={distribution === 'unsupported' || updatePhase === 'checking'}
+                  title={updateActionTitle}
+                  role="menuitem"
+                >
+                  {updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}
+                </button>
+                <button
+                  type="button"
+                  className="action-menu-item"
                   onClick={handleOpenAboutFromAppMenu}
                   role="menuitem"
                 >
@@ -555,6 +608,18 @@ function App({ fileAccess = tauriFileAccess, initialLanguage }: AppProps) {
         </div>
       ) : null}
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
+      <UpdateDialog
+        distribution={distribution}
+        errorMessage={updateErrorMessage}
+        onCheckAgain={() => void handleCheckForUpdates()}
+        onClose={dismissUpdateDialog}
+        onInstall={() => void handleInstallUpdate()}
+        onOpenPortableDownload={() => void openPortableDownload()}
+        phase={updatePhase}
+        progress={updateProgress}
+        t={t}
+        update={availableUpdate}
+      />
     </main>
   )
 }

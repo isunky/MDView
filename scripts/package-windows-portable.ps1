@@ -56,6 +56,7 @@ if (Test-Path -LiteralPath $zipPath) {
 New-Item -ItemType Directory -Path $stagingPath | Out-Null
 
 Copy-Item -LiteralPath $exePath -Destination (Join-Path $stagingPath "MDView.exe")
+Set-Content -LiteralPath (Join-Path $stagingPath "MDView.portable") -Value "MDView portable distribution" -Encoding ASCII
 
 $filePatterns = @("*.dll", "*.pak", "*.bin", "*.dat")
 foreach ($pattern in $filePatterns) {
@@ -85,6 +86,7 @@ Run MDView.exe directly after extracting this ZIP archive.
 Notes:
 - This portable package does not install MDView.
 - It does not register .md or .markdown file associations.
+- Updates open GitHub Releases so this package remains portable.
 - WebView2 Runtime is still required on Windows.
 "@ | Set-Content -LiteralPath (Join-Path $stagingPath "README-portable.txt") -Encoding UTF8
 

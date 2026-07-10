@@ -7,6 +7,7 @@ import { appInfo } from './appInfo'
 import * as markdownOutline from './domain/markdownOutline'
 import { RECENT_FILES_STORAGE_KEY, type RecentFile } from './domain/recentFiles'
 import { OUTLINE_PREFERENCES_STORAGE_KEY } from './domain/outlinePreferences'
+import type { AppDistribution, AppUpdateClient } from './platform/appUpdates'
 import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 
 describe('App', () => {
@@ -181,6 +182,106 @@ describe('App', () => {
     expect(screen.getByText('Interface language')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
+  })
+
+  it('shows a toast when the installed Windows version is already current', async () => {
+    const user = userEvent.setup()
+    const checkForUpdate = vi.fn(async () => null)
+    const appUpdateClient: AppUpdateClient = {
+      getDistribution: vi.fn(async (): Promise<AppDistribution> => 'windows-installed'),
+      checkForUpdate,
+      downloadAndInstall: vi.fn(async () => undefined),
+      openLatestRelease: vi.fn(async () => undefined),
+    }
+    renderApp({ appUpdateClient, fileAccess: createFileAccess() })
+
+    await waitFor(() => {
+      expect(appUpdateClient.getDistribution).toHaveBeenCalled()
+    })
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
+
+    expect(checkForUpdate).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('MDView is up to date')).toBeInTheDocument()
+  })
+
+  it('downloads an update for the Windows MSI installation', async () => {
+    const user = userEvent.setup()
+    const downloadAndInstall = vi.fn(async (onProgress: Parameters<AppUpdateClient['downloadAndInstall']>[0]) => {
+      onProgress({ downloadedBytes: 64, totalBytes: 64 })
+    })
+    const appUpdateClient: AppUpdateClient = {
+      getDistribution: vi.fn(async (): Promise<AppDistribution> => 'windows-installed'),
+      checkForUpdate: vi.fn(async () => ({
+        currentVersion: '1.9.3',
+        version: '1.9.4',
+        notes: 'Update notes',
+      })),
+      downloadAndInstall,
+      openLatestRelease: vi.fn(async () => undefined),
+    }
+    renderApp({ appUpdateClient, fileAccess: createFileAccess() })
+
+    await waitFor(() => {
+      expect(appUpdateClient.getDistribution).toHaveBeenCalled()
+    })
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Software Update' })).toBeInTheDocument()
+    expect(screen.getByText('1.9.4')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Download and Install' }))
+
+    await waitFor(() => {
+      expect(downloadAndInstall).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('keeps portable Windows updates as a GitHub download', async () => {
+    const user = userEvent.setup()
+    const downloadAndInstall = vi.fn(async () => undefined)
+    const openLatestRelease = vi.fn(async () => undefined)
+    const appUpdateClient: AppUpdateClient = {
+      getDistribution: vi.fn(async (): Promise<AppDistribution> => 'windows-portable'),
+      checkForUpdate: vi.fn(async () => ({ currentVersion: '1.9.3', version: '1.9.4' })),
+      downloadAndInstall,
+      openLatestRelease,
+    }
+    renderApp({ appUpdateClient, fileAccess: createFileAccess() })
+
+    await waitFor(() => {
+      expect(appUpdateClient.getDistribution).toHaveBeenCalled()
+    })
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
+    await user.click(await screen.findByRole('button', { name: 'Download Portable ZIP' }))
+
+    expect(openLatestRelease).toHaveBeenCalledTimes(1)
+    expect(downloadAndInstall).not.toHaveBeenCalled()
+  })
+
+  it('requires saving an edited document before installing an update', async () => {
+    const user = userEvent.setup()
+    const downloadAndInstall = vi.fn(async () => undefined)
+    const appUpdateClient: AppUpdateClient = {
+      getDistribution: vi.fn(async (): Promise<AppDistribution> => 'windows-installed'),
+      checkForUpdate: vi.fn(async () => ({ currentVersion: '1.9.3', version: '1.9.4' })),
+      downloadAndInstall,
+      openLatestRelease: vi.fn(async () => undefined),
+    }
+    renderApp({ appUpdateClient, fileAccess: createFileAccess() })
+
+    await waitFor(() => {
+      expect(appUpdateClient.getDistribution).toHaveBeenCalled()
+    })
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+    await user.type(screen.getByRole('textbox', { name: 'Markdown source' }), 'Unsaved')
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
+    await user.click(await screen.findByRole('button', { name: 'Download and Install' }))
+
+    expect(downloadAndInstall).not.toHaveBeenCalled()
+    expect(await screen.findByText('Save your document before installing an update.')).toBeInTheDocument()
   })
 
   it('shows a clickable outline in preview mode only', async () => {
