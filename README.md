@@ -26,6 +26,8 @@
 
 ![MDView screenshot](main.png)
 
+![MDView screenshot](main2.png)
+
 ---
 
 ## 中文
