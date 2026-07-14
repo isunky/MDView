@@ -633,6 +633,15 @@
     linear-gradient(180deg, #fbfcfd 0, var(--preview-bg) 220px);
 }
 
+.preview-loading {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  font: 13px/1.45 var(--ui-font);
+}
+
 .view-preview .editor-panel {
   display: none;
 }

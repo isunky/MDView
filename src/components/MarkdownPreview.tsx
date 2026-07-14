@@ -28,6 +28,7 @@ import {
   type OpenExternalLink,
 } from '../platform/externalLinks'
 import type { FileAccess } from '../platform/fileAccess'
+import { renderMermaidDiagram } from '../domain/mermaidRenderer'
 
 type MarkdownPreviewProps = {
   content: string
@@ -305,13 +306,7 @@ function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPrev
     async function renderDiagram() {
       try {
         setError(null)
-        const mermaid = (await import('mermaid')).default
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: 'strict',
-          theme: 'default',
-        })
-        const result = await mermaid.render(`mdview-mermaid-${diagramId}`, chart)
+        const result = await renderMermaidDiagram(`mdview-mermaid-${diagramId}`, chart)
 
         if (!canceled) {
           setSvg(result.svg)

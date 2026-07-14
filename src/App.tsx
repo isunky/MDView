@@ -1,4 +1,5 @@
 import {
+  Suspense,
   useCallback,
   useRef,
   useState,
@@ -19,10 +20,9 @@ import { AboutDialog } from './components/AboutDialog'
 import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
-import { MarkdownPreview } from './components/MarkdownPreview'
+import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/lazyMarkdownPreview'
 import { MarkdownEditor } from './components/MarkdownEditor'
 import { WelcomeWorkspace } from './components/WelcomeWorkspace'
-import { buildExportHtml } from './domain/exportHtml'
 import {
   detectSystemLanguage,
   translations,
@@ -97,6 +97,18 @@ function App({
     onCloseMenu: closeMenu,
     onViewModeChange: setViewMode,
   })
+  const handleNewDocumentWithPreviewPreload = useCallback(() => {
+    preloadMarkdownPreview()
+    handleNewDocument()
+  }, [handleNewDocument])
+  const handleOpenFileWithPreviewPreload = useCallback(async () => {
+    preloadMarkdownPreview()
+    await handleOpenFile()
+  }, [handleOpenFile])
+  const handleOpenRecentFileWithPreviewPreload = useCallback(async (path: string) => {
+    preloadMarkdownPreview()
+    await handleOpenRecentFile(path)
+  }, [handleOpenRecentFile])
   const {
     checkForUpdates,
     dismiss: dismissUpdateDialog,
@@ -117,8 +129,8 @@ function App({
   const shortcutPlatform = useFileShortcuts({
     supportsNativeFiles: fileAccess.supportsNativeFiles,
     onCloseMenu: closeMenu,
-    onNew: handleNewDocument,
-    onOpen: handleOpenFile,
+    onNew: handleNewDocumentWithPreviewPreload,
+    onOpen: handleOpenFileWithPreviewPreload,
     onSave: handleSaveFile,
     onSaveAs: handleSaveFileAs,
     onSaveSuccess: () => showAppToast(t.saved),
@@ -155,6 +167,7 @@ function App({
     previewRef,
   })
   const handleOpenMarkdownLink = useCallback(async (path: string, headingId?: string) => {
+    preloadMarkdownPreview()
     if (await openMarkdownLinkFile(path)) {
       queueHeadingJump(headingId)
     }
@@ -164,8 +177,9 @@ function App({
     closeMenu()
 
     try {
+      const html = await buildCurrentExportHtml()
       const savedPath = await fileAccess.exportHtmlFile(
-        buildCurrentExportHtml(),
+        html,
         markdownDocument.path,
         markdownDocument.title,
       )
@@ -179,7 +193,8 @@ function App({
     closeMenu()
 
     try {
-      await fileAccess.printExportHtml(buildCurrentExportHtml(), markdownDocument.title)
+      const html = await buildCurrentExportHtml()
+      await fileAccess.printExportHtml(html, markdownDocument.title)
       setStatusMessage(t.printDialogOpened)
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
@@ -209,11 +224,13 @@ function App({
     }
   }
 
-  function buildCurrentExportHtml(): string {
+  async function buildCurrentExportHtml(): Promise<string> {
     const previewElement = previewRef.current
     if (!previewElement) {
       throw new Error(t.exportPreviewUnavailable)
     }
+
+    const { buildExportHtml } = await import('./domain/exportHtml')
 
     return buildExportHtml({
       title: markdownDocument.title,
@@ -309,7 +326,7 @@ function App({
                 <button
                   type="button"
                   className="action-menu-item"
-                  onClick={handleNewDocument}
+                  onClick={handleNewDocumentWithPreviewPreload}
                   title={newTitle}
                   role="menuitem"
                 >
@@ -318,7 +335,7 @@ function App({
                 <button
                   type="button"
                   className="action-menu-item"
-                  onClick={handleOpenFile}
+                  onClick={handleOpenFileWithPreviewPreload}
                   disabled={!fileAccess.supportsNativeFiles}
                   title={nativeFileTitle ?? openTitle}
                   role="menuitem"
@@ -333,7 +350,7 @@ function App({
                       key={file.path}
                       type="button"
                       className="action-menu-item recent-file-item"
-                      onClick={() => handleOpenRecentFile(file.path)}
+                      onClick={() => void handleOpenRecentFileWithPreviewPreload(file.path)}
                       disabled={!fileAccess.supportsNativeFiles}
                       title={file.path}
                       role="menuitem"
@@ -520,9 +537,9 @@ function App({
           recentFiles={recentFiles}
           canOpenFiles={fileAccess.supportsNativeFiles}
           statusMessage={welcomeStatus}
-          onNew={handleNewDocument}
-          onOpen={handleOpenFile}
-          onOpenRecent={handleOpenRecentFile}
+          onNew={handleNewDocumentWithPreviewPreload}
+          onOpen={handleOpenFileWithPreviewPreload}
+          onOpenRecent={handleOpenRecentFileWithPreviewPreload}
           onClearRecent={handleClearRecentFiles}
           t={t}
         />
@@ -581,14 +598,16 @@ function App({
           ref={previewPanelRef}
           style={previewPanelStyle}
         >
-          <MarkdownPreview
-            content={previewContent}
-            previewRef={previewRef}
-            sourcePath={markdownDocument.path}
-            readLocalImageFile={fileAccess.readLocalImageFile}
-            onOpenMarkdownLink={handleOpenMarkdownLink}
-            labels={t.previewLabels}
-          />
+          <Suspense fallback={<PreviewLoading label={t.previewLoading} />}>
+            <LazyMarkdownPreview
+              content={previewContent}
+              previewRef={previewRef}
+              sourcePath={markdownDocument.path}
+              readLocalImageFile={fileAccess.readLocalImageFile}
+              onOpenMarkdownLink={handleOpenMarkdownLink}
+              labels={t.previewLabels}
+            />
+          </Suspense>
         </section>
         {shortcutToast?.placement === 'preview' && viewMode !== 'edit' ? (
           <div className="zoom-toast-layer">
@@ -622,6 +641,10 @@ function App({
       />
     </main>
   )
+}
+
+function PreviewLoading({ label }: { label: string }) {
+  return <div className="preview-loading" role="status">{label}</div>
 }
 
 function getErrorMessage(error: unknown): string {
