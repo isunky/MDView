@@ -262,10 +262,7 @@ function App({
 
   async function handleCheckForUpdates() {
     closeMenu()
-    const result = await checkForUpdates()
-    if (result === 'latest') {
-      showAppToast(t.updateNoUpdate)
-    }
+    await checkForUpdates()
   }
 
   async function handleInstallUpdate() {

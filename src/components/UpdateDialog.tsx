@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Download, ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
+import { CircleCheck, Download, ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
+import { appInfo } from '../appInfo'
 import type { Translation } from '../i18n'
 import type { AppDistribution, AppUpdateCandidate, AppUpdateProgress } from '../platform/appUpdates'
 import type { AppUpdatePhase } from '../hooks/useAppUpdater'
@@ -77,11 +78,23 @@ export function UpdateDialog({
 
         <div className="update-dialog-header">
           <div className="update-dialog-icon" aria-hidden="true">
-            {isBusy ? <LoaderCircle className="update-spinner" /> : <RefreshCw />}
+            {isBusy ? (
+              <LoaderCircle className="update-spinner" />
+            ) : phase === 'latest' ? (
+              <CircleCheck />
+            ) : (
+              <RefreshCw />
+            )}
           </div>
           <div>
             <h2 id="update-title">{t.updateTitle}</h2>
-            <p>{phase === 'checking' ? t.updateChecking : t.updateSubtitle}</p>
+            <p>
+              {phase === 'checking'
+                ? t.updateChecking
+                : phase === 'latest'
+                  ? t.updateNoUpdate
+                  : t.updateSubtitle}
+            </p>
           </div>
         </div>
 
@@ -94,6 +107,22 @@ export function UpdateDialog({
               {t.updateTryAgain}
             </button>
           </div>
+        ) : null}
+
+        {phase === 'latest' ? (
+          <>
+            <dl className="update-meta update-meta-single" aria-live="polite">
+              <div>
+                <dt>{t.updateCurrentVersion}</dt>
+                <dd>{appInfo.version}</dd>
+              </div>
+            </dl>
+            <div className="update-dialog-actions">
+              <button type="button" className="update-secondary-action" onClick={onClose}>
+                {t.updateClose}
+              </button>
+            </div>
+          </>
         ) : null}
 
         {update && (phase === 'available' || phase === 'downloading' || phase === 'installing') ? (

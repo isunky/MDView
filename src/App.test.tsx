@@ -186,7 +186,7 @@ describe('App', () => {
     expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
   })
 
-  it('shows a toast when the installed Windows version is already current', async () => {
+  it('keeps the update dialog open when the installed Windows version is current', async () => {
     const user = userEvent.setup()
     const checkForUpdate = vi.fn(async () => null)
     const appUpdateClient: AppUpdateClient = {
@@ -204,7 +204,14 @@ describe('App', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
 
     expect(checkForUpdate).toHaveBeenCalledTimes(1)
-    expect(await screen.findByText('MDView is up to date')).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', { name: 'Software Update' })
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByText('MDView is up to date')).toBeInTheDocument()
+    expect(screen.getByText(appInfo.version)).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: 'Shortcut notification' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog', { name: 'Software Update' })).not.toBeInTheDocument()
   })
 
   it('downloads an update for the Windows MSI installation', async () => {

@@ -8,7 +8,14 @@ import {
   type AppUpdateProgress,
 } from '../platform/appUpdates'
 
-export type AppUpdatePhase = 'idle' | 'checking' | 'available' | 'downloading' | 'installing' | 'error'
+export type AppUpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'latest'
+  | 'available'
+  | 'downloading'
+  | 'installing'
+  | 'error'
 
 type UseAppUpdaterOptions = {
   client?: AppUpdateClient
@@ -65,7 +72,7 @@ export function useAppUpdater({
     try {
       const candidate = await client.checkForUpdate()
       setUpdate(candidate)
-      setPhase(candidate ? 'available' : 'idle')
+      setPhase(candidate ? 'available' : 'latest')
       return candidate ? 'available' : 'latest'
     } catch {
       setErrorMessage(checkFailedMessage)
