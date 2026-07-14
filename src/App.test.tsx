@@ -532,6 +532,27 @@ describe('App', () => {
     expect(screen.getByLabelText('Outline panel')).toHaveStyle({ width: '360px' })
   })
 
+  it('changes and remembers the maximum outline heading depth', async () => {
+    const user = userEvent.setup()
+    renderApp({
+      fileAccess: createFileAccess({
+        startupFile: file(
+          '/tmp/outline.md',
+          '# Level 1\n\n## Level 2\n\n### Level 3\n\n#### Level 4',
+        ),
+      }),
+    })
+
+    expect(await screen.findByRole('button', { name: 'Jump to Level 3' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Jump to Level 4' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Set outline depth'))
+    await user.click(screen.getByRole('button', { name: 'Show through heading level 4' }))
+
+    expect(screen.getByRole('button', { name: 'Jump to Level 4' })).toBeInTheDocument()
+    expect(getStoredOutlinePreferences()).toMatchObject({ maxDepth: 4 })
+  })
+
   it('syncs the active outline item with preview scrolling', async () => {
     renderApp({
       fileAccess: createFileAccess({

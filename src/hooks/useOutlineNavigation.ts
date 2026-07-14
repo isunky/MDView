@@ -14,6 +14,7 @@ import {
   clampOutlineWidth,
   loadOutlinePreferences,
   saveOutlinePreferences,
+  type OutlineDepth,
 } from '../domain/outlinePreferences'
 import {
   findActiveOutlineId,
@@ -49,6 +50,7 @@ export function useOutlineNavigation({
   const initialPreferences = useMemo(() => loadOutlinePreferences(), [])
   const [isOutlineOpen, setIsOutlineOpen] = useState(initialPreferences.isOpen)
   const [outlineWidth, setOutlineWidth] = useState(initialPreferences.width)
+  const [outlineDepth, setOutlineDepth] = useState<OutlineDepth>(initialPreferences.maxDepth)
   const [outlineResizeStart, setOutlineResizeStart] = useState<OutlineResizeStart>(null)
   const [pendingHeadingId, setPendingHeadingId] = useState<string | null>(null)
   const [activeOutlineId, setActiveOutlineId] = useState<string | null>(null)
@@ -56,8 +58,10 @@ export function useOutlineNavigation({
   const jumpLockRef = useRef<string | null>(null)
   const jumpSettleTimeoutRef = useRef<number | null>(null)
   const outlineItems = useMemo(
-    () => isPreview ? extractMarkdownOutline(content) : EMPTY_OUTLINE_ITEMS,
-    [content, isPreview],
+    () => isPreview
+      ? extractMarkdownOutline(content).filter((item) => item.level <= outlineDepth)
+      : EMPTY_OUTLINE_ITEMS,
+    [content, isPreview, outlineDepth],
   )
   const outlineIds = useMemo(() => outlineItems.map((item) => item.id), [outlineItems])
 
@@ -98,8 +102,12 @@ export function useOutlineNavigation({
   }, [releaseJumpLock])
 
   useEffect(() => {
-    saveOutlinePreferences({ width: outlineWidth, isOpen: isOutlineOpen })
-  }, [isOutlineOpen, outlineWidth])
+    saveOutlinePreferences({
+      width: outlineWidth,
+      isOpen: isOutlineOpen,
+      maxDepth: outlineDepth,
+    })
+  }, [isOutlineOpen, outlineDepth, outlineWidth])
 
   useEffect(() => {
     return () => {
@@ -312,8 +320,10 @@ export function useOutlineNavigation({
     isOutlineOpen,
     openOutline,
     outlineItems,
+    outlineDepth,
     outlineWidth,
     queueHeadingJump,
+    setOutlineDepth,
   }
 }
 

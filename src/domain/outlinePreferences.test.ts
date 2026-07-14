@@ -9,10 +9,10 @@ import {
 describe('outline preferences', () => {
   it('loads saved width and open state', () => {
     const storage = createStorage({
-      [OUTLINE_PREFERENCES_STORAGE_KEY]: JSON.stringify({ width: 340, isOpen: false }),
+      [OUTLINE_PREFERENCES_STORAGE_KEY]: JSON.stringify({ width: 340, isOpen: false, maxDepth: 4 }),
     })
 
-    expect(loadOutlinePreferences(storage)).toEqual({ width: 340, isOpen: false })
+    expect(loadOutlinePreferences(storage)).toEqual({ width: 340, isOpen: false, maxDepth: 4 })
   })
 
   it('clamps saved width and ignores invalid open state', () => {
@@ -23,6 +23,7 @@ describe('outline preferences', () => {
     expect(loadOutlinePreferences(storage)).toEqual({
       width: 420,
       isOpen: DEFAULT_OUTLINE_PREFERENCES.isOpen,
+      maxDepth: DEFAULT_OUTLINE_PREFERENCES.maxDepth,
     })
   })
 
@@ -35,12 +36,25 @@ describe('outline preferences', () => {
   it('saves normalized preferences', () => {
     const storage = createStorage()
 
-    saveOutlinePreferences({ width: 120, isOpen: true }, storage)
+    saveOutlinePreferences({ width: 120, isOpen: true, maxDepth: 4 }, storage)
 
     expect(JSON.parse(storage.getItem(OUTLINE_PREFERENCES_STORAGE_KEY) ?? '{}')).toEqual({
       width: 180,
       isOpen: true,
+      maxDepth: 4,
     })
+  })
+
+  it('falls back to the default depth when a saved depth is invalid', () => {
+    const storage = createStorage({
+      [OUTLINE_PREFERENCES_STORAGE_KEY]: JSON.stringify({
+        width: 300,
+        isOpen: true,
+        maxDepth: 7,
+      }),
+    })
+
+    expect(loadOutlinePreferences(storage).maxDepth).toBe(DEFAULT_OUTLINE_PREFERENCES.maxDepth)
   })
 })
 

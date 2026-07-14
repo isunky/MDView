@@ -1,12 +1,12 @@
 export type MarkdownOutlineItem = {
   id: string
-  level: 1 | 2 | 3
+  level: 1 | 2 | 3 | 4
   text: string
 }
 
 type HeadingIdCounts = Map<string, number>
 
-const HEADING_PATTERN = /^(#{1,3})\s+(.+?)\s*#*\s*$/
+const HEADING_PATTERN = /^(#{1,4})\s+(.+?)\s*#*\s*$/
 const FENCE_PATTERN = /^\s*(```|~~~)/
 
 export function extractMarkdownOutline(content: string): MarkdownOutlineItem[] {
@@ -32,7 +32,7 @@ export function extractMarkdownOutline(content: string): MarkdownOutlineItem[] {
     const text = match[2].trim()
     outline.push({
       id: createUniqueHeadingId(text, idCounts),
-      level: match[1].length as 1 | 2 | 3,
+      level: match[1].length as 1 | 2 | 3 | 4,
       text,
     })
   }

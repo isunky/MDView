@@ -157,9 +157,11 @@ function App({
     handleOutlineResizeKey,
     isOutlineOpen,
     openOutline,
+    outlineDepth,
     outlineItems,
     outlineWidth,
     queueHeadingJump,
+    setOutlineDepth,
   } = useOutlineNavigation({
     content: markdownDocument.content,
     isPreview: !isWelcomeVisible && viewMode === 'preview',
@@ -575,7 +577,9 @@ function App({
             <DocumentOutline
               items={outlineItems}
               activeId={activeOutlineId}
+              maxDepth={outlineDepth}
               onJump={handleOutlineJump}
+              onMaxDepthChange={setOutlineDepth}
               onClose={closeOutline}
               t={t}
             />

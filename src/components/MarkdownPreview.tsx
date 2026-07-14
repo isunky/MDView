@@ -574,7 +574,7 @@ function remarkHeadingIds() {
   return function transform(tree: Root) {
     const idCounts = createHeadingIdCounts()
     visitMarkdownNode(tree, (node) => {
-      if (node.type !== 'heading' || node.depth > 3) {
+      if (node.type !== 'heading' || node.depth > 4) {
         return
       }
 
