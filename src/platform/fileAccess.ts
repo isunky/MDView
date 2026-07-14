@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { open, save } from '@tauri-apps/plugin-dialog'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { createExportDocxDefaultPath } from '../domain/exportDocxPath'
 import { createExportHtmlDefaultPath } from '../domain/exportHtmlPath'
 import { ensureMarkdownExtension } from './markdownFiles'
@@ -20,6 +21,7 @@ export type FileAccess = {
   supportsNativeFiles: boolean
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   openMarkdownFileAtPath: (path: string) => Promise<OpenedMarkdownFile>
+  revealFileInFolder: (path: string) => Promise<void>
   saveMarkdownFile: (path: string, content: string) => Promise<string>
   saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<string | null>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
@@ -79,6 +81,14 @@ export const tauriFileAccess: FileAccess = {
     }
 
     return readMarkdownFile(path)
+  },
+
+  async revealFileInFolder(path) {
+    if (!isTauriRuntime()) {
+      throw new Error('Revealing files is only available in the desktop app.')
+    }
+
+    await revealItemInDir(path)
   },
 
   async saveMarkdownFile(path, content) {

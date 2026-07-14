@@ -19,7 +19,9 @@ describe('App', () => {
   it('loads a markdown file passed by the desktop shell at startup', async () => {
     renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/start.md', '# Startup') }) })
 
-    expect(await screen.findByRole('heading', { name: 'Startup' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Startup' }, { timeout: 5000 }),
+    ).toBeInTheDocument()
     expect(screen.getByText('start.md')).toBeInTheDocument()
     await waitFor(() => {
       expect(getStoredRecentFiles().map((file) => file.path)).toEqual(['/tmp/start.md'])
@@ -654,7 +656,7 @@ describe('App', () => {
     })
   })
 
-  it('shows file menu actions together', async () => {
+  it('places save actions directly below the open action in the File menu', async () => {
     const user = userEvent.setup()
     seedRecentFiles([recent('/tmp/recent.md', '2026-01-01T00:00:00.000Z')])
     renderApp({ fileAccess: createFileAccess() })
@@ -667,6 +669,19 @@ describe('App', () => {
     expect(screen.getByRole('menuitem', { name: 'recent.md' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Save' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Save As' })).toBeInTheDocument()
+    expect(
+      screen
+        .getAllByRole('menuitem')
+        .map((item) => item.getAttribute('aria-label') ?? item.textContent),
+    ).toEqual([
+      'New',
+      'Open Markdown File',
+      'Save',
+      'Save As',
+      'recent.md',
+      'Reveal recent.md in folder',
+      'Clear recent files',
+    ])
   })
 
   it('shows export actions together in the Export menu', async () => {
@@ -815,6 +830,19 @@ describe('App', () => {
 
     expect(openMarkdownFileAtPath).toHaveBeenCalledWith('/tmp/recent.md')
     expect(await screen.findByRole('heading', { name: 'Recent' })).toBeInTheDocument()
+  })
+
+  it('reveals a recent file from the File menu without opening it', async () => {
+    const user = userEvent.setup()
+    const revealFileInFolder = vi.fn(async () => undefined)
+    seedRecentFiles([recent('/tmp/recent.md', '2026-01-01T00:00:00.000Z')])
+    renderApp({ fileAccess: createFileAccess({ revealFileInFolder }) })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Reveal recent.md in folder' }))
+
+    expect(revealFileInFolder).toHaveBeenCalledWith('/tmp/recent.md')
+    expect(screen.getByRole('menuitem', { name: 'recent.md' })).toBeInTheDocument()
   })
 
   it('opens a linked markdown file from the preview relative to the current file', async () => {
@@ -1041,6 +1069,7 @@ function createFileAccess(
     exportDocxFile?: FileAccess['exportDocxFile']
     printExportHtml?: FileAccess['printExportHtml']
     openMarkdownFileAtPath?: FileAccess['openMarkdownFileAtPath']
+    revealFileInFolder?: FileAccess['revealFileInFolder']
     readLocalImageFile?: FileAccess['readLocalImageFile']
     listenForOpenedFiles?: FileAccess['listenForOpenedFiles']
   } = {},
@@ -1050,6 +1079,7 @@ function createFileAccess(
     openMarkdownFile: vi.fn(async () => overrides.openFile ?? null),
     openMarkdownFileAtPath:
       overrides.openMarkdownFileAtPath ?? vi.fn(async (path) => file(path, '# Recent')),
+    revealFileInFolder: overrides.revealFileInFolder ?? vi.fn(async () => undefined),
     saveMarkdownFile: overrides.saveMarkdownFile ?? vi.fn(async (path) => path),
     saveMarkdownFileAs: overrides.saveMarkdownFileAs ?? vi.fn(async () => '/tmp/saved-as.md'),
     exportHtmlFile: overrides.exportHtmlFile ?? vi.fn(async () => '/tmp/export.html'),

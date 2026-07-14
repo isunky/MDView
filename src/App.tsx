@@ -10,6 +10,7 @@ import {
   Download,
   Eye,
   FolderOpen,
+  FolderSearch,
   PanelLeftOpen,
   PencilLine,
   Settings,
@@ -224,6 +225,14 @@ function App({
     }
   }
 
+  async function handleRevealRecentFile(path: string) {
+    try {
+      await fileAccess.revealFileInFolder(path)
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error))
+    }
+  }
+
   async function buildCurrentExportHtml(): Promise<string> {
     const previewElement = previewRef.current
     if (!previewElement) {
@@ -342,34 +351,6 @@ function App({
                 >
                   {t.openMarkdownFile}
                 </button>
-                <div className="action-menu-divider" />
-                <div className="action-menu-section-label">{t.recentFiles}</div>
-                {recentFiles.length > 0 ? (
-                  recentFiles.map((file) => (
-                    <button
-                      key={file.path}
-                      type="button"
-                      className="action-menu-item recent-file-item"
-                      onClick={() => void handleOpenRecentFileWithPreviewPreload(file.path)}
-                      disabled={!fileAccess.supportsNativeFiles}
-                      title={file.path}
-                      role="menuitem"
-                    >
-                      {file.title}
-                    </button>
-                  ))
-                ) : (
-                  <div className="action-menu-empty">{t.noRecentFiles}</div>
-                )}
-                <button
-                  type="button"
-                  className="action-menu-item action-menu-clear"
-                  onClick={handleClearRecentFiles}
-                  disabled={recentFiles.length === 0}
-                  role="menuitem"
-                >
-                  {t.clearRecentFiles}
-                </button>
                 <button
                   type="button"
                   className="action-menu-item"
@@ -389,6 +370,47 @@ function App({
                   role="menuitem"
                 >
                   {t.saveAs}
+                </button>
+                <div className="action-menu-divider" />
+                <div className="action-menu-section-label">{t.recentFiles}</div>
+                {recentFiles.length > 0 ? (
+                  recentFiles.map((file) => (
+                    <div className="recent-file-menu-row" key={file.path}>
+                      <button
+                        type="button"
+                        className="action-menu-item recent-file-item"
+                        onClick={() => void handleOpenRecentFileWithPreviewPreload(file.path)}
+                        disabled={!fileAccess.supportsNativeFiles}
+                        title={file.path}
+                        role="menuitem"
+                      >
+                        <span className="recent-file-title">{file.title}</span>
+                      </button>
+                      {fileAccess.supportsNativeFiles ? (
+                        <button
+                          type="button"
+                          className="recent-file-reveal"
+                          onClick={() => void handleRevealRecentFile(file.path)}
+                          title={t.reveal}
+                          aria-label={t.revealInFolder(file.title)}
+                          role="menuitem"
+                        >
+                          <FolderSearch aria-hidden="true" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <div className="action-menu-empty">{t.noRecentFiles}</div>
+                )}
+                <button
+                  type="button"
+                  className="action-menu-item action-menu-clear"
+                  onClick={handleClearRecentFiles}
+                  disabled={recentFiles.length === 0}
+                  role="menuitem"
+                >
+                  {t.clearRecentFiles}
                 </button>
               </div>
             ) : null}

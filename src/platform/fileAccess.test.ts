@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { save } from '@tauri-apps/plugin-dialog'
 
 const invoke = vi.fn()
+const revealItemInDir = vi.fn()
 const webviewWindows: Array<{
   label: string
   options: { title?: string; url?: string }
@@ -40,10 +41,15 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
   save: vi.fn(),
 }))
 
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  revealItemInDir,
+}))
+
 describe('file access PDF export', () => {
   beforeEach(() => {
     invoke.mockReset()
     vi.mocked(save).mockReset()
+    revealItemInDir.mockReset()
     webviewWindows.length = 0
     document.head.innerHTML = ''
     document.body.innerHTML = ''
@@ -74,6 +80,14 @@ describe('file access PDF export', () => {
       bytes: [0x50, 0x4b],
     })
     expect(savedPath).toBe('C:\\Docs\\report.docx')
+  })
+
+  it('reveals a markdown file in the system file manager', async () => {
+    const { tauriFileAccess } = await import('./fileAccess')
+
+    await tauriFileAccess.revealFileInFolder('C:\\Docs\\report.md')
+
+    expect(revealItemInDir).toHaveBeenCalledWith('C:\\Docs\\report.md')
   })
 
   it('prints the exported markdown document through a dedicated Tauri window', async () => {

@@ -125,7 +125,8 @@
 .markdown-editor:focus-visible,
 .welcome-action:focus-visible,
 .welcome-recent-item:focus-visible,
-.welcome-clear:focus-visible {
+.welcome-clear:focus-visible,
+.recent-file-reveal:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -181,9 +182,61 @@
 }
 
 .toolbar .recent-file-item {
+  min-width: 0;
+  max-width: 100%;
+  padding-right: 9px;
+}
+
+.recent-file-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.recent-file-menu-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar .recent-file-reveal {
+  width: 30px;
+  height: 26px;
+  min-height: 26px;
+  justify-content: center;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--control-text);
+  background: var(--toolbar-bg);
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: visibility 0s linear 120ms, opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.recent-file-reveal svg {
+  width: 14px;
+  height: 14px;
+}
+
+.recent-file-menu-row:hover .recent-file-reveal,
+.recent-file-menu-row:focus-within .recent-file-reveal {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.recent-file-reveal:hover {
+  border-color: #8aa9a6;
+  background: var(--control-hover);
 }
 
 .toolbar .file-menu-clear,
