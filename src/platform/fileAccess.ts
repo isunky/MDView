@@ -1,11 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { open, save } from '@tauri-apps/plugin-dialog'
-import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { createExportDocxDefaultPath } from '../domain/exportDocxPath'
 import { createExportHtmlDefaultPath } from '../domain/exportHtmlPath'
-import { ensureMarkdownExtension } from './markdownFiles'
 
 export type OpenedMarkdownFile = {
   path: string
@@ -32,27 +29,6 @@ export type FileAccess = {
   listenForOpenedFiles: (callback: (file: OpenedMarkdownFile) => void) => Promise<UnlistenFn | null>
 }
 
-const markdownFilters = [
-  {
-    name: 'Markdown',
-    extensions: ['md', 'markdown', 'mdown', 'mkdn'],
-  },
-]
-
-const htmlFilters = [
-  {
-    name: 'HTML',
-    extensions: ['html', 'htm'],
-  },
-]
-
-const docxFilters = [
-  {
-    name: 'Word Document',
-    extensions: ['docx'],
-  },
-]
-
 export const tauriFileAccess: FileAccess = {
   supportsNativeFiles: isTauriRuntime(),
 
@@ -61,18 +37,7 @@ export const tauriFileAccess: FileAccess = {
       return null
     }
 
-    const selected = await open({
-      multiple: false,
-      directory: false,
-      filters: markdownFilters,
-    })
-    const path = normalizeDialogPath(selected)
-
-    if (!path) {
-      return null
-    }
-
-    return readMarkdownFile(path)
+    return invoke<OpenedMarkdownFile | null>('open_markdown_file_dialog')
   },
 
   async openMarkdownFileAtPath(path) {
@@ -80,7 +45,7 @@ export const tauriFileAccess: FileAccess = {
       throw new Error('Native file opening is only available in the desktop app.')
     }
 
-    return readMarkdownFile(path)
+    return invoke<OpenedMarkdownFile>('open_markdown_file_at_path', { path })
   },
 
   async revealFileInFolder(path) {
@@ -88,7 +53,7 @@ export const tauriFileAccess: FileAccess = {
       throw new Error('Revealing files is only available in the desktop app.')
     }
 
-    await revealItemInDir(path)
+    await invoke('reveal_file_in_folder', { path })
   },
 
   async saveMarkdownFile(path, content) {
@@ -105,18 +70,10 @@ export const tauriFileAccess: FileAccess = {
       return null
     }
 
-    const selected = await save({
+    return invoke<string | null>('export_html_file_dialog', {
+      content: html,
       defaultPath: createExportHtmlDefaultPath(currentPath, title),
-      filters: htmlFilters,
     })
-
-    if (!selected) {
-      return null
-    }
-
-    const path = ensureHtmlExtension(selected)
-    await invoke('write_html_file', { path, content: html })
-    return path
   },
 
   async exportDocxFile(bytes, currentPath, title) {
@@ -124,18 +81,10 @@ export const tauriFileAccess: FileAccess = {
       return null
     }
 
-    const selected = await save({
+    return invoke<string | null>('export_docx_file_dialog', {
+      bytes: Array.from(bytes),
       defaultPath: createExportDocxDefaultPath(currentPath, title),
-      filters: docxFilters,
     })
-
-    if (!selected) {
-      return null
-    }
-
-    const path = ensureDocxExtension(selected)
-    await invoke('write_docx_file', { path, bytes: Array.from(bytes) })
-    return path
   },
 
   async printExportHtml(html, title) {
@@ -155,18 +104,10 @@ export const tauriFileAccess: FileAccess = {
       return null
     }
 
-    const selected = await save({
+    return invoke<string | null>('save_markdown_file_dialog', {
+      content,
       defaultPath: currentPath ?? 'Untitled.md',
-      filters: markdownFilters,
     })
-
-    if (!selected) {
-      return null
-    }
-
-    const path = ensureMarkdownExtension(selected)
-    await invoke('write_markdown_file', { path, content })
-    return path
   },
 
   async readStartupMarkdownFile() {
@@ -198,32 +139,6 @@ export const tauriFileAccess: FileAccess = {
 async function readMarkdownFile(path: string): Promise<OpenedMarkdownFile> {
   const content = await invoke<string>('read_markdown_file', { path })
   return { path, content }
-}
-
-function normalizeDialogPath(selected: string | string[] | null): string | null {
-  if (Array.isArray(selected)) {
-    return selected.at(0) ?? null
-  }
-
-  return selected
-}
-
-function ensureHtmlExtension(path: string): string {
-  return isHtmlPath(path) ? path : `${path}.html`
-}
-
-function ensureDocxExtension(path: string): string {
-  return isDocxPath(path) ? path : `${path}.docx`
-}
-
-function isHtmlPath(path: string): boolean {
-  const extension = path.split('.').at(-1)?.toLowerCase()
-  return extension !== undefined && extension !== path.toLowerCase() && htmlFilters[0].extensions.includes(extension)
-}
-
-function isDocxPath(path: string): boolean {
-  const extension = path.split('.').at(-1)?.toLowerCase()
-  return extension === 'docx'
 }
 
 async function printHtmlDocument(html: string, title: string) {

@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { save } from '@tauri-apps/plugin-dialog'
 
 const invoke = vi.fn()
-const revealItemInDir = vi.fn()
 const webviewWindows: Array<{
   label: string
   options: { title?: string; url?: string }
@@ -36,20 +34,9 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   },
 }))
 
-vi.mock('@tauri-apps/plugin-dialog', () => ({
-  open: vi.fn(),
-  save: vi.fn(),
-}))
-
-vi.mock('@tauri-apps/plugin-opener', () => ({
-  revealItemInDir,
-}))
-
 describe('file access PDF export', () => {
   beforeEach(() => {
     invoke.mockReset()
-    vi.mocked(save).mockReset()
-    revealItemInDir.mockReset()
     webviewWindows.length = 0
     document.head.innerHTML = ''
     document.body.innerHTML = ''
@@ -62,7 +49,7 @@ describe('file access PDF export', () => {
   })
 
   it('exports DOCX bytes through the native save dialog', async () => {
-    vi.mocked(save).mockResolvedValue('C:\\Docs\\report')
+    invoke.mockResolvedValueOnce('C:\\Docs\\report.docx')
     const { tauriFileAccess } = await import('./fileAccess')
 
     const savedPath = await tauriFileAccess.exportDocxFile(
@@ -71,13 +58,9 @@ describe('file access PDF export', () => {
       'report.md',
     )
 
-    expect(save).toHaveBeenCalledWith({
-      defaultPath: 'C:\\Docs\\report.docx',
-      filters: [{ name: 'Word Document', extensions: ['docx'] }],
-    })
-    expect(invoke).toHaveBeenCalledWith('write_docx_file', {
-      path: 'C:\\Docs\\report.docx',
+    expect(invoke).toHaveBeenCalledWith('export_docx_file_dialog', {
       bytes: [0x50, 0x4b],
+      defaultPath: 'C:\\Docs\\report.docx',
     })
     expect(savedPath).toBe('C:\\Docs\\report.docx')
   })
@@ -87,7 +70,30 @@ describe('file access PDF export', () => {
 
     await tauriFileAccess.revealFileInFolder('C:\\Docs\\report.md')
 
-    expect(revealItemInDir).toHaveBeenCalledWith('C:\\Docs\\report.md')
+    expect(invoke).toHaveBeenCalledWith('reveal_file_in_folder', {
+      path: 'C:\\Docs\\report.md',
+    })
+  })
+
+  it('opens and saves files through policy-enforced backend dialogs', async () => {
+    invoke
+      .mockResolvedValueOnce({ path: 'C:\\Docs\\readme.md', content: '# Readme' })
+      .mockResolvedValueOnce('C:\\Docs\\saved.md')
+    const { tauriFileAccess } = await import('./fileAccess')
+
+    await expect(tauriFileAccess.openMarkdownFile()).resolves.toEqual({
+      path: 'C:\\Docs\\readme.md',
+      content: '# Readme',
+    })
+    await expect(tauriFileAccess.saveMarkdownFileAs('# Saved', null)).resolves.toBe(
+      'C:\\Docs\\saved.md',
+    )
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'open_markdown_file_dialog')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'save_markdown_file_dialog', {
+      content: '# Saved',
+      defaultPath: 'Untitled.md',
+    })
   })
 
   it('prints the exported markdown document through a dedicated Tauri window', async () => {

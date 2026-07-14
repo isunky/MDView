@@ -1,4 +1,3 @@
-import type { Content, Heading, PhrasingContent, Root } from 'mdast'
 import {
   Fragment,
   memo,
@@ -12,23 +11,28 @@ import {
   type ReactNode,
   type Ref,
 } from 'react'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
+import { createPortal } from 'react-dom'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import 'highlight.js/styles/github.css'
 import {
   resolveLocalMarkdownResource,
   resolveSameDocumentHeading,
 } from '../domain/localMarkdownResources'
-import { createHeadingIdCounts, createUniqueHeadingId } from '../domain/markdownOutline'
+import {
+  markdownSanitizeSchema,
+  rehypeSafeHeadingIds,
+} from '../domain/markdownSanitize'
 import {
   isExternalWebUrl,
   openExternalLink,
   type OpenExternalLink,
 } from '../platform/externalLinks'
 import type { FileAccess } from '../platform/fileAccess'
-import { renderMermaidDiagram } from '../domain/mermaidRenderer'
+import { renderMermaidDiagram, sanitizeMermaidSvg } from '../domain/mermaidRenderer'
 
 type MarkdownPreviewProps = {
   content: string
@@ -65,8 +69,14 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   return (
     <article className="markdown-preview" aria-label="Markdown preview" ref={previewRef}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkHeadingIds]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[
+          rehypeRaw,
+          [rehypeSanitize, markdownSanitizeSchema],
+          rehypeSafeHeadingIds,
+          rehypeHighlight,
+        ]}
+        urlTransform={transformMarkdownUrl}
         components={{
           pre({ children, node, ...props }) {
             void node
@@ -119,7 +129,8 @@ export const MarkdownPreview = memo(function MarkdownPreview({
               </code>
             )
           },
-          a({ href, children, ...props }) {
+          a({ href, children, node, ...props }) {
+            void node
             function handleClick(event: MouseEvent<HTMLAnchorElement>) {
               const sameDocumentHeading = resolveSameDocumentHeading(href)
               if (sameDocumentHeading) {
@@ -178,6 +189,17 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   )
 })
 
+function transformMarkdownUrl(url: string, key: string): string {
+  if (/^file:\/\//i.test(url)) {
+    return url
+  }
+
+  if (key === 'src' && /^data:image\/(?:avif|bmp|gif|jpe?g|png|svg\+xml|webp);/i.test(url)) {
+    return url
+  }
+
+  return defaultUrlTransform(url)
+}
 const defaultPreviewLabels: MarkdownPreviewLabels = {
   copyCode: 'Copy',
   copiedCode: 'Copied',
@@ -309,7 +331,7 @@ function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPrev
         const result = await renderMermaidDiagram(`mdview-mermaid-${diagramId}`, chart)
 
         if (!canceled) {
-          setSvg(result.svg)
+          setSvg(sanitizeMermaidSvg(result.svg))
         }
       } catch (renderError) {
         if (!canceled) {
@@ -539,78 +561,36 @@ function LocalMarkdownImage({
         />
         {alt ? <span className="markdown-image-caption">{alt}</span> : null}
       </span>
-      {previewSrc ? (
-        <div
-          className="image-preview-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label={labels.imagePreview}
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) {
-              setPreviewSrc(null)
-            }
-          }}
-        >
-          <button
-            type="button"
-            className="image-preview-close"
-            onClick={() => setPreviewSrc(null)}
-            aria-label={labels.closeImagePreview}
-          >
-            ×
-          </button>
-          <img
-            className="image-preview-image"
-            src={previewSrc}
-            alt={labels.imagePreviewAlt(alt ?? 'Image')}
-          />
-        </div>
-      ) : null}
+      {previewSrc
+        ? createPortal(
+            <div
+              className="image-preview-backdrop"
+              role="dialog"
+              aria-modal="true"
+              aria-label={labels.imagePreview}
+              onMouseDown={(event) => {
+                if (event.currentTarget === event.target) {
+                  setPreviewSrc(null)
+                }
+              }}
+            >
+              <button
+                type="button"
+                className="image-preview-close"
+                onClick={() => setPreviewSrc(null)}
+                aria-label={labels.closeImagePreview}
+              >
+                ×
+              </button>
+              <img
+                className="image-preview-image"
+                src={previewSrc}
+                alt={labels.imagePreviewAlt(alt ?? 'Image')}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   )
-}
-
-function remarkHeadingIds() {
-  return function transform(tree: Root) {
-    const idCounts = createHeadingIdCounts()
-    visitMarkdownNode(tree, (node) => {
-      if (node.type !== 'heading' || node.depth > 4) {
-        return
-      }
-
-      const data = ((node.data ??= {}) as Heading['data'] & {
-        hProperties?: Record<string, string>
-      })
-      data.hProperties = {
-        ...data.hProperties,
-        id: createUniqueHeadingId(getMarkdownNodeText(node.children), idCounts),
-      }
-    })
-  }
-}
-
-function visitMarkdownNode(node: Root | Content, visitor: (node: Content) => void) {
-  if (node.type !== 'root') {
-    visitor(node)
-  }
-
-  if ('children' in node) {
-    node.children.forEach((child) => visitMarkdownNode(child, visitor))
-  }
-}
-
-function getMarkdownNodeText(nodes: PhrasingContent[]): string {
-  return nodes.map(getMarkdownChildText).join('')
-}
-
-function getMarkdownChildText(node: PhrasingContent): string {
-  if ('value' in node && typeof node.value === 'string') {
-    return node.value
-  }
-
-  if ('children' in node) {
-    return getMarkdownNodeText(node.children)
-  }
-
-  return ''
 }

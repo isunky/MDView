@@ -1,10 +1,14 @@
 param(
-  [switch]$SkipChecks,
-  [switch]$SkipPortable
+  [switch]$SkipChecks
 )
 
 $ErrorActionPreference = "Stop"
 $scriptStartTime = Get-Date
+
+# Tauri reads CI as a boolean and rejects common values such as CI=1.
+if ($env:CI -and $env:CI -notin @("true", "false")) {
+  $env:CI = "true"
+}
 
 function Invoke-BuildStep {
   param(
@@ -66,31 +70,17 @@ if (-not $SkipChecks) {
   }
 }
 
-Invoke-BuildStep -Label "Build Windows installers" -Command {
-  & npm.cmd run desktop:build
+Invoke-BuildStep -Label "Build Windows MSI" -Command {
+  & npm.cmd run desktop:build -- --bundles msi
 }
-
-if (-not $SkipPortable) {
-  Invoke-BuildStep -Label "Build Windows portable package" -Command {
-    & npm.cmd run portable:windows
-  }
-}
-
-$artifactPatterns = @(
-  "src-tauri/target/release/bundle/msi/*.msi",
-  "src-tauri/target/release/bundle/nsis/*.exe",
-  "src-tauri/target/release/bundle/portable/*.zip"
-)
 
 $artifacts = @(
-  foreach ($pattern in $artifactPatterns) {
-    Get-ChildItem -Path $pattern -File -ErrorAction SilentlyContinue |
-      Where-Object { $_.LastWriteTime -ge $scriptStartTime }
-  }
+  Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -ge $scriptStartTime }
 )
 
 if ($artifacts.Count -eq 0) {
-  throw "Packaging completed, but no new Windows artifacts were found."
+  throw "Packaging completed, but no new Windows MSI was found."
 }
 
 Write-Host ""

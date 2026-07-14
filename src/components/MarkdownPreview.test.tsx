@@ -63,7 +63,7 @@ describe('MarkdownPreview', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Project' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Project' })).toHaveAttribute('id', 'project')
     expect(screen.getByRole('checkbox')).toBeChecked()
     expect(screen.getByRole('table')).toBeInTheDocument()
     expect(screen.getByRole('table').parentElement).toHaveClass('table-scroll')
@@ -72,6 +72,51 @@ describe('MarkdownPreview', () => {
     expect(screen.getByText((_, element) => element?.tagName === 'CODE')).toHaveTextContent(
       'const ready = true',
     )
+  })
+
+  it('keeps supported raw HTML while removing active content and event handlers', () => {
+    const { container } = render(
+      <MarkdownPreview
+        content={[
+          '<details open><summary>More</summary><p align="center">Safe content</p></details>',
+          '<img src="https://example.com/image.png" alt="Safe image" width="120" onerror="alert(1)" />',
+          '<a href="javascript:alert(1)" onclick="alert(1)">Unsafe link</a>',
+          '<iframe src="https://example.com"></iframe>',
+          '<script>window.__unsafe = true</script>',
+          '<style>body { display: none }</style>',
+        ].join('\n')}
+      />,
+    )
+
+    expect(screen.getByText('More').closest('details')).toHaveAttribute('open')
+    expect(screen.getByText('Safe content')).toHaveAttribute('align', 'center')
+    expect(screen.getByRole('img', { name: 'Safe image' })).toHaveAttribute('width', '120')
+    expect(screen.getByRole('img', { name: 'Safe image' })).not.toHaveAttribute('onerror')
+    expect(screen.getByText('Unsafe link').closest('a')).not.toHaveAttribute('href')
+    expect(container.querySelector('script, style, iframe')).not.toBeInTheDocument()
+  })
+
+  it('allows safe web and local Markdown URLs but drops dangerous protocols', () => {
+    render(
+      <MarkdownPreview
+        sourcePath="C:\\Docs\\readme.md"
+        content={[
+          '[Website](https://www.sunky.net)',
+          '[Local](file:///C:/Docs/guide.md)',
+          '<a href="data:text/html;base64,PHNjcmlwdD4=">Data URL</a>',
+        ].join('\n\n')}
+      />,
+    )
+
+    expect(screen.getByRole('link', { name: 'Website' })).toHaveAttribute(
+      'href',
+      'https://www.sunky.net',
+    )
+    expect(screen.getByRole('link', { name: 'Local' })).toHaveAttribute(
+      'href',
+      'file:///C:/Docs/guide.md',
+    )
+    expect(screen.getByText('Data URL').closest('a')).not.toHaveAttribute('href')
   })
 
   it('copies fenced code blocks from the preview', async () => {
@@ -130,7 +175,10 @@ describe('MarkdownPreview', () => {
 
     fireEvent.click(image)
 
-    expect(screen.getByRole('dialog', { name: 'Image preview' })).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Image preview' })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog.parentElement).toBe(document.body)
+    expect(image.closest('p')).not.toContainElement(dialog)
     expect(screen.getByRole('img', { name: 'Diagram preview' })).toHaveAttribute(
       'src',
       'data:image/png;base64,abc',
