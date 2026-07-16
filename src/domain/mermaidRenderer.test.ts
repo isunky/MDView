@@ -33,6 +33,25 @@ describe('mermaidRenderer', () => {
     expect(mermaid.render).toHaveBeenNthCalledWith(2, 'second', 'sequenceDiagram')
   })
 
+  it('reconfigures Mermaid when the effective reading theme changes', async () => {
+    mermaid.render.mockResolvedValue({ svg: '<svg />' })
+    const { renderMermaidDiagram } = await import('./mermaidRenderer')
+
+    await renderMermaidDiagram('light-diagram', 'graph TD', 'light')
+    await renderMermaidDiagram('dark-diagram', 'graph TD', 'dark')
+
+    expect(mermaid.initialize).toHaveBeenNthCalledWith(1, {
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'default',
+    })
+    expect(mermaid.initialize).toHaveBeenNthCalledWith(2, {
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'dark',
+    })
+  })
+
   it('removes active content and dangerous URLs from Mermaid SVG output', async () => {
     const { sanitizeMermaidSvg } = await import('./mermaidRenderer')
     const sanitized = sanitizeMermaidSvg([

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
+import { ReadingSettingsDialog } from './components/ReadingSettingsDialog'
 import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
@@ -45,6 +46,7 @@ import { useDocumentSearch } from './hooks/useDocumentSearch'
 import { useImageInsertion } from './hooks/useImageInsertion'
 import { usePreviewController } from './hooks/usePreviewController'
 import { useReadingSession } from './hooks/useReadingSession'
+import { useReadingPreferences } from './hooks/useReadingPreferences'
 import { useTransientToast } from './hooks/useTransientToast'
 import { tauriFileAccess, type FileAccess } from './platform/fileAccess'
 import { tauriAppUpdateClient, type AppUpdateClient } from './platform/appUpdates'
@@ -71,11 +73,18 @@ function App({
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [isReadingSettingsOpen, setIsReadingSettingsOpen] = useState(false)
   const [editorSelection, setEditorSelection] = useState<SelectionRange>({ start: 0, end: 0 })
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const editorRef = useRef<MarkdownEditorHandle | null>(null)
   const t = translations[language]
+  const {
+    effectiveTheme,
+    preferences: readingPreferences,
+    resetPreferences: resetReadingPreferences,
+    updatePreferences: updateReadingPreferences,
+  } = useReadingPreferences()
   const {
     activeMenu,
     closeMenu,
@@ -296,12 +305,15 @@ function App({
       throw new Error(t.exportPreviewUnavailable)
     }
 
-    const { buildExportHtml } = await import('./domain/exportHtml')
+    const [{ buildExportHtml }, { createLightExportContent }] = await Promise.all([
+      import('./domain/exportHtml'),
+      import('./domain/exportPreview'),
+    ])
 
     return buildExportHtml({
       title: markdownDocument.title,
       lang: language === 'zh' ? 'zh-CN' : 'en',
-      contentHtml: previewElement.innerHTML,
+      contentHtml: await createLightExportContent(previewElement),
     })
   }
 
@@ -313,6 +325,11 @@ function App({
   function handleLanguageSelect(nextLanguage: AppLanguage) {
     setLanguage(nextLanguage)
     closeMenu()
+  }
+
+  function handleOpenReadingSettings() {
+    closeMenu()
+    setIsReadingSettingsOpen(true)
   }
 
   async function handleCheckForUpdates() {
@@ -368,6 +385,7 @@ function App({
   return (
     <main
       className={`app-shell view-${viewMode} ${isWelcomeVisible ? 'welcome-open' : ''}`}
+      data-mdview-color-theme={effectiveTheme}
       lang={language === 'zh' ? 'zh-CN' : 'en'}
     >
       <header className="topbar">
@@ -558,6 +576,14 @@ function App({
                 <button
                   type="button"
                   className="action-menu-item"
+                  onClick={handleOpenReadingSettings}
+                  role="menuitem"
+                >
+                  {t.readingSettings}
+                </button>
+                <button
+                  type="button"
+                  className="action-menu-item"
                   onClick={() => void handleCheckForUpdates()}
                   disabled={distribution === 'unsupported' || updatePhase === 'checking'}
                   title={updateActionTitle}
@@ -734,6 +760,7 @@ function App({
           <Suspense fallback={<PreviewLoading label={t.previewLoading} />}>
             <LazyMarkdownPreview
               content={previewContent}
+              theme={effectiveTheme}
               previewRef={previewRef}
               sourcePath={markdownDocument.path}
               readLocalImageFile={fileAccess.readLocalImageFile}
@@ -766,6 +793,14 @@ function App({
         <div className="app-operation-status" role="status">{operationStatus}</div>
       ) : null}
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
+      <ReadingSettingsDialog
+        open={isReadingSettingsOpen}
+        preferences={readingPreferences}
+        onClose={() => setIsReadingSettingsOpen(false)}
+        onReset={resetReadingPreferences}
+        onUpdate={updateReadingPreferences}
+        t={t}
+      />
       <UpdateDialog
         distribution={distribution}
         errorMessage={updateErrorMessage}

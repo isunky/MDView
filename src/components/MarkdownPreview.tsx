@@ -19,7 +19,7 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
-import 'highlight.js/styles/github.css'
+import './highlightThemes.css'
 import {
   resolveLocalMarkdownResource,
   resolveSameDocumentHeading,
@@ -35,6 +35,7 @@ import {
 } from '../platform/externalLinks'
 import type { FileAccess } from '../platform/fileAccess'
 import { renderMermaidDiagram, sanitizeMermaidSvg } from '../domain/mermaidRenderer'
+import type { EffectiveReadingTheme } from '../domain/readingPreferences'
 
 type MarkdownPreviewProps = {
   content: string
@@ -47,6 +48,7 @@ type MarkdownPreviewProps = {
   searchQuery?: string
   activeSearchIndex?: number
   onSearchMatchCountChange?: (count: number) => void
+  theme?: EffectiveReadingTheme
 }
 
 export type MarkdownPreviewLabels = {
@@ -73,6 +75,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   searchQuery = '',
   activeSearchIndex = 0,
   onSearchMatchCountChange,
+  theme = 'light',
 }: MarkdownPreviewProps) {
   const articleRef = useRef<HTMLElement | null>(null)
   const searchHighlightPlugin = useMemo(
@@ -120,7 +123,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
             const mermaidChart = getMermaidChart(children)
 
             if (mermaidChart) {
-              return <MermaidDiagram chart={mermaidChart} labels={labels} />
+              return <MermaidDiagram chart={mermaidChart} labels={labels} theme={theme} />
             }
 
             const codeMetadata = getCodeBlockMetadata(children)
@@ -457,7 +460,15 @@ function normalizeLanguageLabel(language: string) {
   return languageAliases[language.toLowerCase()] ?? language.toUpperCase()
 }
 
-function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPreviewLabels }) {
+function MermaidDiagram({
+  chart,
+  labels,
+  theme,
+}: {
+  chart: string
+  labels: MarkdownPreviewLabels
+  theme: EffectiveReadingTheme
+}) {
   const diagramId = useId().replace(/:/g, '')
   const [svg, setSvg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -468,7 +479,7 @@ function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPrev
     async function renderDiagram() {
       try {
         setError(null)
-        const result = await renderMermaidDiagram(`mdview-mermaid-${diagramId}`, chart)
+        const result = await renderMermaidDiagram(`mdview-mermaid-${diagramId}`, chart, theme)
 
         if (!canceled) {
           setSvg(sanitizeMermaidSvg(result.svg))
@@ -486,7 +497,7 @@ function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPrev
     return () => {
       canceled = true
     }
-  }, [chart, diagramId, labels.mermaidError])
+  }, [chart, diagramId, labels.mermaidError, theme])
 
   if (error) {
     return (
@@ -501,12 +512,13 @@ function MermaidDiagram({ chart, labels }: { chart: string; labels: MarkdownPrev
   }
 
   if (!svg) {
-    return <div className="mermaid-loading">{labels.mermaidLoading}</div>
+    return <div className="mermaid-loading" data-mdview-mermaid-chart={chart}>{labels.mermaidLoading}</div>
   }
 
   return (
     <div
       className="mermaid-diagram"
+      data-mdview-mermaid-chart={chart}
       role="img"
       aria-label={labels.mermaidDiagram}
       dangerouslySetInnerHTML={{ __html: svg }}

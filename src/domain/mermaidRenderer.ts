@@ -1,25 +1,34 @@
 type MermaidModule = typeof import('mermaid')
+export type MermaidTheme = 'light' | 'dark'
 
 let mermaidModulePromise: Promise<MermaidModule['default']> | null = null
+let configuredTheme: MermaidTheme | null = null
+let renderQueue: Promise<void> = Promise.resolve()
 
 function loadMermaid() {
   if (!mermaidModulePromise) {
-    mermaidModulePromise = import('mermaid').then(({ default: mermaid }) => {
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'default',
-      })
-      return mermaid
-    })
+    mermaidModulePromise = import('mermaid').then(({ default: mermaid }) => mermaid)
   }
 
   return mermaidModulePromise
 }
 
-export async function renderMermaidDiagram(id: string, chart: string) {
-  const mermaid = await loadMermaid()
-  return mermaid.render(id, chart)
+export function renderMermaidDiagram(id: string, chart: string, theme: MermaidTheme = 'light') {
+  const renderTask = renderQueue.then(async () => {
+    const mermaid = await loadMermaid()
+    if (configuredTheme !== theme) {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: theme === 'dark' ? 'dark' : 'default',
+      })
+      configuredTheme = theme
+    }
+    return mermaid.render(id, chart)
+  })
+
+  renderQueue = renderTask.then(() => undefined, () => undefined)
+  return renderTask
 }
 
 const blockedSvgElements = 'script, foreignObject, iframe, object, embed'

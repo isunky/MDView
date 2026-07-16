@@ -31,6 +31,24 @@
   --code-block-header: #eef3f6;
   --inline-code-bg: #e9eef2;
   --inline-code: #9f1239;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f7f9fa;
+  --surface-code: #f6f8fa;
+  --floating-shadow: 0 12px 32px rgba(16, 24, 40, 0.16);
+  --search-match-bg: #fef3c7;
+  --search-match-active-bg: #fbbf24;
+  --search-match-active-ring: rgba(146, 64, 14, 0.28);
+  --accent-soft: #e7f6f3;
+  --accent-contrast: #ffffff;
+  --error-text: #991b1b;
+  --error-bg: #fef2f2;
+  --preview-panel-bg:
+    radial-gradient(circle at 20% 0, rgba(15, 118, 110, 0.06), transparent 34%),
+    linear-gradient(180deg, #fbfcfd 0, var(--preview-bg) 220px);
+  --reader-font-family: var(--content-font);
+  --reader-font-size: 16px;
+  --reader-line-height: 1.8;
+  --reader-content-width: 940px;
   --ui-font:
     Inter, 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei',
     'PingFang SC', 'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -47,6 +65,72 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-mdview-color-theme='dark'] {
+  --app-bg: #161a1b;
+  --toolbar-bg: #202526;
+  --editor-bg: #1b2021;
+  --preview-bg: #15191a;
+  --preview-paper: #202626;
+  --preview-paper-border: rgba(148, 163, 184, 0.28);
+  --preview-paper-shadow: 0 18px 54px rgba(0, 0, 0, 0.42);
+  --preview-panel-bg: linear-gradient(180deg, #1c2223 0, var(--preview-bg) 220px);
+  --segmented-bg: #2a3132;
+  --control-hover: #30393a;
+  --brand-bg: #14867c;
+  --accent: #36a99d;
+  --focus: #76adff;
+  --border: #3c4748;
+  --text: #d4dddc;
+  --text-strong: #f1f6f5;
+  --text-muted: #a3b0af;
+  --control-text: #e3ebea;
+  --disabled: #73807f;
+  --saved: #51c4b6;
+  --saved-bg: #173a36;
+  --dirty: #f8b56b;
+  --dirty-bg: #442d16;
+  --prose: #d4dddc;
+  --editor-text: #ecf2f1;
+  --link: #91bbff;
+  --quote-bg: #18322f;
+  --table-head: #2a3636;
+  --table-row-alt: #222a2a;
+  --code-block-bg: #151b1c;
+  --code-block-header: #252e2f;
+  --inline-code-bg: #333c3d;
+  --inline-code: #ffb6c6;
+  --surface-raised: #202526;
+  --surface-subtle: #1b2021;
+  --surface-code: #171c1d;
+  --floating-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  --search-match-bg: #66531a;
+  --search-match-active-bg: #a46e11;
+  --search-match-active-ring: rgba(251, 191, 36, 0.52);
+  --accent-soft: #173c38;
+  --error-text: #fca5a5;
+  --error-bg: #4a2024;
+
+  color-scheme: dark;
+}
+
+:root[data-mdview-color-theme='light'] {
+  --preview-panel-bg:
+    radial-gradient(circle at 20% 0, rgba(15, 118, 110, 0.06), transparent 34%),
+    linear-gradient(180deg, #fbfcfd 0, var(--preview-bg) 220px);
+}
+
+:root[data-mdview-font-family='sans'] {
+  --reader-font-family: var(--content-font);
+}
+
+:root[data-mdview-font-family='serif'] {
+  --reader-font-family: Georgia, 'Noto Serif SC', 'Songti SC', SimSun, serif;
+}
+
+:root[data-mdview-font-family='monospace'] {
+  --reader-font-family: var(--mono-font);
 }
 
 * {

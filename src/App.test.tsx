@@ -13,6 +13,11 @@ import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 describe('App', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    document.documentElement.removeAttribute('data-mdview-color-theme')
+    document.documentElement.removeAttribute('data-mdview-font-family')
+    document.documentElement.style.removeProperty('--reader-font-size')
+    document.documentElement.style.removeProperty('--reader-line-height')
+    document.documentElement.style.removeProperty('--reader-content-width')
     setNavigatorPlatform('Win32')
   })
 
@@ -184,6 +189,25 @@ describe('App', () => {
     expect(screen.getByText('Interface language')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Reading Settings' })).toBeInTheDocument()
+  })
+
+  it('applies and persists reading settings from the App menu', async () => {
+    const user = userEvent.setup()
+    renderApp({ fileAccess: createFileAccess() })
+
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Reading Settings' }))
+    expect(screen.getByRole('dialog', { name: 'Reading Settings' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Dark' }))
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.mdviewColorTheme).toBe('dark')
+    })
+    expect(JSON.parse(window.localStorage.getItem('mdview.readingPreferences.v1') ?? '{}')).toMatchObject({
+      themeMode: 'dark',
+    })
   })
 
   it('keeps the update dialog open when the installed Windows version is current', async () => {
