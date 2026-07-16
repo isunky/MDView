@@ -81,11 +81,18 @@ export function usePreviewController({
     setStoredPreviewContent(content)
   }, [content])
 
+  const restorePreviewZoom = useCallback((zoom: number) => {
+    const nextZoom = clampPreviewZoom(zoom)
+    previewZoomRef.current = nextZoom
+    setPreviewZoom(nextZoom)
+  }, [])
+
   return {
     freezePreview,
     previewContent: isPreview ? content : storedPreviewContent,
     previewZoom,
     prepareSplitPreview,
+    restorePreviewZoom,
   }
 }
 

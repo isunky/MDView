@@ -13,9 +13,13 @@ import {
   X,
 } from 'lucide-react'
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
@@ -48,11 +52,19 @@ type MarkdownEditorProps = {
   label: string
   t: MarkdownEditorLabels
   showToolbar?: boolean
+  onSelectionChange?: (selection: SelectionRange) => void
+  onImportImages?: (files: File[], selection: SelectionRange) => void
 }
 
-type SelectionRange = {
+export type SelectionRange = {
   start: number
   end: number
+}
+
+export type MarkdownEditorHandle = {
+  focus: () => void
+  getSelection: () => SelectionRange
+  setSelection: (selection: SelectionRange) => void
 }
 
 type MarkdownCommand =
@@ -84,7 +96,15 @@ const syntaxReference = [
   ['---', 'Divider'],
 ]
 
-export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }: MarkdownEditorProps) {
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor({
+  value,
+  onChange,
+  label,
+  t,
+  showToolbar = true,
+  onSelectionChange,
+  onImportImages,
+}, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingSelectionRef = useRef<SelectionRange | null>(null)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
@@ -100,7 +120,27 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
     pendingSelectionRef.current = null
     textarea.focus()
     textarea.setSelectionRange(pendingSelection.start, pendingSelection.end)
-  }, [value])
+    onSelectionChange?.(pendingSelection)
+  }, [onSelectionChange, value])
+
+  useImperativeHandle(ref, () => ({
+    focus() {
+      textareaRef.current?.focus()
+    },
+    getSelection() {
+      return textareaRef.current ? getSelection(textareaRef.current) : { start: 0, end: 0 }
+    },
+    setSelection(selection) {
+      const textarea = textareaRef.current
+      if (!textarea) {
+        return
+      }
+
+      textarea.focus()
+      textarea.setSelectionRange(selection.start, selection.end)
+      onSelectionChange?.(selection)
+    },
+  }), [onSelectionChange])
 
   function updateEditor(nextValue: string, selection: SelectionRange) {
     pendingSelectionRef.current = selection
@@ -197,6 +237,40 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
     }
   }
 
+  function handleSelectionChange() {
+    const textarea = textareaRef.current
+    if (textarea) {
+      onSelectionChange?.(getSelection(textarea))
+    }
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const images = getImageFiles(event.clipboardData.files)
+    if (images.length === 0 || !onImportImages) {
+      return
+    }
+
+    event.preventDefault()
+    onImportImages(images, getSelection(event.currentTarget))
+  }
+
+  function handleDragOver(event: DragEvent<HTMLTextAreaElement>) {
+    if (getImageFiles(event.dataTransfer.files).length > 0) {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+    }
+  }
+
+  function handleDrop(event: DragEvent<HTMLTextAreaElement>) {
+    const images = getImageFiles(event.dataTransfer.files)
+    if (images.length === 0 || !onImportImages) {
+      return
+    }
+
+    event.preventDefault()
+    onImportImages(images, getSelection(event.currentTarget))
+  }
+
   return (
     <div className="markdown-editor-shell">
       {showToolbar ? (
@@ -264,8 +338,15 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
         aria-label={label}
         spellCheck={false}
         value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
+        onChange={(event) => {
+          onChange(event.currentTarget.value)
+          onSelectionChange?.(getSelection(event.currentTarget))
+        }}
         onKeyDown={handleKeyDown}
+        onSelect={handleSelectionChange}
+        onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
       />
 
       <MarkdownSyntaxDialog
@@ -276,7 +357,7 @@ export function MarkdownEditor({ value, onChange, label, t, showToolbar = true }
       />
     </div>
   )
-}
+})
 
 function EditorButton({
   label,
@@ -363,6 +444,12 @@ function getSelection(textarea: HTMLTextAreaElement): SelectionRange {
     start: textarea.selectionStart,
     end: textarea.selectionEnd,
   }
+}
+
+function getImageFiles(files: FileList): File[] {
+  return Array.from(files).filter((file) =>
+    file.type.startsWith('image/') || /\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(file.name),
+  )
 }
 
 function wrapSelection(

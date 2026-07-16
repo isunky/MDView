@@ -307,6 +307,10 @@ export function useOutlineNavigation({
   }, [outlineWidth])
   const closeOutline = useCallback(() => setIsOutlineOpen(false), [])
   const openOutline = useCallback(() => setIsOutlineOpen(true), [])
+  const restoreOutlineLayout = useCallback((layout: { width: number; isOpen: boolean }) => {
+    setOutlineWidth(clampOutlineWidth(layout.width))
+    setIsOutlineOpen(layout.isOpen)
+  }, [])
   const queueHeadingJump = useCallback((headingId?: string) => {
     setPendingHeadingId(headingId ?? null)
   }, [])
@@ -323,6 +327,7 @@ export function useOutlineNavigation({
     outlineDepth,
     outlineWidth,
     queueHeadingJump,
+    restoreOutlineLayout,
     setOutlineDepth,
   }
 }

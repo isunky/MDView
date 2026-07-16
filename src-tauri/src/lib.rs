@@ -2,8 +2,10 @@ use std::{
     collections::HashSet,
     ffi::OsString,
     fs,
+    io::Write,
     path::{Path, PathBuf},
     sync::Mutex,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use base64::{engine::general_purpose, Engine as _};
@@ -18,6 +20,7 @@ use tauri::Emitter;
 const FILE_ACCESS_POLICY_FILENAME: &str = "approved-markdown-files.json";
 const FILE_ACCESS_DENIED: &str =
     "File access denied. Open or select the file in MDView before accessing it.";
+const MAX_IMAGE_ASSET_BYTES: usize = 10 * 1024 * 1024;
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
@@ -45,6 +48,14 @@ struct OpenedMarkdownFilePayload {
 struct ImageFilePayload {
     path: String,
     data_url: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WrittenImageAssetPayload {
+    path: String,
+    relative_path: String,
+    filename: String,
 }
 
 impl FileAccessPolicy {
@@ -295,6 +306,44 @@ fn read_image_file(
 }
 
 #[tauri::command]
+fn write_image_asset(
+    policy: State<'_, FileAccessPolicy>,
+    document_path: String,
+    file_name: String,
+    mime_type: String,
+    bytes: Vec<u8>,
+) -> Result<WrittenImageAssetPayload, String> {
+    if bytes.is_empty() {
+        return Err("Image data is empty.".to_string());
+    }
+
+    if bytes.len() > MAX_IMAGE_ASSET_BYTES {
+        return Err("Image files must be 10 MB or smaller.".to_string());
+    }
+
+    let document_path = PathBuf::from(document_path);
+    ensure_markdown_path(&document_path)?;
+    policy.ensure_authorized(&document_path)?;
+
+    let extension = image_extension_for_mime_type(&mime_type)?;
+    let parent = document_path
+        .parent()
+        .ok_or_else(|| "The Markdown file does not have a parent directory.".to_string())?;
+    let assets_directory = parent.join("assets");
+    fs::create_dir_all(&assets_directory)
+        .map_err(|error| format!("Failed to create assets directory: {error}"))?;
+
+    let stem = sanitize_image_filename_stem(&file_name);
+    let (path, filename) = create_image_asset_file(&assets_directory, &stem, extension, &bytes)?;
+
+    Ok(WrittenImageAssetPayload {
+        path: path.to_string_lossy().to_string(),
+        relative_path: format!("assets/{filename}"),
+        filename,
+    })
+}
+
+#[tauri::command]
 fn reveal_file_in_folder(
     app: AppHandle,
     policy: State<'_, FileAccessPolicy>,
@@ -355,6 +404,7 @@ pub fn run() {
             export_html_file_dialog,
             export_docx_file_dialog,
             read_image_file,
+            write_image_asset,
             reveal_file_in_folder,
             get_app_distribution
         ])
@@ -608,6 +658,71 @@ fn image_mime_type(path: &Path) -> Result<&'static str, String> {
     }
 }
 
+fn image_extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
+    match mime_type.to_ascii_lowercase().as_str() {
+        "image/png" => Ok("png"),
+        "image/jpeg" => Ok("jpg"),
+        "image/gif" => Ok("gif"),
+        "image/webp" => Ok("webp"),
+        "image/bmp" => Ok("bmp"),
+        "image/avif" => Ok("avif"),
+        _ => Err("Only PNG, JPEG, GIF, WebP, BMP, and AVIF images can be imported.".to_string()),
+    }
+}
+
+fn sanitize_image_filename_stem(file_name: &str) -> String {
+    let source = Path::new(file_name)
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let cleaned = source
+        .chars()
+        .filter(|character| character.is_alphanumeric() || matches!(character, ' ' | '-' | '_'))
+        .take(72)
+        .collect::<String>()
+        .trim_matches(|character: char| matches!(character, ' ' | '.' | '-'))
+        .to_string();
+
+    if cleaned.is_empty() {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
+        format!("pasted-image-{timestamp}")
+    } else {
+        cleaned
+    }
+}
+
+fn create_image_asset_file(
+    assets_directory: &Path,
+    stem: &str,
+    extension: &str,
+    bytes: &[u8],
+) -> Result<(PathBuf, String), String> {
+    for index in 1..10_000 {
+        let filename = if index == 1 {
+            format!("{stem}.{extension}")
+        } else {
+            format!("{stem}-{index}.{extension}")
+        };
+        let path = assets_directory.join(&filename);
+        match fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(mut file) => {
+                if let Err(error) = file.write_all(bytes) {
+                    let _ = fs::remove_file(&path);
+                    return Err(format!("Failed to write image: {error}"));
+                }
+                return Ok((path, filename));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(format!("Failed to create image file: {error}")),
+        }
+    }
+
+    Err("Unable to allocate a unique image file name.".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -661,6 +776,36 @@ mod tests {
     #[test]
     fn rejects_non_image_paths() {
         assert!(ensure_image_path(Path::new("report.md")).is_err());
+    }
+
+    #[test]
+    fn accepts_only_supported_image_import_mime_types() {
+        assert_eq!(image_extension_for_mime_type("image/png").unwrap(), "png");
+        assert_eq!(image_extension_for_mime_type("IMAGE/JPEG").unwrap(), "jpg");
+        assert!(image_extension_for_mime_type("image/svg+xml").is_err());
+    }
+
+    #[test]
+    fn sanitizes_imported_image_file_names() {
+        assert_eq!(sanitize_image_filename_stem("../report:final.png"), "reportfinal");
+        assert_eq!(sanitize_image_filename_stem("中文 图片.webp"), "中文 图片");
+    }
+
+    #[test]
+    fn creates_unique_image_asset_files_without_overwriting() {
+        let directory = create_test_directory("image-assets");
+        let assets = directory.join("assets");
+        fs::create_dir_all(&assets).unwrap();
+
+        let (first_path, first_name) = create_image_asset_file(&assets, "photo", "png", b"first").unwrap();
+        let (second_path, second_name) = create_image_asset_file(&assets, "photo", "png", b"second").unwrap();
+
+        assert_eq!(first_name, "photo.png");
+        assert_eq!(second_name, "photo-2.png");
+        assert_eq!(fs::read(first_path).unwrap(), b"first");
+        assert_eq!(fs::read(second_path).unwrap(), b"second");
+
+        let _ = fs::remove_dir_all(directory);
     }
 
     #[test]

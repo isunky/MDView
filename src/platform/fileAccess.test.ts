@@ -75,6 +75,28 @@ describe('file access PDF export', () => {
     })
   })
 
+  it('writes imported image bytes through the native file layer', async () => {
+    invoke.mockResolvedValueOnce({
+      path: 'C:\\Docs\\assets\\photo.png',
+      relativePath: 'assets/photo.png',
+      filename: 'photo.png',
+    })
+    const { tauriFileAccess } = await import('./fileAccess')
+
+    await expect(tauriFileAccess.writeImageAsset('C:\\Docs\\guide.md', {
+      bytes: new Uint8Array([1, 2, 3]),
+      fileName: 'photo.png',
+      mimeType: 'image/png',
+    })).resolves.toMatchObject({ relativePath: 'assets/photo.png' })
+
+    expect(invoke).toHaveBeenCalledWith('write_image_asset', {
+      documentPath: 'C:\\Docs\\guide.md',
+      fileName: 'photo.png',
+      mimeType: 'image/png',
+      bytes: [1, 2, 3],
+    })
+  })
+
   it('opens and saves files through policy-enforced backend dialogs', async () => {
     invoke
       .mockResolvedValueOnce({ path: 'C:\\Docs\\readme.md', content: '# Readme' })

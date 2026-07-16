@@ -14,6 +14,18 @@ export type LocalImageFile = {
   dataUrl: string
 }
 
+export type WrittenImageAsset = {
+  path: string
+  relativePath: string
+  filename: string
+}
+
+export type ImageAssetWriteRequest = {
+  bytes: Uint8Array
+  fileName: string
+  mimeType: string
+}
+
 export type FileAccess = {
   supportsNativeFiles: boolean
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
@@ -25,6 +37,7 @@ export type FileAccess = {
   exportDocxFile: (bytes: Uint8Array, currentPath: string | null, title: string) => Promise<string | null>
   printExportHtml: (html: string, title: string) => Promise<void>
   readLocalImageFile: (path: string) => Promise<LocalImageFile>
+  writeImageAsset: (documentPath: string, image: ImageAssetWriteRequest) => Promise<WrittenImageAsset>
   readStartupMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   listenForOpenedFiles: (callback: (file: OpenedMarkdownFile) => void) => Promise<UnlistenFn | null>
 }
@@ -97,6 +110,19 @@ export const tauriFileAccess: FileAccess = {
     }
 
     return invoke<LocalImageFile>('read_image_file', { path })
+  },
+
+  async writeImageAsset(documentPath, image) {
+    if (!isTauriRuntime()) {
+      throw new Error('Image import is only available in the desktop app.')
+    }
+
+    return invoke<WrittenImageAsset>('write_image_asset', {
+      documentPath,
+      fileName: image.fileName,
+      mimeType: image.mimeType,
+      bytes: Array.from(image.bytes),
+    })
   },
 
   async saveMarkdownFileAs(content, currentPath) {

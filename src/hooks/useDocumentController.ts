@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createInitialDocument,
   markDocumentSaved,
@@ -37,6 +37,8 @@ export function useDocumentController({
   const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const saveOperationRef = useRef<Promise<string | null> | null>(null)
 
   const canDiscardUnsavedChanges = useCallback((): boolean => {
     return !markdownDocument.isDirty || window.confirm(discardUnsavedMessage)
@@ -166,70 +168,83 @@ export function useDocumentController({
     }
   }, [canDiscardUnsavedChanges, fileAccess, fileOperationFailedMessage, loadFile])
 
-  const handleSaveFile = useCallback(async (): Promise<boolean> => {
-    onCloseMenu()
-
-    try {
-      const currentPath = markdownDocument.path
-      const contentToSave = markdownDocument.content
-      const isSaveAs = !currentPath
-      const savedPath = isSaveAs
-        ? await fileAccess.saveMarkdownFileAs(contentToSave, currentPath)
-        : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
-
-      if (savedPath) {
-        setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
-        setStatusMessage('saved')
-        if (isSaveAs) {
-          rememberRecentFile(savedPath)
-        }
-        return true
-      }
-    } catch (error) {
-      setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
+  const saveDocument = useCallback((forceSaveAs = false): Promise<string | null> => {
+    const existingOperation = saveOperationRef.current
+    if (existingOperation && !forceSaveAs) {
+      return existingOperation
     }
 
-    return false
+    const runSave = async (): Promise<string | null> => {
+      try {
+        const currentPath = markdownDocument.path
+        const contentToSave = markdownDocument.content
+        const isSaveAs = forceSaveAs || !currentPath
+        const savedPath = isSaveAs
+          ? await fileAccess.saveMarkdownFileAs(contentToSave, currentPath)
+          : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
+
+        if (savedPath) {
+          setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
+          setStatusMessage('saved')
+          if (isSaveAs) {
+            rememberRecentFile(savedPath)
+          }
+          return savedPath
+        }
+      } catch (error) {
+        setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
+      }
+
+      return null
+    }
+
+    const operation = existingOperation
+      ? existingOperation.then(() => runSave())
+      : runSave()
+    saveOperationRef.current = operation
+    setIsSaving(true)
+    void operation.finally(() => {
+      if (saveOperationRef.current === operation) {
+        saveOperationRef.current = null
+        setIsSaving(false)
+      }
+    })
+    return operation
   }, [
     fileAccess,
     fileOperationFailedMessage,
     markdownDocument.content,
     markdownDocument.path,
-    onCloseMenu,
     rememberRecentFile,
   ])
+
+  const handleSaveFile = useCallback(async (): Promise<boolean> => {
+    onCloseMenu()
+    return Boolean(await saveDocument())
+  }, [onCloseMenu, saveDocument])
 
   const handleSaveFileAs = useCallback(async () => {
     onCloseMenu()
+    await saveDocument(true)
+  }, [onCloseMenu, saveDocument])
 
-    try {
-      const contentToSave = markdownDocument.content
-      const savedPath = await fileAccess.saveMarkdownFileAs(
-        contentToSave,
-        markdownDocument.path,
-      )
-
-      if (savedPath) {
-        setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
-        setStatusMessage('saved')
-        rememberRecentFile(savedPath)
-      }
-    } catch (error) {
-      setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
-    }
-  }, [
-    fileAccess,
-    fileOperationFailedMessage,
-    markdownDocument.content,
-    markdownDocument.path,
-    onCloseMenu,
-    rememberRecentFile,
-  ])
+  const ensureDocumentPath = useCallback(async (): Promise<string | null> => {
+    return markdownDocument.path ?? saveDocument(true)
+  }, [markdownDocument.path, saveDocument])
 
   const handleContentChange = useCallback((content: string) => {
     setIsWelcomeVisible(false)
     setMarkdownDocument((current) => {
       const nextDocument = updateDocumentDraft(current, content)
+      setStatusMessage(nextDocument.isDirty ? 'unsaved' : 'saved')
+      return nextDocument
+    })
+  }, [])
+
+  const transformDocumentContent = useCallback((transform: (content: string) => string) => {
+    setIsWelcomeVisible(false)
+    setMarkdownDocument((current) => {
+      const nextDocument = updateDocumentDraft(current, transform(current.content))
       setStatusMessage(nextDocument.isDirty ? 'unsaved' : 'saved')
       return nextDocument
     })
@@ -249,12 +264,15 @@ export function useDocumentController({
     handleOpenRecentFile,
     handleSaveFile,
     handleSaveFileAs,
+    ensureDocumentPath,
+    isSaving,
     isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
     recentFiles,
     setStatusMessage,
     statusMessage,
+    transformDocumentContent,
   }
 }
 

@@ -140,6 +140,26 @@ describe('MarkdownEditor', () => {
       screen.queryByRole('dialog', { name: 'Markdown syntax reference' }),
     ).not.toBeInTheDocument()
   })
+
+  it('passes pasted image files and the current selection to the import handler', () => {
+    const onImportImages = vi.fn()
+    render(
+      <MarkdownEditor
+        value="hello"
+        onChange={vi.fn()}
+        onImportImages={onImportImages}
+        label="Markdown source"
+        t={labels}
+      />,
+    )
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(1, 4)
+    const image = new File(['image'], 'photo.png', { type: 'image/png' })
+    fireEvent.paste(editor, { clipboardData: { files: [image] } })
+
+    expect(onImportImages).toHaveBeenCalledWith([image], { start: 1, end: 4 })
+  })
 })
 
 function setNavigatorPlatform(platform: string) {

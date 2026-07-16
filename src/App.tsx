@@ -1,6 +1,8 @@
 import {
   Suspense,
   useCallback,
+  useDeferredValue,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -21,8 +23,10 @@ import { AboutDialog } from './components/AboutDialog'
 import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
+import { DocumentSearchBar } from './components/DocumentSearchBar'
+import { EditorStatusBar } from './components/EditorStatusBar'
 import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/lazyMarkdownPreview'
-import { MarkdownEditor } from './components/MarkdownEditor'
+import { MarkdownEditor, type MarkdownEditorHandle, type SelectionRange } from './components/MarkdownEditor'
 import { WelcomeWorkspace } from './components/WelcomeWorkspace'
 import {
   detectSystemLanguage,
@@ -37,7 +41,10 @@ import {
 import { useAppMenu } from './hooks/useAppMenu'
 import { useAppUpdater } from './hooks/useAppUpdater'
 import { useDocumentController } from './hooks/useDocumentController'
+import { useDocumentSearch } from './hooks/useDocumentSearch'
+import { useImageInsertion } from './hooks/useImageInsertion'
 import { usePreviewController } from './hooks/usePreviewController'
+import { useReadingSession } from './hooks/useReadingSession'
 import { useTransientToast } from './hooks/useTransientToast'
 import { tauriFileAccess, type FileAccess } from './platform/fileAccess'
 import { tauriAppUpdateClient, type AppUpdateClient } from './platform/appUpdates'
@@ -45,8 +52,10 @@ import {
   withShortcutTitle,
 } from './platform/keyboardShortcuts'
 import { useFileShortcuts } from './hooks/useFileShortcuts'
+import { getCursorPosition, getDocumentStatistics } from './domain/documentStatistics'
+import type { ReadingViewMode } from './domain/readingSessions'
 
-type ViewMode = 'preview' | 'edit' | 'split'
+type ViewMode = ReadingViewMode
 
 type AppProps = {
   appUpdateClient?: AppUpdateClient
@@ -62,8 +71,10 @@ function App({
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [editorSelection, setEditorSelection] = useState<SelectionRange>({ start: 0, end: 0 })
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
+  const editorRef = useRef<MarkdownEditorHandle | null>(null)
   const t = translations[language]
   const {
     activeMenu,
@@ -84,12 +95,15 @@ function App({
     handleOpenRecentFile,
     handleSaveFile,
     handleSaveFileAs,
+    ensureDocumentPath,
+    isSaving,
     isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
     recentFiles,
     setStatusMessage,
     statusMessage,
+    transformDocumentContent,
   } = useDocumentController({
     fileAccess,
     discardUnsavedMessage: t.discardUnsaved,
@@ -141,6 +155,7 @@ function App({
     previewContent,
     previewZoom,
     prepareSplitPreview,
+    restorePreviewZoom,
   } = usePreviewController({
     content: markdownDocument.content,
     isEnabled: !isWelcomeVisible,
@@ -161,6 +176,7 @@ function App({
     outlineItems,
     outlineWidth,
     queueHeadingJump,
+    restoreOutlineLayout,
     setOutlineDepth,
   } = useOutlineNavigation({
     content: markdownDocument.content,
@@ -175,6 +191,45 @@ function App({
       queueHeadingJump(headingId)
     }
   }, [openMarkdownLinkFile, queueHeadingJump])
+  const handleRestoreReadingSession = useCallback((session: {
+    previewZoom: number
+    viewMode: ViewMode
+    outlineWidth: number
+    isOutlineOpen: boolean
+  }) => {
+    restorePreviewZoom(session.previewZoom)
+    restoreOutlineLayout({ width: session.outlineWidth, isOpen: session.isOutlineOpen })
+    setViewMode(session.viewMode)
+  }, [restoreOutlineLayout, restorePreviewZoom])
+  useReadingSession({
+    documentPath: markdownDocument.path,
+    isOutlineOpen,
+    onRestore: handleRestoreReadingSession,
+    outlineWidth,
+    previewPanelRef,
+    previewZoom,
+    viewMode,
+  })
+  const documentSearch = useDocumentSearch({
+    content: markdownDocument.content,
+    editorRef,
+    onContentChange: handleContentChange,
+    viewMode,
+  })
+  const { importImages } = useImageInsertion({
+    content: markdownDocument.content,
+    documentPath: markdownDocument.path,
+    ensureDocumentPath,
+    fileAccess,
+    messages: {
+      failed: t.imageImportFailed,
+      invalid: t.imageImportInvalid,
+      success: t.imageImportSuccess,
+      unsupported: t.imageImportUnsupported,
+    },
+    onContentTransform: transformDocumentContent,
+    onNotify: showAppToast,
+  })
 
   async function handleExportHtml() {
     closeMenu()
@@ -292,10 +347,21 @@ function App({
   const openTitle = withShortcutTitle(t.openLabel, { key: 'o' }, shortcutPlatform)
   const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
   const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
-  const visibleStatus = markdownDocument.isDirty ? t.unsaved : translateStatus(statusMessage, t)
   const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
+  const deferredContent = useDeferredValue(markdownDocument.content)
+  const documentStatistics = useMemo(
+    () => getDocumentStatistics(deferredContent),
+    [deferredContent],
+  )
+  const cursorPosition = useMemo(
+    () => getCursorPosition(markdownDocument.content, editorSelection.end),
+    [editorSelection.end, markdownDocument.content],
+  )
 
   const welcomeStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
+    ? statusMessage
+    : null
+  const operationStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
     ? statusMessage
     : null
 
@@ -354,7 +420,7 @@ function App({
                   type="button"
                   className="action-menu-item"
                   onClick={() => void handleSaveFile()}
-                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles}
+                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles || isSaving}
                   title={documentActionTitle ?? saveTitle}
                   role="menuitem"
                 >
@@ -364,7 +430,7 @@ function App({
                   type="button"
                   className="action-menu-item"
                   onClick={handleSaveFileAs}
-                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles}
+                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles || isSaving}
                   title={documentActionTitle ?? saveAsTitle}
                   role="menuitem"
                 >
@@ -548,9 +614,6 @@ function App({
           </button>
         </div> : null}
 
-        {!isWelcomeVisible ? <div className={`save-state ${markdownDocument.isDirty ? 'dirty' : ''}`}>
-          {visibleStatus}
-        </div> : null}
       </header>
 
       {isWelcomeVisible ? (
@@ -565,6 +628,35 @@ function App({
           t={t}
         />
       ) : <section className={workspaceClasses} aria-label={t.workspace}>
+        <DocumentSearchBar
+          activeIndex={documentSearch.activeIndex}
+          inputRef={documentSearch.inputRef}
+          isOpen={documentSearch.isOpen}
+          isReplaceOpen={documentSearch.isReplaceOpen}
+          isSourceSearch={documentSearch.isSourceSearch}
+          labels={{
+            close: t.closeFind,
+            find: t.find,
+            matchCount: t.findMatchCount,
+            next: t.findNext,
+            previous: t.findPrevious,
+            replace: t.replaceCurrent,
+            replaceAll: t.replaceAll,
+            replaceCurrent: t.replaceCurrent,
+            replacement: t.replacement,
+            toggleReplace: t.toggleReplace,
+          }}
+          matchCount={documentSearch.matchCount}
+          onClose={documentSearch.close}
+          onMove={documentSearch.move}
+          onQueryChange={documentSearch.setQuery}
+          onReplaceAll={documentSearch.replaceAll}
+          onReplaceCurrent={documentSearch.replaceCurrent}
+          onReplacementChange={documentSearch.setReplacement}
+          onToggleReplace={() => documentSearch.setIsReplaceOpen((current) => !current)}
+          query={documentSearch.query}
+          replacement={documentSearch.replacement}
+        />
         {isOutlineVisible ? (
           <aside
             className="outline-panel"
@@ -608,12 +700,30 @@ function App({
         ) : null}
         <section className="editor-panel" aria-label={t.sourceEditorPanel}>
           <MarkdownEditor
+            ref={editorRef}
             value={markdownDocument.content}
             onChange={handleContentChange}
+            onImportImages={(files, selection) => void importImages(files, selection)}
+            onSelectionChange={setEditorSelection}
             label={t.markdownSource}
             t={t}
             showToolbar={viewMode !== 'preview'}
           />
+          {viewMode !== 'preview' ? <EditorStatusBar
+            cursorPosition={cursorPosition}
+            isDirty={markdownDocument.isDirty}
+            isSaving={isSaving}
+            labels={{
+              characterCount: t.characterCount,
+              cursorPosition: t.cursorPosition,
+              readingTime: t.readingTime,
+              saved: t.saved,
+              saving: t.saving,
+              unsaved: t.unsaved,
+              wordCount: t.wordCount,
+            }}
+            statistics={documentStatistics}
+          /> : null}
         </section>
         <section
           className="preview-panel"
@@ -629,6 +739,9 @@ function App({
               readLocalImageFile={fileAccess.readLocalImageFile}
               onOpenMarkdownLink={handleOpenMarkdownLink}
               labels={t.previewLabels}
+              searchQuery={viewMode === 'preview' ? documentSearch.query : ''}
+              activeSearchIndex={documentSearch.activeIndex}
+              onSearchMatchCountChange={documentSearch.setPreviewMatchCount}
             />
           </Suspense>
         </section>
@@ -648,6 +761,9 @@ function App({
         <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
           {shortcutToast.message}
         </div>
+      ) : null}
+      {!isWelcomeVisible && operationStatus ? (
+        <div className="app-operation-status" role="status">{operationStatus}</div>
       ) : null}
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
       <UpdateDialog
@@ -672,22 +788,6 @@ function PreviewLoading({ label }: { label: string }) {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : translations.en.fileOperationFailed
-}
-
-function translateStatus(statusMessage: 'saved' | 'opened' | string, t: (typeof translations)['en']) {
-  if (statusMessage === 'saved') {
-    return t.saved
-  }
-
-  if (statusMessage === 'opened') {
-    return t.opened
-  }
-
-  if (statusMessage === 'unsaved') {
-    return t.unsaved
-  }
-
-  return statusMessage
 }
 
 export default App

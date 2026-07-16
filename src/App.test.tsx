@@ -773,6 +773,30 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Opened' })).toBeInTheDocument()
   })
 
+  it('finds and replaces Markdown source text with Ctrl+F', async () => {
+    const user = userEvent.setup()
+    renderWelcomeApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/search.md', '# Draft\n\nDraft body'),
+      }),
+    })
+
+    await screen.findByRole('heading', { name: 'Draft' })
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+    fireEvent.keyDown(window, { key: 'f', ctrlKey: true })
+    const findInput = await screen.findByRole('textbox', { name: 'Find' })
+    fireEvent.change(findInput, { target: { value: 'Draft' } })
+
+    expect(await screen.findByText('1/2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show replace' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Replacement' }), {
+      target: { value: 'Note' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Replace All' }))
+
+    expect(screen.getByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Note\n\nNote body')
+  })
+
   it('uses Command instead of Ctrl for macOS file shortcuts', async () => {
     setNavigatorPlatform('MacIntel')
     const saveMarkdownFile = vi.fn(async (path: string) => path)
@@ -812,6 +836,7 @@ describe('App', () => {
     renderApp({ fileAccess: createFileAccess(), initialLanguage: 'zh' })
 
     expect(screen.getByRole('button', { name: '预览 Markdown' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '编辑 Markdown 源码' }))
     expect(screen.getByText('已保存')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '文件' }))
@@ -1099,6 +1124,7 @@ function createFileAccess(
     openMarkdownFileAtPath?: FileAccess['openMarkdownFileAtPath']
     revealFileInFolder?: FileAccess['revealFileInFolder']
     readLocalImageFile?: FileAccess['readLocalImageFile']
+    writeImageAsset?: FileAccess['writeImageAsset']
     listenForOpenedFiles?: FileAccess['listenForOpenedFiles']
   } = {},
 ): FileAccess {
@@ -1116,6 +1142,11 @@ function createFileAccess(
     readLocalImageFile:
       overrides.readLocalImageFile ??
       vi.fn(async (path) => ({ path, dataUrl: 'data:image/png;base64,test' })),
+    writeImageAsset: overrides.writeImageAsset ?? vi.fn(async () => ({
+      path: '/tmp/assets/image.png',
+      relativePath: 'assets/image.png',
+      filename: 'image.png',
+    })),
     readStartupMarkdownFile: vi.fn(async () => overrides.startupFile ?? null),
     listenForOpenedFiles: overrides.listenForOpenedFiles ?? vi.fn(async () => null),
   }

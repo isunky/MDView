@@ -277,6 +277,23 @@ describe('MarkdownPreview', () => {
     })
   })
 
+  it('highlights visible preview search matches and reports their count', async () => {
+    const onSearchMatchCountChange = vi.fn()
+    render(
+      <MarkdownPreview
+        content="Read this. Read it again."
+        searchQuery="read"
+        activeSearchIndex={1}
+        onSearchMatchCountChange={onSearchMatchCountChange}
+      />,
+    )
+
+    const matches = await screen.findAllByText('Read')
+    expect(matches).toHaveLength(2)
+    expect(matches[1]).toHaveClass('search-match-active')
+    expect(onSearchMatchCountChange).toHaveBeenLastCalledWith(2)
+  })
+
   it('does not show color swatches inside fenced code blocks', () => {
     render(
       <MarkdownPreview
