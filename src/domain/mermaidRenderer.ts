@@ -20,6 +20,8 @@ export function renderMermaidDiagram(id: string, chart: string, theme: MermaidTh
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
+        // Keep labels in SVG <text> nodes so the safety sanitizer can retain them.
+        htmlLabels: false,
         theme: theme === 'dark' ? 'dark' : 'default',
       })
       configuredTheme = theme

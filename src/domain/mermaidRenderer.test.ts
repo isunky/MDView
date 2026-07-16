@@ -27,6 +27,7 @@ describe('mermaidRenderer', () => {
     expect(mermaid.initialize).toHaveBeenCalledWith({
       startOnLoad: false,
       securityLevel: 'strict',
+      htmlLabels: false,
       theme: 'default',
     })
     expect(mermaid.render).toHaveBeenNthCalledWith(1, 'first', 'graph TD')
@@ -43,11 +44,13 @@ describe('mermaidRenderer', () => {
     expect(mermaid.initialize).toHaveBeenNthCalledWith(1, {
       startOnLoad: false,
       securityLevel: 'strict',
+      htmlLabels: false,
       theme: 'default',
     })
     expect(mermaid.initialize).toHaveBeenNthCalledWith(2, {
       startOnLoad: false,
       securityLevel: 'strict',
+      htmlLabels: false,
       theme: 'dark',
     })
   })
