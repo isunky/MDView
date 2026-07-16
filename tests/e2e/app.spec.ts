@@ -83,7 +83,7 @@ test('opens a markdown file through the file menu', async ({ page }) => {
   await openMarkdownFile(page)
 
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Opened' })).toBeVisible()
-  await expect(page.locator('.save-state')).toHaveText('Opened')
+  await expect(page.getByText('E2E Opened.md', { exact: true })).toBeVisible()
 })
 
 test('saves edited markdown content', async ({ page }) => {
@@ -96,7 +96,7 @@ test('saves edited markdown content', async ({ page }) => {
   await page.getByRole('button', { exact: true, name: 'File' }).click()
   await page.getByRole('menuitem', { exact: true, name: 'Save' }).click()
 
-  await expect(page.locator('.save-state')).toHaveText('Saved')
+  await expect(page.locator('.editor-save-state')).toHaveText('Saved')
   await expect
     .poll(() => getSavedContent(page))
     .toContain('# Saved from E2E')
