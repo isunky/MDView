@@ -24,9 +24,36 @@
   </p>
 </div>
 
-![MDView preview](main2.png)
+## 界面预览 / Interface Preview
 
-<p align="center"><sub>专注阅读，也保留恰到好处的编辑能力。Focused reading with practical editing tools.</sub></p>
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>阅读工作区 / Reading workspace</strong></td>
+    <td width="50%" align="center"><strong>欢迎页 / Welcome screen</strong></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="main2.png">
+        <img src="main2.png" alt="MDView 阅读工作区，展示 Markdown 预览与目录导航" width="100%" />
+      </a>
+    </td>
+    <td width="50%" valign="top">
+      <a href="main.png">
+        <img src="main.png" alt="MDView 欢迎页，展示打开文件与最近文件入口" width="100%" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <sub>目录导航、沉浸预览与长文档阅读<br />Outline navigation, focused preview, and long-document reading</sub>
+    </td>
+    <td align="center">
+      <sub>快速打开、新建和继续最近文档<br />Open, create, or continue recent documents</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center"><sub>点击截图查看原图 · Click either screenshot to view it at full size.</sub></p>
 
 ## 中文
 
@@ -34,7 +61,7 @@ MDView 是一款面向本地 Markdown 文档的轻量桌面应用。它把阅读
 
 - **清晰预览**：支持 GFM 表格、任务列表、代码高亮、Mermaid、内嵌 HTML 和颜色预览。
 - **三种视图**：在预览、编辑和分屏模式之间快速切换。
-- **长文档导航**：自动提取 `H1` 至 `H3` 生成目录，并跟随当前阅读位置。
+- **长文档导航**：自动提取 `H1` 至 `H4` 生成目录，可切换展示层级并跟随当前阅读位置。
 - **本地文件体验**：支持最近文件、相对路径图片、本地 Markdown 链接和 `.md` / `.markdown` 文件关联。
 - **实用编辑能力**：提供格式工具栏、语法速查、列表续写、缩进和常用快捷键。
 - **灵活导出**：可导出独立 HTML、Word `.docx`，也可通过系统打印生成 PDF。
@@ -45,7 +72,7 @@ MDView is a lightweight desktop app for local Markdown documents. It prioritizes
 
 - **Clean preview**: GFM tables, task lists, syntax highlighting, Mermaid, inline HTML, and color swatches.
 - **Three views**: switch quickly between Preview, Edit, and Split modes.
-- **Long-document navigation**: generate an outline from `H1` to `H3` and follow the current reading position.
+- **Long-document navigation**: generate an outline from `H1` to `H4`, choose the visible depth, and follow the current reading position.
 - **Local-first workflow**: recent files, relative images, local Markdown links, and `.md` / `.markdown` associations.
 - **Practical editing**: formatting toolbar, syntax reference, list continuation, indentation, and keyboard shortcuts.
 - **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing.
@@ -63,12 +90,6 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 
 > Windows MSI 和 macOS 构建可能未签名。系统首次启动时可能显示安全确认。
 > Windows MSI and macOS builds may be unsigned, so the operating system can show a security prompt on first launch.
-
-<details>
-<summary>查看欢迎页 / View welcome screen</summary>
-<br />
-<img src="main.png" alt="MDView welcome screen" />
-</details>
 
 ## 快捷键 / Shortcuts
 
