@@ -25,6 +25,15 @@ test.beforeEach(async ({ page }) => {
     }
 
     localStorage.clear()
+    if (new URLSearchParams(window.location.search).get('e2eDraft') === 'recover') {
+      localStorage.setItem('mdview.documentDraft.v1', JSON.stringify({
+        id: 'e2e-draft',
+        path: null,
+        title: 'Untitled.md',
+        content: '# Recovered draft\n\nRestored by Playwright.',
+        updatedAt: Date.now(),
+      }))
+    }
     win.__MDVIEW_E2E_STATE__ = state
     win.__MDVIEW_E2E_FILE_ACCESS__ = {
       supportsNativeFiles: true,
@@ -119,6 +128,18 @@ test('opens the About dialog from the App menu', async ({ page }) => {
 
   await expect(page.getByRole('dialog', { name: 'About MDView' })).toBeVisible()
   await expect(page.getByText(/^Version [0-9]+\.[0-9]+\.[0-9]+$/)).toBeVisible()
+})
+
+test('restores a pending unsaved draft', async ({ page }) => {
+  await page.goto('/?e2eDraft=recover')
+
+  await expect(page.getByRole('dialog', { name: 'Recover unsaved draft' })).toBeVisible()
+  await page.getByRole('button', { name: 'Restore draft' }).click()
+
+  await expect(page.getByRole('textbox', { name: 'Markdown source' })).toHaveValue(
+    '# Recovered draft\n\nRestored by Playwright.',
+  )
+  await expect(page.locator('.editor-save-state')).toHaveText('Unsaved')
 })
 
 async function openMarkdownFile(page: Page) {

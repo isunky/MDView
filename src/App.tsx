@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
+import { DraftRecoveryDialog } from './components/DraftRecoveryDialog'
 import { ReadingSettingsDialog } from './components/ReadingSettingsDialog'
 import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
@@ -109,13 +110,17 @@ function App({
     isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
+    pendingDraft,
     recentFiles,
+    restorePendingDraft,
+    discardPendingDraft,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,
   } = useDocumentController({
     fileAccess,
     discardUnsavedMessage: t.discardUnsaved,
+    draftBackupFailedMessage: t.draftBackupFailed,
     recentFileOpenFailedMessage: t.recentFileOpenFailed,
     fileOperationFailedMessage: t.fileOperationFailed,
     onCloseMenu: closeMenu,
@@ -792,6 +797,12 @@ function App({
       {!isWelcomeVisible && operationStatus ? (
         <div className="app-operation-status" role="status">{operationStatus}</div>
       ) : null}
+      <DraftRecoveryDialog
+        draft={pendingDraft}
+        onDiscard={discardPendingDraft}
+        onRestore={() => void restorePendingDraft()}
+        t={t}
+      />
       <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
       <ReadingSettingsDialog
         open={isReadingSettingsOpen}

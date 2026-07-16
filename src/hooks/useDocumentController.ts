@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  clearDocumentDraft,
+  createDocumentDraftId,
+  loadDocumentDraft,
+  saveDocumentDraft,
+  type RecoverableDraft,
+} from '../domain/documentDraft'
+import {
   createInitialDocument,
   markDocumentSaved,
   replaceDocumentContent,
   updateDocumentDraft,
+  type MarkdownDocument,
 } from '../domain/documentState'
 import {
   addRecentFile,
@@ -21,15 +29,19 @@ type UseDocumentControllerOptions = {
   discardUnsavedMessage: string
   recentFileOpenFailedMessage: string
   fileOperationFailedMessage: string
+  draftBackupFailedMessage: string
   onCloseMenu: () => void
   onViewModeChange: (mode: DocumentViewMode) => void
 }
+
+const DRAFT_SAVE_DELAY_MS = 750
 
 export function useDocumentController({
   fileAccess,
   discardUnsavedMessage,
   recentFileOpenFailedMessage,
   fileOperationFailedMessage,
+  draftBackupFailedMessage,
   onCloseMenu,
   onViewModeChange,
 }: UseDocumentControllerOptions) {
@@ -38,7 +50,16 @@ export function useDocumentController({
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [pendingDraft, setPendingDraft] = useState<RecoverableDraft | null>(loadDocumentDraft)
+  const [isStartupResolved, setIsStartupResolved] = useState(false)
   const saveOperationRef = useRef<Promise<string | null> | null>(null)
+  const documentRef = useRef(markdownDocument)
+  const sessionIdRef = useRef(createDocumentDraftId())
+  const backupFailureNotifiedRef = useRef(false)
+
+  useEffect(() => {
+    documentRef.current = markdownDocument
+  }, [markdownDocument])
 
   const canDiscardUnsavedChanges = useCallback((): boolean => {
     return !markdownDocument.isDirty || window.confirm(discardUnsavedMessage)
@@ -60,32 +81,76 @@ export function useDocumentController({
     })
   }, [])
 
-  const loadFile = useCallback((file: OpenedMarkdownFile) => {
+  const startDraftSession = useCallback((id = createDocumentDraftId()) => {
+    sessionIdRef.current = id
+    backupFailureNotifiedRef.current = false
+  }, [])
+
+  const clearCurrentDraft = useCallback(() => {
+    clearDocumentDraft(sessionIdRef.current)
+  }, [])
+
+  const loadFile = useCallback((file: OpenedMarkdownFile, discardCurrentDraft = false) => {
+    if (discardCurrentDraft) {
+      clearCurrentDraft()
+    }
+
+    startDraftSession()
     setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path))
     setIsWelcomeVisible(false)
     onViewModeChange('preview')
     setStatusMessage('opened')
     rememberRecentFile(file.path)
-  }, [onViewModeChange, rememberRecentFile])
+  }, [clearCurrentDraft, onViewModeChange, rememberRecentFile, startDraftSession])
 
-  useEffect(() => {
-    void fileAccess.readStartupMarkdownFile().then((file) => {
-      if (file) {
-        loadFile(file)
-      }
+  const persistCurrentDraft = useCallback(() => {
+    const document = documentRef.current
+    if (!isStartupResolved || pendingDraft || !document.isDirty) {
+      return
+    }
+
+    const saved = saveDocumentDraft({
+      id: sessionIdRef.current,
+      path: document.path,
+      title: document.title,
+      content: document.content,
+      updatedAt: Date.now(),
     })
 
+    if (!saved && !backupFailureNotifiedRef.current) {
+      backupFailureNotifiedRef.current = true
+      setStatusMessage(draftBackupFailedMessage)
+    }
+  }, [draftBackupFailedMessage, isStartupResolved, pendingDraft])
+
+  useEffect(() => {
     let disposed = false
     let unlisten: (() => void) | null = null
 
-    void fileAccess.listenForOpenedFiles(loadFile).then((dispose) => {
+    async function initialize() {
+      try {
+        const startupFile = await fileAccess.readStartupMarkdownFile()
+        if (!disposed && startupFile) {
+          // A file explicitly passed by the operating system takes priority over an older draft.
+          loadFile(startupFile)
+          setPendingDraft(null)
+        }
+      } finally {
+        if (!disposed) {
+          setIsStartupResolved(true)
+        }
+      }
+
+      const dispose = await fileAccess.listenForOpenedFiles((file) => loadFile(file, true))
       if (disposed) {
         dispose?.()
         return
       }
 
       unlisten = dispose
-    })
+    }
+
+    void initialize()
 
     return () => {
       disposed = true
@@ -97,17 +162,48 @@ export function useDocumentController({
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`
   }, [markdownDocument.isDirty, markdownDocument.title])
 
+  useEffect(() => {
+    if (!isStartupResolved || pendingDraft || !markdownDocument.isDirty) {
+      return
+    }
+
+    const timeout = window.setTimeout(persistCurrentDraft, DRAFT_SAVE_DELAY_MS)
+    return () => window.clearTimeout(timeout)
+  }, [isStartupResolved, markdownDocument.content, markdownDocument.isDirty, pendingDraft, persistCurrentDraft])
+
+  useEffect(() => {
+    function flushDraft() {
+      persistCurrentDraft()
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        flushDraft()
+      }
+    }
+
+    window.addEventListener('pagehide', flushDraft)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      window.removeEventListener('pagehide', flushDraft)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      flushDraft()
+    }
+  }, [persistCurrentDraft])
+
   const handleNewDocument = useCallback(() => {
     if (!canDiscardUnsavedChanges()) {
       return
     }
 
     onCloseMenu()
+    clearCurrentDraft()
+    startDraftSession()
     setIsWelcomeVisible(false)
     setMarkdownDocument(createInitialDocument())
     onViewModeChange('edit')
     setStatusMessage('saved')
-  }, [canDiscardUnsavedChanges, onCloseMenu, onViewModeChange])
+  }, [canDiscardUnsavedChanges, clearCurrentDraft, onCloseMenu, onViewModeChange, startDraftSession])
 
   const handleOpenFile = useCallback(async () => {
     if (!canDiscardUnsavedChanges()) {
@@ -119,18 +215,12 @@ export function useDocumentController({
     try {
       const file = await fileAccess.openMarkdownFile()
       if (file) {
-        loadFile(file)
+        loadFile(file, true)
       }
     } catch (error) {
       setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
     }
-  }, [
-    canDiscardUnsavedChanges,
-    fileAccess,
-    fileOperationFailedMessage,
-    loadFile,
-    onCloseMenu,
-  ])
+  }, [canDiscardUnsavedChanges, fileAccess, fileOperationFailedMessage, loadFile, onCloseMenu])
 
   const handleOpenRecentFile = useCallback(async (path: string) => {
     if (!canDiscardUnsavedChanges()) {
@@ -140,19 +230,12 @@ export function useDocumentController({
     onCloseMenu()
 
     try {
-      loadFile(await fileAccess.openMarkdownFileAtPath(path))
+      loadFile(await fileAccess.openMarkdownFileAtPath(path), true)
     } catch {
       forgetRecentFile(path)
       setStatusMessage(recentFileOpenFailedMessage)
     }
-  }, [
-    canDiscardUnsavedChanges,
-    fileAccess,
-    forgetRecentFile,
-    loadFile,
-    onCloseMenu,
-    recentFileOpenFailedMessage,
-  ])
+  }, [canDiscardUnsavedChanges, fileAccess, forgetRecentFile, loadFile, onCloseMenu, recentFileOpenFailedMessage])
 
   const openMarkdownLinkFile = useCallback(async (path: string): Promise<boolean> => {
     if (!canDiscardUnsavedChanges()) {
@@ -160,7 +243,7 @@ export function useDocumentController({
     }
 
     try {
-      loadFile(await fileAccess.openMarkdownFileAtPath(path))
+      loadFile(await fileAccess.openMarkdownFileAtPath(path), true)
       return true
     } catch (error) {
       setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
@@ -184,6 +267,7 @@ export function useDocumentController({
           : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
 
         if (savedPath) {
+          clearCurrentDraft()
           setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
           setStatusMessage('saved')
           if (isSaveAs) {
@@ -210,13 +294,7 @@ export function useDocumentController({
       }
     })
     return operation
-  }, [
-    fileAccess,
-    fileOperationFailedMessage,
-    markdownDocument.content,
-    markdownDocument.path,
-    rememberRecentFile,
-  ])
+  }, [clearCurrentDraft, fileAccess, fileOperationFailedMessage, markdownDocument.content, markdownDocument.path, rememberRecentFile])
 
   const handleSaveFile = useCallback(async (): Promise<boolean> => {
     onCloseMenu()
@@ -250,6 +328,50 @@ export function useDocumentController({
     })
   }, [])
 
+  const restorePendingDraft = useCallback(async () => {
+    const draft = pendingDraft
+    if (!draft) {
+      return
+    }
+
+    setPendingDraft(null)
+    startDraftSession(draft.id)
+
+    let restoredDocument: MarkdownDocument
+    if (draft.path) {
+      try {
+        const file = await fileAccess.openMarkdownFileAtPath(draft.path)
+        restoredDocument = updateDocumentDraft(
+          replaceDocumentContent(createInitialDocument(), file.content, file.path),
+          draft.content,
+        )
+        rememberRecentFile(file.path)
+      } catch {
+        restoredDocument = updateDocumentDraft(createInitialDocument(), draft.content)
+      }
+    } else {
+      restoredDocument = updateDocumentDraft(createInitialDocument(), draft.content)
+    }
+
+    setMarkdownDocument(restoredDocument)
+    setIsWelcomeVisible(false)
+    onViewModeChange('edit')
+    setStatusMessage(restoredDocument.isDirty ? 'unsaved' : 'saved')
+    if (!restoredDocument.isDirty) {
+      clearCurrentDraft()
+    }
+  }, [clearCurrentDraft, fileAccess, onViewModeChange, pendingDraft, rememberRecentFile, startDraftSession])
+
+  const discardPendingDraft = useCallback(() => {
+    if (!pendingDraft) {
+      return
+    }
+
+    clearDocumentDraft(pendingDraft.id)
+    startDraftSession()
+    setPendingDraft(null)
+  }, [pendingDraft, startDraftSession])
+
   const handleClearRecentFiles = useCallback(() => {
     clearRecentFiles()
     setRecentFiles([])
@@ -257,6 +379,7 @@ export function useDocumentController({
   }, [onCloseMenu])
 
   return {
+    discardPendingDraft,
     handleClearRecentFiles,
     handleContentChange,
     handleNewDocument,
@@ -269,7 +392,9 @@ export function useDocumentController({
     isWelcomeVisible,
     markdownDocument,
     openMarkdownLinkFile,
+    pendingDraft: isStartupResolved ? pendingDraft : null,
     recentFiles,
+    restorePendingDraft,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,

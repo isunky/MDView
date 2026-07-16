@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { appInfo } from './appInfo'
 import * as markdownOutline from './domain/markdownOutline'
+import { DOCUMENT_DRAFT_STORAGE_KEY } from './domain/documentDraft'
 import { RECENT_FILES_STORAGE_KEY, type RecentFile } from './domain/recentFiles'
 import { OUTLINE_PREFERENCES_STORAGE_KEY } from './domain/outlinePreferences'
 import type { AppDistribution, AppUpdateClient } from './platform/appUpdates'
@@ -190,6 +191,116 @@ describe('App', () => {
     expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Reading Settings' })).toBeInTheDocument()
+  })
+
+  it('offers to restore a pending draft during a normal launch', async () => {
+    const user = userEvent.setup()
+    seedDocumentDraft({
+      id: 'recoverable-draft',
+      path: '/tmp/recover.md',
+      title: 'recover.md',
+      content: '# Restored draft',
+      updatedAt: Date.now(),
+    })
+    renderWelcomeApp({
+      fileAccess: createFileAccess({
+        openMarkdownFileAtPath: vi.fn(async (path) => file(path, '# Saved baseline')),
+      }),
+    })
+
+    expect(await screen.findByRole('dialog', { name: 'Recover unsaved draft' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Restore draft' }))
+
+    expect(await screen.findByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Restored draft')
+    expect(screen.getByText('Unsaved')).toBeInTheDocument()
+  })
+
+  it('keeps an old draft when a startup file takes priority', async () => {
+    seedDocumentDraft({
+      id: 'older-draft',
+      path: null,
+      title: 'Untitled.md',
+      content: '# Older draft',
+      updatedAt: Date.now(),
+    })
+    renderWelcomeApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/start.md', '# Startup') }) })
+
+    expect(await screen.findByRole('heading', { name: 'Startup' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Recover unsaved draft' })).not.toBeInTheDocument()
+    expect(JSON.parse(window.localStorage.getItem(DOCUMENT_DRAFT_STORAGE_KEY) ?? '{}')).toMatchObject({
+      id: 'older-draft',
+      content: '# Older draft',
+    })
+  })
+
+  it('discards a pending draft and returns to the welcome workspace', async () => {
+    const user = userEvent.setup()
+    seedDocumentDraft({
+      id: 'discardable-draft',
+      path: null,
+      title: 'Untitled.md',
+      content: '# Discard this',
+      updatedAt: Date.now(),
+    })
+    renderWelcomeApp({ fileAccess: createFileAccess() })
+
+    expect(await screen.findByRole('dialog', { name: 'Recover unsaved draft' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Discard draft' }))
+
+    expect(await screen.findByRole('heading', { name: 'Open a Markdown file' })).toBeInTheDocument()
+    expect(window.localStorage.getItem(DOCUMENT_DRAFT_STORAGE_KEY)).toBeNull()
+  })
+
+  it('restores a missing source file as an untitled unsaved document', async () => {
+    const user = userEvent.setup()
+    seedDocumentDraft({
+      id: 'missing-source-draft',
+      path: '/tmp/missing.md',
+      title: 'missing.md',
+      content: '# Recovered without source',
+      updatedAt: Date.now(),
+    })
+    renderWelcomeApp({
+      fileAccess: createFileAccess({
+        openMarkdownFileAtPath: vi.fn(async () => {
+          throw new Error('File missing')
+        }),
+      }),
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Restore draft' }))
+
+    expect(await screen.findByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Recovered without source')
+    expect(screen.getByText('Untitled.md')).toBeInTheDocument()
+  })
+
+  it('backs up a dirty document and clears its draft after saving', async () => {
+    const user = userEvent.setup()
+    const saveMarkdownFile = vi.fn(async (path: string) => path)
+    renderWelcomeApp({
+      fileAccess: createFileAccess({
+        startupFile: file('/tmp/backup.md', '# Backup'),
+        saveMarkdownFile,
+      }),
+    })
+
+    await screen.findByRole('heading', { name: 'Backup' })
+    await user.click(screen.getByRole('button', { name: 'Edit markdown source' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Markdown source' }), {
+      target: { value: '# Changed for backup' },
+    })
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(DOCUMENT_DRAFT_STORAGE_KEY)).toContain('# Changed for backup')
+    }, { timeout: 2_000 })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/backup.md', '# Changed for backup')
+      expect(window.localStorage.getItem(DOCUMENT_DRAFT_STORAGE_KEY)).toBeNull()
+    })
   })
 
   it('applies and persists reading settings from the App menu', async () => {
@@ -1186,6 +1297,10 @@ function recent(path: string, lastOpenedAt: string): RecentFile {
 
 function seedRecentFiles(recentFiles: RecentFile[]) {
   window.localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(recentFiles))
+}
+
+function seedDocumentDraft(draft: Record<string, unknown>) {
+  window.localStorage.setItem(DOCUMENT_DRAFT_STORAGE_KEY, JSON.stringify(draft))
 }
 
 function getStoredRecentFiles(): RecentFile[] {

@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     ffi::OsString,
     fs,
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
@@ -21,6 +21,33 @@ const FILE_ACCESS_POLICY_FILENAME: &str = "approved-markdown-files.json";
 const FILE_ACCESS_DENIED: &str =
     "File access denied. Open or select the file in MDView before accessing it.";
 const MAX_IMAGE_ASSET_BYTES: usize = 10 * 1024 * 1024;
+
+fn atomic_write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let existing_permissions = fs::metadata(path)
+        .ok()
+        .map(|metadata| metadata.permissions());
+    let mut temporary = tempfile::Builder::new()
+        .prefix(".mdview-")
+        .tempfile_in(parent)?;
+
+    temporary.write_all(bytes)?;
+    temporary.as_file().sync_all()?;
+    if let Some(permissions) = existing_permissions {
+        temporary.as_file().set_permissions(permissions)?;
+    }
+    temporary.persist(path).map_err(|error| error.error)?;
+
+    #[cfg(unix)]
+    {
+        let _ = fs::File::open(parent).and_then(|directory| directory.sync_all());
+    }
+
+    Ok(())
+}
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
@@ -212,7 +239,8 @@ fn write_markdown_file(
     let path = PathBuf::from(path);
     ensure_markdown_path(&path)?;
     policy.ensure_authorized(&path)?;
-    fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))
+    atomic_write_file(&path, content.as_bytes())
+        .map_err(|error| format!("Failed to write file: {error}"))
 }
 
 #[tauri::command]
@@ -236,7 +264,8 @@ async fn save_markdown_file_dialog(
         .map_err(|_| "The selected item is not a local file path.".to_string())?;
     let path = ensure_extension(path, "md", is_markdown_path);
 
-    fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))?;
+    atomic_write_file(&path, content.as_bytes())
+        .map_err(|error| format!("Failed to write file: {error}"))?;
     approve_and_persist_markdown_file(&app, &policy, &path)?;
     Ok(Some(path.to_string_lossy().to_string()))
 }
@@ -868,6 +897,56 @@ mod tests {
             ensure_extension(PathBuf::from("report.MD"), "md", is_markdown_path),
             PathBuf::from("report.MD")
         );
+    }
+
+    #[test]
+    fn atomic_write_creates_and_replaces_files() {
+        let root = create_test_directory("atomic-write");
+        let path = root.join("draft.md");
+
+        atomic_write_file(&path, b"first version").unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "first version");
+
+        atomic_write_file(&path, b"second version").unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "second version");
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn failed_atomic_write_leaves_no_temporary_file() {
+        let root = create_test_directory("atomic-failure");
+        let target_directory = root.join("target.md");
+        fs::create_dir(&target_directory).unwrap();
+
+        assert!(atomic_write_file(&target_directory, b"new content").is_err());
+        assert!(target_directory.is_dir());
+        assert_eq!(
+            fs::read_dir(&root)
+                .unwrap()
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_name().to_string_lossy().starts_with(".mdview-"))
+                .count(),
+            0
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_inherits_existing_file_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = create_test_directory("atomic-permissions");
+        let path = root.join("draft.md");
+        fs::write(&path, "existing").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
+
+        atomic_write_file(&path, b"replacement").unwrap();
+
+        assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o640);
+        fs::remove_dir_all(root).unwrap();
     }
 
     fn create_test_directory(label: &str) -> PathBuf {
