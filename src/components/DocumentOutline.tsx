@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { ListTree, PanelLeftClose } from 'lucide-react'
 import type { MarkdownOutlineItem } from '../domain/markdownOutline'
 import type { OutlineDepth } from '../domain/outlinePreferences'
@@ -26,6 +26,20 @@ export function DocumentOutline({
   t,
 }: DocumentOutlineProps) {
   const depthPickerRef = useRef<HTMLDetailsElement>(null)
+  const activeItemRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const activeItem = activeItemRef.current
+    if (typeof activeItem?.scrollIntoView !== 'function') {
+      return
+    }
+
+    activeItem.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'auto',
+    })
+  }, [activeId])
 
   function handleDepthChange(depth: OutlineDepth) {
     onMaxDepthChange(depth)
@@ -100,6 +114,7 @@ export function DocumentOutline({
                   onClick={() => onJump(item.id)}
                   aria-label={t.jumpTo(item.text)}
                   aria-current={isActive ? 'location' : undefined}
+                  ref={isActive ? activeItemRef : undefined}
                 >
                   {item.text}
                 </button>

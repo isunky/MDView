@@ -753,6 +753,7 @@
 .outline-panel {
   overflow-x: hidden;
   overflow-y: auto;
+  scroll-padding: 68px 0 20px;
   scrollbar-color: rgba(100, 116, 139, 0.42) transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
