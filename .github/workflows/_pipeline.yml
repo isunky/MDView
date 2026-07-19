@@ -11,8 +11,8 @@ on:
         description: Build Windows and macOS installers
         required: true
         type: boolean
-      build_updater_artifacts:
-        description: Create signed Windows updater artifacts
+      sign_windows_artifacts:
+        description: Submit release Windows artifacts to SignPath
         required: false
         default: false
         type: boolean
@@ -22,11 +22,7 @@ on:
         default: 7
         type: number
     secrets:
-      WINDOWS_CERTIFICATE_BASE64:
-        required: false
-      WINDOWS_CERTIFICATE_PASSWORD:
-        required: false
-      WINDOWS_CERTIFICATE_THUMBPRINT:
+      SIGNPATH_API_TOKEN:
         required: false
       TAURI_SIGNING_PRIVATE_KEY:
         required: false
@@ -34,6 +30,7 @@ on:
         required: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -77,12 +74,14 @@ jobs:
     if: ${{ inputs.build_installers }}
     runs-on: windows-latest
     needs: quality
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
-      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-      WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+      SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+      SIGNPATH_PROJECT_SLUG: mdview
+      SIGNPATH_SIGNING_POLICY_SLUG: release-signing
+      SIGNPATH_ARTIFACT_CONFIGURATION_SLUG: windows-release
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
@@ -110,35 +109,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Import Windows signing certificate
-        if: ${{ env.WINDOWS_CERTIFICATE_BASE64 != '' && env.WINDOWS_CERTIFICATE_PASSWORD != '' && env.WINDOWS_CERTIFICATE_THUMBPRINT != '' }}
+      - name: Validate release signing configuration
+        if: ${{ inputs.sign_windows_artifacts }}
         shell: pwsh
         run: |
-          $certificatePath = Join-Path $env:RUNNER_TEMP "mdview-code-signing.pfx"
-          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
-          $password = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
-          Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password | Out-Null
+          $required = @(
+            'SIGNPATH_API_TOKEN',
+            'SIGNPATH_ORGANIZATION_ID',
+            'TAURI_SIGNING_PRIVATE_KEY',
+            'TAURI_SIGNING_PRIVATE_KEY_PASSWORD'
+          )
 
-          $configPath = Join-Path $env:RUNNER_TEMP "tauri-signing.json"
-          @{
-            bundle = @{
-              windows = @{
-                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
-                digestAlgorithm = "sha256"
-                timestampUrl = "http://timestamp.digicert.com"
-              }
-            }
-          } | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
-
-          "TAURI_SIGNING_CONFIG=$configPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Validate updater signing secrets
-        if: ${{ inputs.build_updater_artifacts }}
-        shell: pwsh
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) -or [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
-            throw "TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD must be configured for release updater artifacts."
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
+          if ($missing) {
+            throw "Release signing is enabled, but these GitHub configuration values are missing: $($missing -join ', ')."
           }
+
+      - name: Read package version
+        id: package-version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Clean previous Windows bundle outputs
         shell: pwsh
@@ -146,30 +138,105 @@ jobs:
           Remove-Item -LiteralPath src-tauri\target\release\bundle\msi -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -LiteralPath src-tauri\target\release\bundle\portable -Recurse -Force -ErrorAction SilentlyContinue
 
-      - name: Build MSI
+      - name: Build unsigned MSI
+        shell: pwsh
+        run: npm run tauri -- build --bundles msi --ci
+
+      - name: Stage unsigned Windows artifacts for SignPath
+        if: ${{ inputs.sign_windows_artifacts }}
         shell: pwsh
         run: |
-          $configPaths = @()
-          if ($env:TAURI_SIGNING_CONFIG) {
-            $configPaths += $env:TAURI_SIGNING_CONFIG
+          $stagingPath = Join-Path $env:RUNNER_TEMP 'mdview-signpath-input'
+          Remove-Item -LiteralPath $stagingPath -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stagingPath | Out-Null
+
+          $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File | Select-Object -First 1
+          $exe = Get-Item -LiteralPath src-tauri\target\release\MDView.exe
+          if (-not $msi -or -not $exe) {
+            throw 'Expected unsigned MSI and MDView.exe build outputs were not found.'
           }
 
-          if ('${{ inputs.build_updater_artifacts }}' -eq 'true') {
-            $updaterConfigPath = Join-Path $env:RUNNER_TEMP "tauri-updater-artifacts.json"
-            @{ bundle = @{ createUpdaterArtifacts = $true } } | ConvertTo-Json -Depth 4 | Set-Content -Path $updaterConfigPath -Encoding UTF8
-            $configPaths += $updaterConfigPath
+          Copy-Item -LiteralPath $msi.FullName -Destination (Join-Path $stagingPath $msi.Name)
+          Copy-Item -LiteralPath $exe.FullName -Destination (Join-Path $stagingPath $exe.Name)
+
+      - name: Upload unsigned Windows artifacts
+        if: ${{ inputs.sign_windows_artifacts }}
+        id: upload-signpath-input
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-signpath-input-${{ github.run_id }}
+          path: ${{ runner.temp }}/mdview-signpath-input
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Submit Windows artifacts to SignPath
+        if: ${{ inputs.sign_windows_artifacts }}
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: mdview
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: windows-release
+          github-artifact-id: ${{ steps.upload-signpath-input.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 4800
+          output-artifact-directory: ${{ runner.temp }}/mdview-signpath-output
+          parameters: |
+            version: ${{ toJSON(steps.package-version.outputs.value) }}
+
+      - name: Install and verify signed Windows artifacts
+        if: ${{ inputs.sign_windows_artifacts }}
+        shell: pwsh
+        run: |
+          $signedRoot = Join-Path $env:RUNNER_TEMP 'mdview-signpath-output'
+          $signedMsi = Get-ChildItem -Path $signedRoot -Recurse -Filter '*.msi' -File | Select-Object -First 1
+          $signedExe = Get-ChildItem -Path $signedRoot -Recurse -Filter 'MDView.exe' -File | Select-Object -First 1
+          if (-not $signedMsi -or -not $signedExe) {
+            throw 'SignPath did not return both the signed MSI and signed MDView.exe.'
           }
 
-          $configArgs = @()
-          foreach ($configPath in $configPaths) {
-            $configArgs += @('--config', $configPath)
+          foreach ($artifact in @($signedMsi, $signedExe)) {
+            $signature = Get-AuthenticodeSignature -FilePath $artifact.FullName
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'SignPath Foundation') {
+              throw "Invalid SignPath signature on $($artifact.Name): $($signature.Status) $($signature.SignerCertificate.Subject)"
+            }
           }
 
-          npm run tauri -- build --bundles msi --ci @configArgs
+          $msiOutput = Join-Path $PWD 'src-tauri\target\release\bundle\msi'
+          Copy-Item -LiteralPath $signedMsi.FullName -Destination (Join-Path $msiOutput $signedMsi.Name) -Force
+          Copy-Item -LiteralPath $signedExe.FullName -Destination 'src-tauri\target\release\MDView.exe' -Force
+
+      - name: Create updater signature after Authenticode signing
+        if: ${{ inputs.sign_windows_artifacts }}
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File | Select-Object -First 1
+          $signaturePath = "$($msi.FullName).sig"
+          Remove-Item -LiteralPath $signaturePath -Force -ErrorAction SilentlyContinue
+          npm run tauri -- signer sign $msi.FullName
+          if (-not (Test-Path -LiteralPath $signaturePath) -or [string]::IsNullOrWhiteSpace((Get-Content -LiteralPath $signaturePath -Raw))) {
+            throw 'Tauri updater signature was not created for the signed MSI.'
+          }
 
       - name: Build portable ZIP
         shell: pwsh
         run: npm run portable:windows
+
+      - name: Create Windows checksums
+        shell: pwsh
+        run: |
+          $checksumPath = 'src-tauri\target\release\bundle\SHA256SUMS.txt'
+          $artifacts = @(
+            Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File
+            Get-ChildItem -Path src-tauri\target\release\bundle\portable -Filter '*.zip' -File
+          )
+          if ($artifacts.Count -ne 2) {
+            throw 'Expected exactly one MSI and one portable ZIP to checksum.'
+          }
+          $artifacts | ForEach-Object {
+            "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          } | Set-Content -LiteralPath $checksumPath -Encoding ascii
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
@@ -180,7 +247,7 @@ jobs:
           retention-days: ${{ inputs.retention_days }}
 
       - name: Upload updater signature artifact
-        if: ${{ inputs.build_updater_artifacts }}
+        if: ${{ inputs.sign_windows_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: mdview-windows-updater-signature
@@ -193,6 +260,14 @@ jobs:
         with:
           name: mdview-windows-portable
           path: src-tauri/target/release/bundle/portable/*.zip
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+      - name: Upload Windows checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-checksums
+          path: src-tauri/target/release/bundle/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: ${{ inputs.retention_days }}
 

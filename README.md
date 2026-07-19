@@ -90,8 +90,11 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 | Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
 | macOS | DMG | macOS 10.15 或更高版本 / macOS 10.15 or later |
 
-> Windows MSI 和 macOS 构建可能未签名。系统首次启动时可能显示安全确认。
-> Windows MSI and macOS builds may be unsigned, so the operating system can show a security prompt on first launch.
+> 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
+> Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
+
+签名政策与发布审批流程见 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
+See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and release approval process.
 
 ## 快捷键 / Shortcuts
 
@@ -147,11 +150,12 @@ GitHub Actions 会执行单元测试、ESLint、前端构建和 Playwright E2E �
 
 GitHub Actions runs unit tests, ESLint, frontend builds, and Playwright E2E tests. A manual CI run can build Windows MSI, Portable ZIP, and macOS Universal DMG packages. Push a `v*` tag or run the Release workflow to create a GitHub Release.
 
-可选 Windows 代码签名 Secrets / Optional Windows code-signing secrets:
+Windows 发布签名 / Windows release signing:
 
-- `WINDOWS_CERTIFICATE_BASE64`
-- `WINDOWS_CERTIFICATE_PASSWORD`
-- `WINDOWS_CERTIFICATE_THUMBPRINT`
+- 申请并配置 [SignPath Foundation](https://signpath.org/) 后，在 GitHub Actions Secrets 中设置 `SIGNPATH_API_TOKEN`。
+- 在 GitHub Actions Variables 中设置 `SIGNPATH_ORGANIZATION_ID`。
+- 仅 Release 工作流请求 SignPath 签名；普通 CI 构建保持未签名。
+- After configuring [SignPath Foundation](https://signpath.org/), set `SIGNPATH_API_TOKEN` in GitHub Actions Secrets and `SIGNPATH_ORGANIZATION_ID` in GitHub Actions Variables. Only the Release workflow requests signing; regular CI builds remain unsigned.
 
 Tauri 自动更新签名 Secrets / Tauri updater signing secrets:
 

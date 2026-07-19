@@ -3,8 +3,8 @@ name = "mdview"
 version = "2.1.1"
 description = "A lightweight Markdown viewer and source editor."
 authors = ["MDView"]
-license = ""
-repository = ""
+license = "Apache-2.0"
+repository = "https://github.com/isunky/MDView"
 edition = "2021"
 rust-version = "1.77.2"
 

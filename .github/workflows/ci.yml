@@ -9,6 +9,7 @@ on:
   pull_request:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -28,6 +29,5 @@ jobs:
     with:
       ref: ${{ github.sha }}
       build_installers: ${{ github.event_name == 'workflow_dispatch' }}
-      build_updater_artifacts: false
       retention_days: 14
     secrets: inherit

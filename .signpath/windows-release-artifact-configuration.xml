@@ -1,0 +1,16 @@
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <msi-file path="MDView_${version}_x64_en-US.msi" subject="MDView" author="mdview">
+      <pe-file path="mdview.exe" product-name="MDView" product-version="${version}" file-version="${version}" company-name="mdview">
+        <authenticode-sign description="MDView" description-url="https://github.com/isunky/MDView" />
+      </pe-file>
+      <authenticode-sign description="MDView" description-url="https://github.com/isunky/MDView" />
+    </msi-file>
+    <pe-file path="MDView.exe" product-name="MDView" product-version="${version}" file-version="${version}" company-name="mdview">
+      <authenticode-sign description="MDView" description-url="https://github.com/isunky/MDView" />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

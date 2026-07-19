@@ -17,6 +17,7 @@ on:
       - "v*"
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -121,7 +122,7 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.sha }}
       build_installers: true
-      build_updater_artifacts: true
+      sign_windows_artifacts: true
       retention_days: 7
     secrets: inherit
 
@@ -180,6 +181,13 @@ jobs:
             release-assets/*.msi.sig
             release-assets/*.zip
             release-assets/*.dmg
+            release-assets/SHA256SUMS.txt
             release-assets/latest.json
           fail_on_unmatched_files: true
           generate_release_notes: true
+          body: |
+            ## Code signing / 代码签名
+
+            Windows release artifacts are signed through SignPath after manual approval. See the [code signing policy](https://github.com/isunky/MDView/blob/main/CODE_SIGNING_POLICY.md).
+
+            Windows 发布包经人工审批后由 SignPath 签名。详见[代码签名政策](https://github.com/isunky/MDView/blob/main/CODE_SIGNING_POLICY.md)。
