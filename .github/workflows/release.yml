@@ -33,6 +33,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       tag: ${{ steps.release.outputs.tag }}
       sha: ${{ steps.release.outputs.sha }}
+      notes: ${{ steps.release.outputs.notes }}
 
     steps:
       - name: Checkout release source
@@ -54,10 +55,33 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_BUMP: ${{ inputs.bump }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
 
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            previous_tag="$(git tag --merged HEAD --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+            if [[ -n "$previous_tag" ]]; then
+              commit_range="${previous_tag}..HEAD"
+              compare_url="https://github.com/${REPOSITORY}/compare/${previous_tag}...HEAD"
+            else
+              commit_range="HEAD"
+              compare_url="https://github.com/${REPOSITORY}/commits/HEAD"
+            fi
+            commit_notes="$(git log "$commit_range" -n 20 --invert-grep --grep='^chore: release v' --pretty=format:'- %s (`%h`)' || true)"
+            if [[ -z "$commit_notes" ]]; then
+              commit_notes='- Maintenance release.'
+            fi
+            {
+              echo 'notes<<EOF'
+              echo "## What's new / 本次更新"
+              echo
+              echo "$commit_notes"
+              echo
+              echo "[View full changelog](${compare_url})"
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+
             current_version="$(node -p "require('./package.json').version")"
             IFS='.' read -r major minor patch <<< "$current_version"
 
@@ -108,6 +132,7 @@ jobs:
             fi
 
             sha="$GITHUB_SHA"
+            echo 'notes=' >> "$GITHUB_OUTPUT"
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -184,8 +209,10 @@ jobs:
             release-assets/SHA256SUMS.txt
             release-assets/latest.json
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          generate_release_notes: ${{ github.event_name != 'workflow_dispatch' }}
           body: |
+            ${{ needs.prepare.outputs.notes }}
+
             ## Code signing / 代码签名
 
             Windows release artifacts are signed through SignPath after manual approval. See the [code signing policy](https://github.com/isunky/MDView/blob/main/CODE_SIGNING_POLICY.md).
