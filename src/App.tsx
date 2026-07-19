@@ -26,6 +26,7 @@ import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
 import { DocumentSearchBar } from './components/DocumentSearchBar'
+import { ExternalFileBanner } from './components/ExternalFileBanner'
 import { EditorStatusBar } from './components/EditorStatusBar'
 import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/lazyMarkdownPreview'
 import { MarkdownEditor, type MarkdownEditorHandle, type SelectionRange } from './components/MarkdownEditor'
@@ -100,9 +101,11 @@ function App({
   const {
     handleClearRecentFiles,
     handleContentChange,
+    handleKeepLocalEdits,
     handleNewDocument,
     handleOpenFile,
     handleOpenRecentFile,
+    handleReloadDiskVersion,
     handleSaveFile,
     handleSaveFileAs,
     ensureDocumentPath,
@@ -113,7 +116,9 @@ function App({
     pendingDraft,
     recentFiles,
     restorePendingDraft,
+    retryExternalFile,
     discardPendingDraft,
+    externalFileState,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,
@@ -121,6 +126,10 @@ function App({
     fileAccess,
     discardUnsavedMessage: t.discardUnsaved,
     draftBackupFailedMessage: t.draftBackupFailed,
+    externalFileUpdatedMessage: t.externalFileUpdated,
+    externalFileConflictMessage: t.externalFileConflict,
+    externalFileMissingMessage: t.externalFileMissing,
+    externalFileSaveBlockedMessage: t.externalFileSaveBlocked,
     recentFileOpenFailedMessage: t.recentFileOpenFailed,
     fileOperationFailedMessage: t.fileOperationFailed,
     onCloseMenu: closeMenu,
@@ -247,15 +256,18 @@ function App({
 
   async function handleExportHtml() {
     closeMenu()
+    setStatusMessage(t.exportHtmlPreparing)
 
     try {
-      const html = await buildCurrentExportHtml()
+      const { html, unresolvedResources } = await buildCurrentExportHtml()
       const savedPath = await fileAccess.exportHtmlFile(
         html,
         markdownDocument.path,
         markdownDocument.title,
       )
-      setStatusMessage(savedPath ? t.exportHtmlSaved : t.exportCanceled)
+      setStatusMessage(savedPath
+        ? unresolvedResources.length > 0 ? t.exportHtmlSavedWithWarnings(unresolvedResources.length) : t.exportHtmlSaved
+        : t.exportCanceled)
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
     }
@@ -265,9 +277,9 @@ function App({
     closeMenu()
 
     try {
-      const html = await buildCurrentExportHtml()
+      const { html, unresolvedResources } = await buildCurrentExportHtml()
       await fileAccess.printExportHtml(html, markdownDocument.title)
-      setStatusMessage(t.printDialogOpened)
+      setStatusMessage(unresolvedResources.length > 0 ? t.printDialogOpenedWithWarnings(unresolvedResources.length) : t.printDialogOpened)
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
     }
@@ -304,7 +316,7 @@ function App({
     }
   }
 
-  async function buildCurrentExportHtml(): Promise<string> {
+  async function buildCurrentExportHtml(): Promise<{ html: string; unresolvedResources: string[] }> {
     const previewElement = previewRef.current
     if (!previewElement) {
       throw new Error(t.exportPreviewUnavailable)
@@ -315,11 +327,19 @@ function App({
       import('./domain/exportPreview'),
     ])
 
-    return buildExportHtml({
+    const content = await createLightExportContent(previewElement, {
+      sourcePath: markdownDocument.path,
+      readLocalImageFile: fileAccess.readLocalImageFile,
+      readRemoteImageFile: fileAccess.readRemoteImageFile,
+    })
+    return {
+      unresolvedResources: content.unresolvedResources,
+      html: buildExportHtml({
       title: markdownDocument.title,
       lang: language === 'zh' ? 'zh-CN' : 'en',
-      contentHtml: await createLightExportContent(previewElement),
-    })
+      contentHtml: content.html,
+      }),
+    }
   }
 
   function handleOpenAboutFromAppMenu() {
@@ -658,7 +678,18 @@ function App({
           onClearRecent={handleClearRecentFiles}
           t={t}
         />
-      ) : <section className={workspaceClasses} aria-label={t.workspace}>
+      ) : <>
+        {externalFileState ? <ExternalFileBanner
+          state={externalFileState}
+          labels={{ conflict: t.externalFileConflict, missing: t.externalFileMissing, keepEdits: t.keepMyEdits, reload: t.reloadDiskVersion, retry: t.retryFile, saveAs: t.saveAs }}
+          onKeepEdits={handleKeepLocalEdits}
+          onReload={() => {
+            if (window.confirm(t.reloadDiskVersion)) handleReloadDiskVersion()
+          }}
+          onRetry={() => void retryExternalFile()}
+          onSaveAs={() => void handleSaveFileAs()}
+        /> : null}
+        <section className={workspaceClasses} aria-label={t.workspace}>
         <DocumentSearchBar
           activeIndex={documentSearch.activeIndex}
           inputRef={documentSearch.inputRef}
@@ -788,7 +819,8 @@ function App({
             </div>
           </div>
         ) : null}
-      </section>}
+      </section>
+      </>}
       {shortcutToast?.placement === 'app' ? (
         <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
           {shortcutToast.message}

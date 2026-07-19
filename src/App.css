@@ -18,6 +18,13 @@
   border-bottom: 1px solid var(--border);
 }
 
+.external-file-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 20px; color: var(--ink-strong); background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface)); border-bottom: 1px solid var(--line); }
+.external-file-banner strong, .external-file-banner span { display: block; }
+.external-file-banner span { margin-top: 2px; font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56vw; }
+.external-file-banner-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.external-file-banner button { padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink-strong); font: inherit; cursor: pointer; }
+.external-file-banner button.primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+
 .welcome-open .topbar {
   grid-template-columns: minmax(220px, 1fr) auto;
 }

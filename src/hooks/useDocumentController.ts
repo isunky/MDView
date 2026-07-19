@@ -22,6 +22,10 @@ import {
 } from '../domain/recentFiles'
 import type { FileAccess, OpenedMarkdownFile } from '../platform/fileAccess'
 
+type ExternalFileState =
+  | { kind: 'conflict'; file: OpenedMarkdownFile }
+  | { kind: 'missing'; path: string }
+
 type DocumentViewMode = 'preview' | 'edit'
 
 type UseDocumentControllerOptions = {
@@ -30,6 +34,10 @@ type UseDocumentControllerOptions = {
   recentFileOpenFailedMessage: string
   fileOperationFailedMessage: string
   draftBackupFailedMessage: string
+  externalFileUpdatedMessage: string
+  externalFileConflictMessage: string
+  externalFileMissingMessage: string
+  externalFileSaveBlockedMessage: string
   onCloseMenu: () => void
   onViewModeChange: (mode: DocumentViewMode) => void
 }
@@ -42,6 +50,10 @@ export function useDocumentController({
   recentFileOpenFailedMessage,
   fileOperationFailedMessage,
   draftBackupFailedMessage,
+  externalFileUpdatedMessage,
+  externalFileConflictMessage,
+  externalFileMissingMessage,
+  externalFileSaveBlockedMessage,
   onCloseMenu,
   onViewModeChange,
 }: UseDocumentControllerOptions) {
@@ -52,6 +64,7 @@ export function useDocumentController({
   const [isSaving, setIsSaving] = useState(false)
   const [pendingDraft, setPendingDraft] = useState<RecoverableDraft | null>(loadDocumentDraft)
   const [isStartupResolved, setIsStartupResolved] = useState(false)
+  const [externalFileState, setExternalFileState] = useState<ExternalFileState | null>(null)
   const saveOperationRef = useRef<Promise<string | null> | null>(null)
   const documentRef = useRef(markdownDocument)
   const sessionIdRef = useRef(createDocumentDraftId())
@@ -96,7 +109,8 @@ export function useDocumentController({
     }
 
     startDraftSession()
-    setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path))
+    setMarkdownDocument((current) => replaceDocumentContent(current, file.content, file.path, file.revision))
+    setExternalFileState(null)
     setIsWelcomeVisible(false)
     onViewModeChange('preview')
     setStatusMessage('opened')
@@ -157,6 +171,61 @@ export function useDocumentController({
       unlisten?.()
     }
   }, [fileAccess, loadFile])
+
+  const checkCurrentFile = useCallback(async () => {
+    const current = documentRef.current
+    if (!fileAccess.supportsNativeFiles || !fileAccess.checkMarkdownFile || !current.path || !current.savedRevision) {
+      return
+    }
+
+    try {
+      const result = await fileAccess.checkMarkdownFile(current.path, current.savedRevision)
+      const latest = documentRef.current
+      if (latest.path !== current.path || latest.savedRevision !== current.savedRevision) {
+        return
+      }
+
+      if (result.status === 'missing') {
+        setExternalFileState({ kind: 'missing', path: result.path })
+        setStatusMessage(externalFileMissingMessage)
+      } else if (result.status === 'changed') {
+        if (latest.isDirty && latest.content !== result.file.content) {
+          setExternalFileState({ kind: 'conflict', file: result.file })
+          setStatusMessage(externalFileConflictMessage)
+        } else {
+          setMarkdownDocument((document) => replaceDocumentContent(document, result.file.content, result.file.path, result.file.revision))
+          clearCurrentDraft()
+          setExternalFileState(null)
+          setStatusMessage(externalFileUpdatedMessage)
+        }
+      }
+    } catch {
+      // Temporary filesystem failures should not interrupt reading or editing.
+    }
+  }, [clearCurrentDraft, externalFileConflictMessage, externalFileMissingMessage, externalFileUpdatedMessage, fileAccess])
+
+  useEffect(() => {
+    if (!isStartupResolved || !markdownDocument.path || !markdownDocument.savedRevision || !fileAccess.supportsNativeFiles) {
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void checkCurrentFile()
+      }
+    }, 2000)
+    const onFocus = () => void checkCurrentFile()
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void checkCurrentFile()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [checkCurrentFile, fileAccess.supportsNativeFiles, isStartupResolved, markdownDocument.path, markdownDocument.savedRevision])
 
   useEffect(() => {
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`
@@ -262,18 +331,43 @@ export function useDocumentController({
         const currentPath = markdownDocument.path
         const contentToSave = markdownDocument.content
         const isSaveAs = forceSaveAs || !currentPath
-        const savedPath = isSaveAs
+        const savedResult = isSaveAs
           ? await fileAccess.saveMarkdownFileAs(contentToSave, currentPath)
-          : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
+          : markdownDocument.savedRevision
+            ? await fileAccess.saveMarkdownFile(currentPath, contentToSave, markdownDocument.savedRevision)
+            : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
 
-        if (savedPath) {
+        if (typeof savedResult === 'string') {
           clearCurrentDraft()
-          setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave))
+          setMarkdownDocument((current) => markDocumentSaved(current, savedResult, contentToSave, current.savedRevision))
+          setExternalFileState(null)
+          setStatusMessage('saved')
+          if (isSaveAs) rememberRecentFile(savedResult)
+          return savedResult
+        }
+
+        const structuredResult = savedResult as Exclude<typeof savedResult, string | null>
+        if (structuredResult && ((isSaveAs && 'revision' in structuredResult) || (!isSaveAs && 'status' in structuredResult && (structuredResult as import('../platform/fileAccess').MarkdownFileSaveResult).status === 'saved'))) {
+          const completed = structuredResult as { path: string; revision: string }
+          const savedPath = completed.path
+          const savedRevision = completed.revision
+          clearCurrentDraft()
+          setMarkdownDocument((current) => markDocumentSaved(current, savedPath, contentToSave, savedRevision))
+          setExternalFileState(null)
           setStatusMessage('saved')
           if (isSaveAs) {
             rememberRecentFile(savedPath)
           }
           return savedPath
+        }
+        if (savedResult && !isSaveAs && 'status' in savedResult) {
+          if (savedResult.status === 'conflict') {
+            setExternalFileState({ kind: 'conflict', file: savedResult.file })
+            setStatusMessage(externalFileSaveBlockedMessage)
+          } else if (savedResult.status === 'missing') {
+            setExternalFileState({ kind: 'missing', path: savedResult.path })
+            setStatusMessage(externalFileMissingMessage)
+          }
         }
       } catch (error) {
         setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
@@ -294,12 +388,33 @@ export function useDocumentController({
       }
     })
     return operation
-  }, [clearCurrentDraft, fileAccess, fileOperationFailedMessage, markdownDocument.content, markdownDocument.path, rememberRecentFile])
+  }, [clearCurrentDraft, externalFileMissingMessage, externalFileSaveBlockedMessage, fileAccess, fileOperationFailedMessage, markdownDocument.content, markdownDocument.path, markdownDocument.savedRevision, rememberRecentFile])
 
   const handleSaveFile = useCallback(async (): Promise<boolean> => {
     onCloseMenu()
+    if (externalFileState) {
+      setStatusMessage(externalFileSaveBlockedMessage)
+      return false
+    }
     return Boolean(await saveDocument())
-  }, [onCloseMenu, saveDocument])
+  }, [externalFileSaveBlockedMessage, externalFileState, onCloseMenu, saveDocument])
+
+  const handleKeepLocalEdits = useCallback(() => {
+    if (externalFileState?.kind !== 'conflict') return
+    const external = externalFileState.file
+    setMarkdownDocument((current) => markDocumentSaved(current, external.path, external.content, external.revision))
+    setExternalFileState(null)
+    setStatusMessage('unsaved')
+  }, [externalFileState])
+
+  const handleReloadDiskVersion = useCallback(() => {
+    if (externalFileState?.kind !== 'conflict') return
+    const external = externalFileState.file
+    clearCurrentDraft()
+    setMarkdownDocument((current) => replaceDocumentContent(current, external.content, external.path, external.revision))
+    setExternalFileState(null)
+    setStatusMessage(externalFileUpdatedMessage)
+  }, [clearCurrentDraft, externalFileState, externalFileUpdatedMessage])
 
   const handleSaveFileAs = useCallback(async () => {
     onCloseMenu()
@@ -342,7 +457,7 @@ export function useDocumentController({
       try {
         const file = await fileAccess.openMarkdownFileAtPath(draft.path)
         restoredDocument = updateDocumentDraft(
-          replaceDocumentContent(createInitialDocument(), file.content, file.path),
+          replaceDocumentContent(createInitialDocument(), file.content, file.path, file.revision),
           draft.content,
         )
         rememberRecentFile(file.path)
@@ -380,11 +495,14 @@ export function useDocumentController({
 
   return {
     discardPendingDraft,
+    externalFileState,
     handleClearRecentFiles,
     handleContentChange,
+    handleKeepLocalEdits,
     handleNewDocument,
     handleOpenFile,
     handleOpenRecentFile,
+    handleReloadDiskVersion,
     handleSaveFile,
     handleSaveFileAs,
     ensureDocumentPath,
@@ -395,6 +513,7 @@ export function useDocumentController({
     pendingDraft: isStartupResolved ? pendingDraft : null,
     recentFiles,
     restorePendingDraft,
+    retryExternalFile: checkCurrentFile,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,

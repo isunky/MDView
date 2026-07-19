@@ -5,11 +5,12 @@ use std::{
     io::{self, Write},
     path::{Path, PathBuf},
     sync::Mutex,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::{DialogExt, FileDialogBuilder};
 use tauri_plugin_opener::OpenerExt;
@@ -21,6 +22,7 @@ const FILE_ACCESS_POLICY_FILENAME: &str = "approved-markdown-files.json";
 const FILE_ACCESS_DENIED: &str =
     "File access denied. Open or select the file in MDView before accessing it.";
 const MAX_IMAGE_ASSET_BYTES: usize = 10 * 1024 * 1024;
+const MAX_EXPORT_IMAGE_BYTES: usize = 20 * 1024 * 1024;
 
 fn atomic_write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let parent = path
@@ -68,6 +70,23 @@ struct StoredFileAccessPolicy {
 struct OpenedMarkdownFilePayload {
     path: String,
     content: String,
+    revision: String,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+enum MarkdownFileCheckPayload {
+    Unchanged,
+    Changed { file: OpenedMarkdownFilePayload },
+    Missing { path: String },
+}
+
+#[derive(Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+enum MarkdownFileSavePayload {
+    Saved { path: String, revision: String },
+    Conflict { file: OpenedMarkdownFilePayload },
+    Missing { path: String },
 }
 
 #[derive(Serialize)]
@@ -231,16 +250,50 @@ fn read_markdown_file(policy: State<'_, FileAccessPolicy>, path: String) -> Resu
 }
 
 #[tauri::command]
-fn write_markdown_file(
+fn save_markdown_file(
     policy: State<'_, FileAccessPolicy>,
     path: String,
     content: String,
-) -> Result<(), String> {
+    expected_revision: String,
+) -> Result<MarkdownFileSavePayload, String> {
     let path = PathBuf::from(path);
     ensure_markdown_path(&path)?;
     policy.ensure_authorized(&path)?;
+    let existing = match read_authorized_markdown_file(&policy, &path) {
+        Ok(file) => file,
+        Err(error) if is_not_found_error(&error) => return Ok(MarkdownFileSavePayload::Missing { path: path.to_string_lossy().to_string() }),
+        Err(error) => return Err(error),
+    };
+    if existing.revision != expected_revision {
+        return Ok(MarkdownFileSavePayload::Conflict { file: existing });
+    }
     atomic_write_file(&path, content.as_bytes())
-        .map_err(|error| format!("Failed to write file: {error}"))
+        .map_err(|error| format!("Failed to write file: {error}"))?;
+    Ok(MarkdownFileSavePayload::Saved {
+        path: path.to_string_lossy().to_string(),
+        revision: markdown_revision(&content),
+    })
+}
+
+#[tauri::command]
+fn check_markdown_file(
+    policy: State<'_, FileAccessPolicy>,
+    path: String,
+    known_revision: String,
+) -> Result<MarkdownFileCheckPayload, String> {
+    let path = PathBuf::from(path);
+    ensure_markdown_path(&path)?;
+    policy.ensure_authorized(&path)?;
+    let file = match read_authorized_markdown_file(&policy, &path) {
+        Ok(file) => file,
+        Err(error) if is_not_found_error(&error) => return Ok(MarkdownFileCheckPayload::Missing { path: path.to_string_lossy().to_string() }),
+        Err(error) => return Err(error),
+    };
+    if file.revision == known_revision {
+        Ok(MarkdownFileCheckPayload::Unchanged)
+    } else {
+        Ok(MarkdownFileCheckPayload::Changed { file })
+    }
 }
 
 #[tauri::command]
@@ -249,7 +302,7 @@ async fn save_markdown_file_dialog(
     policy: State<'_, FileAccessPolicy>,
     content: String,
     default_path: String,
-) -> Result<Option<String>, String> {
+) -> Result<Option<OpenedMarkdownFilePayload>, String> {
     let dialog = configure_default_path(
         app.dialog()
             .file()
@@ -267,7 +320,7 @@ async fn save_markdown_file_dialog(
     atomic_write_file(&path, content.as_bytes())
         .map_err(|error| format!("Failed to write file: {error}"))?;
     approve_and_persist_markdown_file(&app, &policy, &path)?;
-    Ok(Some(path.to_string_lossy().to_string()))
+    Ok(Some(opened_markdown_payload(path, content)))
 }
 
 #[tauri::command]
@@ -331,6 +384,62 @@ fn read_image_file(
     Ok(ImageFilePayload {
         path: path.to_string_lossy().to_string(),
         data_url: format!("data:{mime_type};base64,{encoded}"),
+    })
+}
+
+#[tauri::command]
+async fn read_remote_image_file(url: String) -> Result<ImageFilePayload, String> {
+    let parsed = url::Url::parse(&url).map_err(|_| "The image URL is invalid.".to_string())?;
+    if !matches!(parsed.scheme(), "http" | "https")
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+    {
+        return Err("Only unauthenticated HTTP and HTTPS image URLs are supported.".to_string());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::limited(5))
+        .build()
+        .map_err(|error| format!("Failed to create image download client: {error}"))?;
+    let mut response = client
+        .get(parsed)
+        .send()
+        .await
+        .map_err(|error| format!("Failed to download image: {error}"))?
+        .error_for_status()
+        .map_err(|error| format!("Failed to download image: {error}"))?;
+
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_EXPORT_IMAGE_BYTES as u64)
+    {
+        return Err("The remote image exceeds the 20 MB export limit.".to_string());
+    }
+    let mime_type = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(';').next())
+        .map(str::trim)
+        .filter(|value| value.starts_with("image/"))
+        .map(str::to_owned)
+        .ok_or_else(|| "The remote resource is not an image.".to_string())?;
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| format!("Failed to read downloaded image: {error}"))?
+    {
+        if bytes.len() + chunk.len() > MAX_EXPORT_IMAGE_BYTES {
+            return Err("The remote image exceeds the 20 MB export limit.".to_string());
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+
+    Ok(ImageFilePayload {
+        path: url,
+        data_url: format!("data:{mime_type};base64,{}", general_purpose::STANDARD.encode(bytes)),
     })
 }
 
@@ -428,11 +537,13 @@ pub fn run() {
             open_markdown_file_dialog,
             open_markdown_file_at_path,
             read_markdown_file,
-            write_markdown_file,
+            save_markdown_file,
+            check_markdown_file,
             save_markdown_file_dialog,
             export_html_file_dialog,
             export_docx_file_dialog,
             read_image_file,
+            read_remote_image_file,
             write_image_asset,
             reveal_file_in_folder,
             get_app_distribution
@@ -522,8 +633,17 @@ fn read_authorized_markdown_file(
 fn opened_markdown_payload(path: PathBuf, content: String) -> OpenedMarkdownFilePayload {
     OpenedMarkdownFilePayload {
         path: path.to_string_lossy().to_string(),
+        revision: markdown_revision(&content),
         content,
     }
+}
+
+fn markdown_revision(content: &str) -> String {
+    format!("{:x}", Sha256::digest(content.as_bytes()))
+}
+
+fn is_not_found_error(error: &str) -> bool {
+    error.contains("os error 2") || error.contains("The system cannot find the file") || error.contains("No such file")
 }
 
 fn configure_default_path<R: tauri::Runtime>(

@@ -7,7 +7,20 @@ import { createExportHtmlDefaultPath } from '../domain/exportHtmlPath'
 export type OpenedMarkdownFile = {
   path: string
   content: string
+  revision?: string
 }
+
+export type MarkdownFileCheck =
+  | { status: 'unchanged' }
+  | { status: 'changed'; file: OpenedMarkdownFile }
+  | { status: 'missing'; path: string }
+
+export type MarkdownFileSaveResult =
+  | { status: 'saved'; path: string; revision: string }
+  | { status: 'conflict'; file: OpenedMarkdownFile }
+  | { status: 'missing'; path: string }
+
+export type SavedMarkdownFile = { path: string; revision: string }
 
 export type LocalImageFile = {
   path: string
@@ -31,12 +44,14 @@ export type FileAccess = {
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   openMarkdownFileAtPath: (path: string) => Promise<OpenedMarkdownFile>
   revealFileInFolder: (path: string) => Promise<void>
-  saveMarkdownFile: (path: string, content: string) => Promise<string>
-  saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<string | null>
+  saveMarkdownFile: (path: string, content: string, expectedRevision?: string) => Promise<MarkdownFileSaveResult | string>
+  saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<SavedMarkdownFile | string | null>
+  checkMarkdownFile?: (path: string, knownRevision: string) => Promise<MarkdownFileCheck>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
   exportDocxFile: (bytes: Uint8Array, currentPath: string | null, title: string) => Promise<string | null>
   printExportHtml: (html: string, title: string) => Promise<void>
   readLocalImageFile: (path: string) => Promise<LocalImageFile>
+  readRemoteImageFile?: (url: string) => Promise<LocalImageFile>
   writeImageAsset: (documentPath: string, image: ImageAssetWriteRequest) => Promise<WrittenImageAsset>
   readStartupMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   listenForOpenedFiles: (callback: (file: OpenedMarkdownFile) => void) => Promise<UnlistenFn | null>
@@ -69,13 +84,12 @@ export const tauriFileAccess: FileAccess = {
     await invoke('reveal_file_in_folder', { path })
   },
 
-  async saveMarkdownFile(path, content) {
+  async saveMarkdownFile(path, content, expectedRevision) {
     if (!isTauriRuntime()) {
       throw new Error('Native file saving is only available in the desktop app.')
     }
 
-    await invoke('write_markdown_file', { path, content })
-    return path
+    return invoke<MarkdownFileSaveResult>('save_markdown_file', { path, content, expectedRevision })
   },
 
   async exportHtmlFile(html, currentPath, title) {
@@ -112,6 +126,14 @@ export const tauriFileAccess: FileAccess = {
     return invoke<LocalImageFile>('read_image_file', { path })
   },
 
+  async readRemoteImageFile(url) {
+    if (!isTauriRuntime()) {
+      throw new Error('Remote images are only available in the desktop app.')
+    }
+
+    return invoke<LocalImageFile>('read_remote_image_file', { url })
+  },
+
   async writeImageAsset(documentPath, image) {
     if (!isTauriRuntime()) {
       throw new Error('Image import is only available in the desktop app.')
@@ -130,10 +152,18 @@ export const tauriFileAccess: FileAccess = {
       return null
     }
 
-    return invoke<string | null>('save_markdown_file_dialog', {
+    return invoke<SavedMarkdownFile | null>('save_markdown_file_dialog', {
       content,
       defaultPath: currentPath ?? 'Untitled.md',
     })
+  },
+
+  async checkMarkdownFile(path, knownRevision) {
+    if (!isTauriRuntime()) {
+      return { status: 'unchanged' }
+    }
+
+    return invoke<MarkdownFileCheck>('check_markdown_file', { path, knownRevision })
   },
 
   async readStartupMarkdownFile() {
@@ -143,7 +173,7 @@ export const tauriFileAccess: FileAccess = {
 
     const paths = await invoke<string[]>('take_opened_files')
     const path = paths.at(0)
-    return path ? readMarkdownFile(path) : null
+    return path ? invoke<OpenedMarkdownFile>('open_markdown_file_at_path', { path }) : null
   },
 
   async listenForOpenedFiles(callback) {
@@ -157,14 +187,9 @@ export const tauriFileAccess: FileAccess = {
         return
       }
 
-      callback(await readMarkdownFile(path))
+      callback(await invoke<OpenedMarkdownFile>('open_markdown_file_at_path', { path }))
     })
   },
-}
-
-async function readMarkdownFile(path: string): Promise<OpenedMarkdownFile> {
-  const content = await invoke<string>('read_markdown_file', { path })
-  return { path, content }
 }
 
 async function printHtmlDocument(html: string, title: string) {

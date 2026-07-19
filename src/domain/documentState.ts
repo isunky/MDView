@@ -3,6 +3,7 @@ export type MarkdownDocument = {
   path: string | null
   content: string
   savedContent: string
+  savedRevision: string | null
   isDirty: boolean
 }
 
@@ -14,6 +15,7 @@ export function createInitialDocument(): MarkdownDocument {
     path: null,
     content: untitledContent,
     savedContent: untitledContent,
+    savedRevision: null,
     isDirty: false,
   }
 }
@@ -22,6 +24,7 @@ export function replaceDocumentContent(
   document: MarkdownDocument,
   content: string,
   path: string,
+  revision: string | null = null,
 ): MarkdownDocument {
   return {
     ...document,
@@ -29,6 +32,7 @@ export function replaceDocumentContent(
     path,
     content,
     savedContent: content,
+    savedRevision: revision,
     isDirty: false,
   }
 }
@@ -48,12 +52,14 @@ export function markDocumentSaved(
   document: MarkdownDocument,
   path: string,
   savedContent = document.content,
+  savedRevision = document.savedRevision,
 ): MarkdownDocument {
   return {
     ...document,
     title: getTitleFromPath(path),
     path,
     savedContent,
+    savedRevision,
     isDirty: document.content !== savedContent,
   }
 }
