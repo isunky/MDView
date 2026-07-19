@@ -34,7 +34,8 @@ jobs:
       tag: ${{ steps.release.outputs.tag }}
       sha: ${{ steps.release.outputs.sha }}
       notes: ${{ steps.release.outputs.notes }}
-      signing_enabled: ${{ steps.release.outputs.signing_enabled }}
+      authenticode_signing_enabled: ${{ steps.release.outputs.authenticode_signing_enabled }}
+      updater_signing_enabled: ${{ steps.release.outputs.updater_signing_enabled }}
       signing_notes: ${{ steps.release.outputs.signing_notes }}
 
     steps:
@@ -65,28 +66,47 @@ jobs:
         run: |
           set -euo pipefail
 
-          required_signing_values=(
+          required_authenticode_values=(
             SIGNPATH_API_TOKEN
             SIGNPATH_ORGANIZATION_ID
-            TAURI_SIGNING_PRIVATE_KEY
-            TAURI_SIGNING_PRIVATE_KEY_PASSWORD
           )
-          missing_signing_values=()
-          for value_name in "${required_signing_values[@]}"; do
+          missing_authenticode_values=()
+          for value_name in "${required_authenticode_values[@]}"; do
             if [[ -z "${!value_name}" ]]; then
-              missing_signing_values+=("$value_name")
+              missing_authenticode_values+=("$value_name")
             fi
           done
 
-          if [[ ${#missing_signing_values[@]} -eq 0 ]]; then
-            signing_enabled=true
+          required_updater_values=(
+            TAURI_SIGNING_PRIVATE_KEY
+            TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+          )
+          missing_updater_values=()
+          for value_name in "${required_updater_values[@]}"; do
+            if [[ -z "${!value_name}" ]]; then
+              missing_updater_values+=("$value_name")
+            fi
+          done
+
+          if [[ ${#missing_authenticode_values[@]} -eq 0 ]]; then
+            authenticode_signing_enabled=true
             signing_notes=$'## Code signing / 代码签名\n\nWindows release artifacts are signed through SignPath after manual approval. See the [code signing policy](https://github.com/isunky/MDView/blob/main/CODE_SIGNING_POLICY.md).\n\nWindows 发布包经人工审批后由 SignPath 签名。详见[代码签名政策](https://github.com/isunky/MDView/blob/main/CODE_SIGNING_POLICY.md)。'
           else
-            signing_enabled=false
-            signing_notes=$'## Signing status / 签名状态\n\nThis release is unsigned because optional SignPath and Tauri updater signing configuration is not available. Windows may show a security warning, and in-app updates are unavailable for this release.\n\n本版本未签名，因为可选的 SignPath 和 Tauri 自动更新签名配置尚未完成。Windows 可能显示安全提示，且此版本不提供应用内自动更新。'
-            echo "::warning::Windows signing is disabled because these configuration values are missing: ${missing_signing_values[*]}"
+            authenticode_signing_enabled=false
+            signing_notes=$'## Code signing / 代码签名\n\nThis release is not Authenticode-signed because optional SignPath configuration is unavailable. Windows may show a security warning.\n\n本版本未进行 Authenticode 代码签名，因为可选的 SignPath 配置尚未完成。Windows 可能显示安全提示。'
+            echo "::warning::Authenticode signing is disabled because these configuration values are missing: ${missing_authenticode_values[*]}"
           fi
-          echo "signing_enabled=$signing_enabled" >> "$GITHUB_OUTPUT"
+
+          if [[ ${#missing_updater_values[@]} -eq 0 ]]; then
+            updater_signing_enabled=true
+            signing_notes+=$'\n\n## Automatic updates / 自动更新\n\nThe MSI includes verified in-app updates.\n\nMSI 安装版支持已验证的应用内自动更新。'
+          else
+            updater_signing_enabled=false
+            signing_notes+=$'\n\n## Automatic updates / 自动更新\n\nIn-app updates are unavailable because Tauri updater signing is not configured.\n\n应用内自动更新不可用，因为 Tauri 更新签名尚未配置。'
+            echo "::warning::Updater signing is disabled because these GitHub secrets are missing: ${missing_updater_values[*]}"
+          fi
+          echo "authenticode_signing_enabled=$authenticode_signing_enabled" >> "$GITHUB_OUTPUT"
+          echo "updater_signing_enabled=$updater_signing_enabled" >> "$GITHUB_OUTPUT"
           {
             echo 'signing_notes<<EOF'
             echo "$signing_notes"
@@ -181,7 +201,8 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.sha }}
       build_installers: true
-      sign_windows_artifacts: ${{ needs.prepare.outputs.signing_enabled == 'true' }}
+      sign_windows_artifacts: ${{ needs.prepare.outputs.authenticode_signing_enabled == 'true' }}
+      sign_updater_artifacts: ${{ needs.prepare.outputs.updater_signing_enabled == 'true' }}
       retention_days: 7
     secrets: inherit
 
@@ -206,6 +227,7 @@ jobs:
           merge-multiple: true
 
       - name: Generate Windows updater manifest
+        if: ${{ needs.prepare.outputs.updater_signing_enabled == 'true' }}
         shell: bash
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
@@ -221,8 +243,8 @@ jobs:
 
           signature_path="${msi_path}.sig"
           if [[ ! -f "$signature_path" ]]; then
-            echo "::warning::Skipping updater manifest because this release is unsigned."
-            exit 0
+            echo "::error::Expected a matching Tauri updater signature."
+            exit 1
           fi
 
           node scripts/generate-updater-manifest.mjs \

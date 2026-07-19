@@ -12,7 +12,12 @@ on:
         required: true
         type: boolean
       sign_windows_artifacts:
-        description: Submit release Windows artifacts to SignPath
+        description: Submit release Windows artifacts to SignPath for Authenticode signing
+        required: false
+        default: false
+        type: boolean
+      sign_updater_artifacts:
+        description: Create Tauri updater signatures for the Windows MSI
         required: false
         default: false
         type: boolean
@@ -115,14 +120,26 @@ jobs:
         run: |
           $required = @(
             'SIGNPATH_API_TOKEN',
-            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_ORGANIZATION_ID'
+          )
+
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
+          if ($missing) {
+            throw "Release signing is enabled, but these GitHub configuration values are missing: $($missing -join ', ')."
+          }
+
+      - name: Validate updater signing configuration
+        if: ${{ inputs.sign_updater_artifacts }}
+        shell: pwsh
+        run: |
+          $required = @(
             'TAURI_SIGNING_PRIVATE_KEY',
             'TAURI_SIGNING_PRIVATE_KEY_PASSWORD'
           )
 
           $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
           if ($missing) {
-            throw "Release signing is enabled, but these GitHub configuration values are missing: $($missing -join ', ')."
+            throw "Updater signing is enabled, but these GitHub secrets are missing: $($missing -join ', ')."
           }
 
       - name: Read package version
@@ -207,8 +224,8 @@ jobs:
           Copy-Item -LiteralPath $signedMsi.FullName -Destination (Join-Path $msiOutput $signedMsi.Name) -Force
           Copy-Item -LiteralPath $signedExe.FullName -Destination 'src-tauri\target\release\MDView.exe' -Force
 
-      - name: Create updater signature after Authenticode signing
-        if: ${{ inputs.sign_windows_artifacts }}
+      - name: Create updater signature
+        if: ${{ inputs.sign_updater_artifacts }}
         shell: pwsh
         run: |
           $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File | Select-Object -First 1
@@ -247,7 +264,7 @@ jobs:
           retention-days: ${{ inputs.retention_days }}
 
       - name: Upload updater signature artifact
-        if: ${{ inputs.sign_windows_artifacts }}
+        if: ${{ inputs.sign_updater_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: mdview-windows-updater-signature
