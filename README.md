@@ -19,7 +19,7 @@
   </p>
 
   <p>
-    <strong>Version / 版本：</strong>2.3.1
+    <strong>Version / 版本：</strong>2.3.2
     · <a href="https://www.sunky.net">Sunky</a>
   </p>
 </div>
@@ -178,8 +178,8 @@ Tauri 自动更新签名 Secrets / Tauri updater signing secrets:
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 2.3.1 |
-| Version | 2.3.1 |
+| 当前版本 | 2.3.2 |
+| Version | 2.3.2 |
 | 平台 / Platforms | Windows · macOS |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [Apache-2.0](LICENSE) |
