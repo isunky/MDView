@@ -1,6 +1,6 @@
 [package]
 name = "mdview"
-version = "2.3.3"
+version = "2.3.4"
 description = "A lightweight Markdown viewer and source editor."
 authors = ["MDView"]
 license = "Apache-2.0"
