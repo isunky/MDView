@@ -8,7 +8,7 @@ import * as markdownOutline from './domain/markdownOutline'
 import { DOCUMENT_DRAFT_STORAGE_KEY } from './domain/documentDraft'
 import { RECENT_FILES_STORAGE_KEY, type RecentFile } from './domain/recentFiles'
 import { OUTLINE_PREFERENCES_STORAGE_KEY } from './domain/outlinePreferences'
-import type { AppDistribution, AppUpdateClient } from './platform/appUpdates'
+import type { AppDistribution, AppUpdateCandidate, AppUpdateClient } from './platform/appUpdates'
 import type { FileAccess, OpenedMarkdownFile } from './platform/fileAccess'
 
 describe('App', () => {
@@ -347,6 +347,39 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
     expect(screen.queryByRole('dialog', { name: 'Software Update' })).not.toBeInTheDocument()
+  })
+
+  it('closes and ignores an in-progress update check', async () => {
+    const user = userEvent.setup()
+    let resolveCheck: (candidate: AppUpdateCandidate | null) => void = () => undefined
+    const appUpdateClient: AppUpdateClient = {
+      getDistribution: vi.fn(async (): Promise<AppDistribution> => 'windows-installed'),
+      checkForUpdate: vi.fn(() => new Promise<AppUpdateCandidate | null>((resolve) => {
+        resolveCheck = resolve
+      })),
+      cancelPendingUpdate: vi.fn(async () => undefined),
+      downloadAndInstall: vi.fn(async () => undefined),
+      openLatestRelease: vi.fn(async () => undefined),
+    }
+    renderApp({ appUpdateClient, fileAccess: createFileAccess() })
+
+    await waitFor(() => {
+      expect(appUpdateClient.getDistribution).toHaveBeenCalled()
+    })
+    await openAppMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Check for Updates' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Software Update' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Close update dialog' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Close update dialog' }))
+    expect(screen.queryByRole('dialog', { name: 'Software Update' })).not.toBeInTheDocument()
+
+    await act(async () => {
+      resolveCheck({ currentVersion: '2.3.2', version: '2.3.3' })
+      await Promise.resolve()
+    })
+    expect(screen.queryByRole('dialog', { name: 'Software Update' })).not.toBeInTheDocument()
+    expect(appUpdateClient.cancelPendingUpdate).toHaveBeenCalled()
   })
 
   it('downloads an update for the Windows MSI installation', async () => {

@@ -21,11 +21,13 @@ export type AppUpdateProgress = {
 export type AppUpdateClient = {
   getDistribution: () => Promise<AppDistribution>
   checkForUpdate: () => Promise<AppUpdateCandidate | null>
+  cancelPendingUpdate?: () => Promise<void>
   downloadAndInstall: (onProgress: (progress: AppUpdateProgress) => void) => Promise<void>
   openLatestRelease: () => Promise<void>
 }
 
 let pendingUpdate: Update | null = null
+let updateCheckRequestId = 0
 
 export const tauriAppUpdateClient: AppUpdateClient = {
   async getDistribution() {
@@ -43,12 +45,23 @@ export const tauriAppUpdateClient: AppUpdateClient = {
       return null
     }
 
+    const requestId = updateCheckRequestId + 1
+    updateCheckRequestId = requestId
     await disposePendingUpdate()
     const { check } = await import('@tauri-apps/plugin-updater')
     const update = await check({ timeout: 30_000 })
+    if (requestId !== updateCheckRequestId) {
+      await update?.close().catch(() => undefined)
+      return null
+    }
     pendingUpdate = update
 
     return update ? toCandidate(update) : null
+  },
+
+  async cancelPendingUpdate() {
+    updateCheckRequestId += 1
+    await disposePendingUpdate()
   },
 
   async downloadAndInstall(onProgress) {

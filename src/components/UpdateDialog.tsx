@@ -31,10 +31,11 @@ export function UpdateDialog({
   update,
 }: UpdateDialogProps) {
   const isBusy = phase === 'checking' || phase === 'downloading' || phase === 'installing'
+  const isInstallInProgress = phase === 'downloading' || phase === 'installing'
   const isOpen = phase !== 'idle'
 
   useEffect(() => {
-    if (!isOpen || isBusy) {
+    if (!isOpen || isInstallInProgress) {
       return
     }
 
@@ -46,7 +47,7 @@ export function UpdateDialog({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isBusy, isOpen, onClose])
+  }, [isInstallInProgress, isOpen, onClose])
 
   if (!isOpen) {
     return null
@@ -60,7 +61,7 @@ export function UpdateDialog({
     <div
       className="dialog-backdrop"
       onMouseDown={(event) => {
-        if (!isBusy && event.currentTarget === event.target) {
+        if (!isInstallInProgress && event.currentTarget === event.target) {
           onClose()
         }
       }}
@@ -71,7 +72,7 @@ export function UpdateDialog({
           className="about-close"
           onClick={onClose}
           aria-label={t.closeUpdateDialog}
-          disabled={isBusy}
+          disabled={isInstallInProgress}
         >
           <X aria-hidden="true" />
         </button>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   isWindowsDistribution,
   tauriAppUpdateClient,
@@ -37,6 +37,7 @@ export function useAppUpdater({
   const [update, setUpdate] = useState<AppUpdateCandidate | null>(null)
   const [progress, setProgress] = useState<AppUpdateProgress | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const checkRequestIdRef = useRef(0)
 
   useEffect(() => {
     let cancelled = false
@@ -58,23 +59,31 @@ export function useAppUpdater({
     }
   }, [client])
 
-  const checkForUpdates = useCallback(async (): Promise<'available' | 'latest' | 'failed'> => {
+  const checkForUpdates = useCallback(async (): Promise<'available' | 'latest' | 'failed' | 'cancelled'> => {
     if (!isWindowsDistribution(distribution)) {
       setErrorMessage(unsupportedMessage)
       setPhase('error')
       return 'failed'
     }
 
+    const requestId = checkRequestIdRef.current + 1
+    checkRequestIdRef.current = requestId
     setPhase('checking')
     setErrorMessage(null)
     setProgress(null)
 
     try {
       const candidate = await client.checkForUpdate()
+      if (checkRequestIdRef.current !== requestId) {
+        return 'cancelled'
+      }
       setUpdate(candidate)
       setPhase(candidate ? 'available' : 'latest')
       return candidate ? 'available' : 'latest'
     } catch {
+      if (checkRequestIdRef.current !== requestId) {
+        return 'cancelled'
+      }
       setErrorMessage(checkFailedMessage)
       setPhase('error')
       return 'failed'
@@ -122,15 +131,19 @@ export function useAppUpdater({
   }, [client, releaseOpenFailedMessage])
 
   const dismiss = useCallback(() => {
-    if (phase === 'checking' || phase === 'downloading' || phase === 'installing') {
+    if (phase === 'downloading' || phase === 'installing') {
       return
     }
 
+    if (phase === 'checking') {
+      checkRequestIdRef.current += 1
+      void client.cancelPendingUpdate?.()
+    }
     setPhase('idle')
     setUpdate(null)
     setProgress(null)
     setErrorMessage(null)
-  }, [phase])
+  }, [client, phase])
 
   return {
     checkForUpdates,
