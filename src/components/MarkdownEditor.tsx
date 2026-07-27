@@ -63,6 +63,7 @@ export type SelectionRange = {
 
 export type MarkdownEditorHandle = {
   focus: () => void
+  getScrollElement: () => HTMLTextAreaElement | null
   getSelection: () => SelectionRange
   setSelection: (selection: SelectionRange) => void
 }
@@ -126,6 +127,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   useImperativeHandle(ref, () => ({
     focus() {
       textareaRef.current?.focus()
+    },
+    getScrollElement() {
+      return textareaRef.current
     },
     getSelection() {
       return textareaRef.current ? getSelection(textareaRef.current) : { start: 0, end: 0 }

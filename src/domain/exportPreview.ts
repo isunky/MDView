@@ -57,6 +57,10 @@ export async function createLightExportContent(
   previewClone.querySelectorAll<HTMLElement>('.search-match').forEach((match) => {
     match.replaceWith(...Array.from(match.childNodes))
   })
+  previewClone.querySelectorAll<HTMLElement>('[data-mdview-source-start]').forEach((element) => {
+    delete element.dataset.mdviewSourceStart
+    delete element.dataset.mdviewSourceEnd
+  })
 
   return {
     html: previewClone.innerHTML,

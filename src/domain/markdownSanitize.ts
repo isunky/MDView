@@ -116,6 +116,44 @@ export function rehypeSafeHeadingIds() {
   }
 }
 
+const sourcePositionTags = new Set([
+  'blockquote',
+  'details',
+  'div',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'hr',
+  'li',
+  'ol',
+  'p',
+  'pre',
+  'table',
+  'ul',
+])
+
+export function rehypeSourcePositions() {
+  return function transform(tree: Root) {
+    visitHastNode(tree, (element) => {
+      if (!sourcePositionTags.has(element.tagName)) {
+        return
+      }
+
+      const startLine = element.position?.start.line
+      const endLine = element.position?.end.line
+      if (!startLine || !endLine) {
+        return
+      }
+
+      element.properties.dataMdviewSourceStart = startLine
+      element.properties.dataMdviewSourceEnd = endLine
+    })
+  }
+}
+
 function visitHastNode(node: Nodes, visitor: (element: Element) => void) {
   if (node.type === 'element') {
     visitor(node)

@@ -27,6 +27,7 @@ import {
 import {
   markdownSanitizeSchema,
   rehypeSafeHeadingIds,
+  rehypeSourcePositions,
 } from '../domain/markdownSanitize'
 import {
   isExternalWebUrl,
@@ -112,6 +113,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
         rehypePlugins={[
           rehypeRaw,
           [rehypeSanitize, markdownSanitizeSchema],
+          rehypeSourcePositions,
           rehypeSafeHeadingIds,
           rehypeHighlight,
           searchHighlightPlugin,
@@ -119,11 +121,17 @@ export const MarkdownPreview = memo(function MarkdownPreview({
         urlTransform={transformMarkdownUrl}
         components={{
           pre({ children, node, ...props }) {
-            void node
             const mermaidChart = getMermaidChart(children)
 
             if (mermaidChart) {
-              return <MermaidDiagram chart={mermaidChart} labels={labels} theme={theme} />
+              return (
+                <MermaidDiagram
+                  chart={mermaidChart}
+                  labels={labels}
+                  sourceLine={node?.position?.start.line}
+                  theme={theme}
+                />
+              )
             }
 
             const codeMetadata = getCodeBlockMetadata(children)
@@ -463,10 +471,12 @@ function normalizeLanguageLabel(language: string) {
 function MermaidDiagram({
   chart,
   labels,
+  sourceLine,
   theme,
 }: {
   chart: string
   labels: MarkdownPreviewLabels
+  sourceLine?: number
   theme: EffectiveReadingTheme
 }) {
   const diagramId = useId().replace(/:/g, '')
@@ -512,13 +522,14 @@ function MermaidDiagram({
   }
 
   if (!svg) {
-    return <div className="mermaid-loading" data-mdview-mermaid-chart={chart}>{labels.mermaidLoading}</div>
+      return <div className="mermaid-loading" data-mdview-mermaid-chart={chart} data-mdview-source-start={sourceLine}>{labels.mermaidLoading}</div>
   }
 
   return (
     <div
       className="mermaid-diagram"
       data-mdview-mermaid-chart={chart}
+      data-mdview-source-start={sourceLine}
       role="img"
       aria-label={labels.mermaidDiagram}
       dangerouslySetInnerHTML={{ __html: svg }}

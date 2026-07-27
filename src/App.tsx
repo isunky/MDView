@@ -13,10 +13,12 @@ import {
   Eye,
   FolderOpen,
   FolderSearch,
+  Link2,
   PanelLeftOpen,
   PencilLine,
   Settings,
   SplitSquareHorizontal,
+  Unlink2,
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
@@ -50,6 +52,7 @@ import { usePreviewController } from './hooks/usePreviewController'
 import { useReadingSession } from './hooks/useReadingSession'
 import { useReadingPreferences } from './hooks/useReadingPreferences'
 import { useTransientToast } from './hooks/useTransientToast'
+import { useSplitScrollSync } from './hooks/useSplitScrollSync'
 import { tauriFileAccess, type FileAccess } from './platform/fileAccess'
 import { tauriAppUpdateClient, type AppUpdateClient } from './platform/appUpdates'
 import {
@@ -186,6 +189,17 @@ function App({
     isSplit: viewMode === 'split',
     previewPanelRef,
     onZoomChange: showPreviewToast,
+  })
+  const {
+    isSplitScrollSyncEnabled,
+    toggleSplitScrollSync,
+  } = useSplitScrollSync({
+    editorRef,
+    isSplit: viewMode === 'split',
+    previewContent,
+    previewPanelRef,
+    previewRef,
+    previewZoom,
   })
   const {
     activeOutlineId,
@@ -663,6 +677,18 @@ function App({
             <SplitSquareHorizontal aria-hidden="true" />
             <span>{t.split}</span>
           </button>
+          {viewMode === 'split' ? (
+            <button
+              type="button"
+              className={`split-scroll-toggle ${isSplitScrollSyncEnabled ? 'active' : ''}`}
+              onClick={toggleSplitScrollSync}
+              aria-label={isSplitScrollSyncEnabled ? t.disableSplitScrollSync : t.enableSplitScrollSync}
+              aria-pressed={isSplitScrollSyncEnabled}
+              title={isSplitScrollSyncEnabled ? t.disableSplitScrollSync : t.enableSplitScrollSync}
+            >
+              {isSplitScrollSyncEnabled ? <Link2 aria-hidden="true" /> : <Unlink2 aria-hidden="true" />}
+            </button>
+          ) : null}
         </div> : null}
 
       </header>

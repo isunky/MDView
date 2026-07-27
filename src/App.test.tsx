@@ -649,6 +649,23 @@ describe('App', () => {
     expect(screen.queryByRole('toolbar', { name: 'Markdown formatting' })).not.toBeInTheDocument()
   })
 
+  it('shows and persists the split scroll synchronization toggle', async () => {
+    const user = userEvent.setup()
+    renderApp({ fileAccess: createFileAccess() })
+
+    await user.click(screen.getByRole('button', { name: 'Split preview and source' }))
+    const toggle = screen.getByRole('button', { name: 'Disable synchronized scrolling' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(toggle)
+
+    expect(screen.getByRole('button', { name: 'Enable synchronized scrolling' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(window.localStorage.getItem('mdview.splitScrollPreferences.v1')).toContain('false')
+  })
+
   it('collapses and reopens the outline in preview mode', async () => {
     const user = userEvent.setup()
     renderApp({

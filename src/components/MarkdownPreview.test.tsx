@@ -74,6 +74,14 @@ describe('MarkdownPreview', () => {
     )
   })
 
+  it('marks rendered blocks with internal source line positions', () => {
+    render(<MarkdownPreview content={'# Title\n\nParagraph\n\n- Item'} />)
+
+    expect(screen.getByRole('heading', { name: 'Title' })).toHaveAttribute('data-mdview-source-start', '1')
+    expect(screen.getByText('Paragraph')).toHaveAttribute('data-mdview-source-start', '3')
+    expect(screen.getByRole('list')).toHaveAttribute('data-mdview-source-start', '5')
+  })
+
   it('keeps supported raw HTML while removing active content and event handlers', () => {
     const { container } = render(
       <MarkdownPreview

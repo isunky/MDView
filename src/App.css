@@ -111,6 +111,12 @@
   cursor: pointer;
 }
 
+.view-controls .split-scroll-toggle {
+  width: 36px;
+  justify-content: center;
+  padding: 0;
+}
+
 .toolbar button:hover:not(:disabled),
 .view-controls button:hover {
   background: var(--control-hover);

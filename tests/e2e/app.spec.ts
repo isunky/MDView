@@ -130,6 +130,43 @@ test('opens the About dialog from the App menu', async ({ page }) => {
   await expect(page.getByText(/^Version [0-9]+\.[0-9]+\.[0-9]+$/)).toBeVisible()
 })
 
+test('synchronizes split editor and preview scrolling in both directions', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  const content = Array.from({ length: 80 }, (_, index) => (
+    `## Section ${index + 1}\n\nThis is enough content to create a readable preview block.\n`
+  )).join('\n')
+  await editor.fill(content)
+  await page.getByRole('button', { name: 'Split preview and source' }).click()
+
+  const preview = page.getByLabel('Preview panel')
+  await expect(preview.locator('[data-mdview-source-start]').first()).toBeVisible()
+
+  await editor.evaluate((element) => {
+    element.scrollTop = element.scrollHeight / 2
+    element.dispatchEvent(new Event('scroll'))
+  })
+  await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(100)
+
+  await editor.evaluate((element) => {
+    element.scrollTop = 0
+  })
+  await preview.evaluate((element) => {
+    element.scrollTop = element.scrollHeight / 2
+    element.dispatchEvent(new Event('scroll'))
+  })
+  await expect.poll(() => editor.evaluate((element) => element.scrollTop)).toBeGreaterThan(100)
+
+  await page.getByRole('button', { name: 'Disable synchronized scrolling' }).click()
+  const previewTopBeforeDisable = await preview.evaluate((element) => element.scrollTop)
+  await editor.evaluate((element) => {
+    element.scrollTop = 0
+    element.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(100)
+  await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBe(previewTopBeforeDisable)
+})
+
 test('restores a pending unsaved draft', async ({ page }) => {
   await page.goto('/?e2eDraft=recover')
 

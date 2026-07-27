@@ -46,4 +46,18 @@ describe('createLightExportContent', () => {
     expect(readRemoteImageFile).toHaveBeenCalledWith('https://example.com/remote.png')
     expect(readRemoteImageFile).toHaveBeenCalledTimes(1)
   })
+
+  it('removes internal split-scroll source attributes from export output', async () => {
+    const { createLightExportContent } = await import('./exportPreview')
+    const preview = document.createElement('article')
+    preview.innerHTML = '<p data-mdview-source-start="3" data-mdview-source-end="4">Content</p>'
+
+    await expect(createLightExportContent(preview, {
+      sourcePath: null,
+      readLocalImageFile: async () => ({ dataUrl: 'data:image/png;base64,local' }),
+    })).resolves.toEqual({
+      html: '<p>Content</p>',
+      unresolvedResources: [],
+    })
+  })
 })
