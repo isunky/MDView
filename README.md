@@ -19,7 +19,7 @@
   </p>
 
   <p>
-    <strong>Version / 版本：</strong>2.4.0
+    <strong>Version / 版本：</strong>2.4.1
     · <a href="https://www.sunky.net">Sunky</a>
   </p>
 </div>
@@ -188,8 +188,8 @@ macOS 签名状态 / macOS signing status:
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 2.4.0 |
-| Version | 2.4.0 |
+| 当前版本 | 2.4.1 |
+| Version | 2.4.1 |
 | 平台 / Platforms | Windows · macOS |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [Apache-2.0](LICENSE) |
