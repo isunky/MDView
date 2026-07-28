@@ -4,9 +4,9 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation
 
 ## Scope / 适用范围
 
-This policy applies to official Windows MSI installers and the `MDView.exe` executable in official Portable ZIP releases published from [isunky/MDView](https://github.com/isunky/MDView).
+This policy applies to official Windows MSI installers, the `MDView.exe` executable in official Portable ZIP releases, and macOS Universal DMG releases published from [isunky/MDView](https://github.com/isunky/MDView).
 
-本政策适用于从 [isunky/MDView](https://github.com/isunky/MDView) 发布的官方 Windows MSI 安装包，以及官方 Portable ZIP 中的 `MDView.exe`。
+本政策适用于从 [isunky/MDView](https://github.com/isunky/MDView) 发布的官方 Windows MSI 安装包、官方 Portable ZIP 中的 `MDView.exe`，以及 macOS Universal DMG。
 
 ## Release authorization / 发布授权
 
@@ -28,9 +28,15 @@ This policy applies to official Windows MSI installers and the `MDView.exe` exec
 
 ## Verification / 验证方式
 
-Each official Windows release includes `SHA256SUMS.txt`. After download, verify that the file hash matches the release checksum and inspect the Authenticode publisher in Windows file properties.
+Each official Windows release includes `SHA256SUMS.txt`. After download, verify that the file hash matches the release checksum and inspect the Authenticode publisher in Windows file properties. Official macOS DMG releases are currently ad-hoc signed and verified by CI with `codesign` and `hdiutil`; they are not yet Apple-notarized.
 
-每个官方 Windows Release 都包含 `SHA256SUMS.txt`。下载后请核对文件哈希与发布校验和一致，并在 Windows 文件属性中检查 Authenticode 发布者。
+每个官方 Windows Release 都包含 `SHA256SUMS.txt`。下载后请核对文件哈希与发布校验和一致，并在 Windows 文件属性中检查 Authenticode 发布者。当前 macOS DMG 采用 ad-hoc 签名，并由 CI 使用 `codesign` 和 `hdiutil` 验证；尚未完成 Apple 公证。
+
+## macOS roadmap / macOS 后续计划
+
+The current ad-hoc signature prevents the damaged-app error for downloads from GitHub Releases, but it does not establish a trusted developer identity. After paid Apple Developer Program credentials are available, releases will use a Developer ID Application certificate, Apple notarization, and stapling.
+
+当前 ad-hoc 签名可避免 GitHub Release 下载后出现“应用已损坏”，但不能建立受信任的开发者身份。取得付费 Apple Developer Program 凭据后，Release 将升级为 Developer ID Application 证书签名、Apple 公证和 stapling。
 
 ## License / 许可证
 

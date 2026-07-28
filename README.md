@@ -88,10 +88,13 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 | --- | --- | --- |
 | Windows | MSI | 推荐；支持安装、文件关联和应用内更新 / Recommended; installer, file associations, and in-app updates |
 | Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
-| macOS | DMG | macOS 10.15 或更高版本 / macOS 10.15 or later |
+| macOS | Universal DMG | macOS 10.15 或更高版本；ad-hoc 签名 / macOS 10.15 or later; ad-hoc signed |
 
 > 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
 > Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
+
+> macOS Universal DMG 使用 ad-hoc 签名，避免 GitHub 下载后被 macOS 判定为“已损坏”。由于尚未完成 Apple 公证，首次启动仍可能需要右键点击应用并选择“打开”，或前往“隐私与安全性”允许。请始终直接从 GitHub Release 下载 DMG，不要转发解压后的 `.app`。
+> The macOS Universal DMG is ad-hoc signed so macOS does not treat a GitHub download as damaged. It is not yet Apple-notarized, so first launch may require right-clicking the app and choosing Open, or approving it in Privacy & Security. Always download the DMG directly from GitHub Releases and do not redistribute an extracted `.app`.
 
 签名政策与发布审批流程见 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and release approval process.
@@ -135,7 +138,7 @@ npm run test:e2e
 | --- | --- |
 | Windows MSI | `npm run desktop:build -- --bundles msi` |
 | Windows installers + Portable ZIP | `npm run package:windows` |
-| macOS DMG | `npm run desktop:build -- --bundles dmg` |
+| macOS DMG | `npm run desktop:build -- --bundles dmg` (ad-hoc signed by default) |
 
 同步所有版本文件 / Synchronize all version files:
 
@@ -161,6 +164,13 @@ Tauri 自动更新签名 Secrets / Tauri updater signing secrets:
 
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+macOS 签名状态 / macOS signing status:
+
+- 当前构建使用 ad-hoc 签名，避免下载后的应用被 macOS 视为损坏。
+- Apple Developer ID 签名、公证和 stapling 尚未配置；取得付费 Apple Developer Program 凭据后，再将其接入 Release 工作流。
+- Current builds use ad-hoc signing so macOS does not treat downloaded apps as damaged.
+- Developer ID signing, notarization, and stapling will be added after paid Apple Developer Program credentials are available.
 
 </details>
 

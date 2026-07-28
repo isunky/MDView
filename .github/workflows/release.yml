@@ -105,6 +105,8 @@ jobs:
             signing_notes+=$'\n\n## Automatic updates / 自动更新\n\nIn-app updates are unavailable because Tauri updater signing is not configured.\n\n应用内自动更新不可用，因为 Tauri 更新签名尚未配置。'
             echo "::warning::Updater signing is disabled because these GitHub secrets are missing: ${missing_updater_values[*]}"
           fi
+
+          signing_notes+=$'\n\n## macOS installation / macOS 安装\n\nThe Universal DMG is ad-hoc signed to prevent macOS from treating the GitHub download as damaged. It is not Apple-notarized, so macOS may require one-time approval through right-click **Open** or **Privacy & Security**. Download the DMG directly from this release; do not redistribute the extracted `.app` bundle.\n\nUniversal DMG 已进行 ad-hoc 签名，避免 macOS 将 GitHub 下载内容判定为“已损坏”。该版本尚未完成 Apple 公证，首次启动可能仍需右键选择“打开”，或在“隐私与安全性”中允许。请直接从本 Release 下载 DMG，不要转发解压后的 `.app` 应用包。'
           echo "authenticode_signing_enabled=$authenticode_signing_enabled" >> "$GITHUB_OUTPUT"
           echo "updater_signing_enabled=$updater_signing_enabled" >> "$GITHUB_OUTPUT"
           {

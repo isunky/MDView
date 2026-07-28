@@ -9,7 +9,7 @@
 - 已完成：38 / 62 项，约 61%。
 - 完整完成：Markdown 渲染安全、DOCX 按需加载、App 组件拆分、查找替换、图片粘贴与拖入、阅读现场恢复、编辑状态栏、阅读主题设置、原子保存、未保存草稿恢复、分屏双向同步滚动。
 - 部分完成：分屏预览性能、自动更新、构建环境稳定性。
-- 尚未开始或尚无有效实现：macOS 签名与公证、Mermaid 与本地图片结果缓存、多标签页、文件夹工作区、专项 E2E 与性能基准。
+- 尚未开始或尚无有效实现：macOS Developer ID 签名与公证、Mermaid 与本地图片结果缓存、多标签页、文件夹工作区、专项 E2E 与性能基准。
 - 本次核对仅更新完成状态，不把已有单元/组件测试等同于仍明确要求的 E2E 测试。
 
 ## P0：安全与发布可信度
@@ -28,10 +28,12 @@
 
 ### macOS 签名与公证
 
-状态：未开始。CI 当前使用 `--no-sign` 构建 Universal DMG，没有签名、公证或 stapling 步骤。
+状态：部分完成（2026-07-28）。CI 已对 Universal DMG 使用 ad-hoc 签名，并验证应用签名、通用架构和 DMG 完整性；Developer ID、公证和 stapling 尚未配置。
 
+- [x] 移除 `--no-sign`，为 Universal DMG 启用 ad-hoc 签名。
+- [x] 在 GitHub Actions 中验证应用签名、arm64/x86_64 架构和 DMG 挂载内容。
 - [ ] 配置 Apple Developer ID Application 证书。
-- [ ] 在 GitHub Actions 中加入代码签名。
+- [ ] 将 CI 升级为 Developer ID 代码签名。
 - [ ] 上传并等待 Apple Notarization。
 - [ ] 对 DMG 执行 stapling。
 - [ ] 在一台未配置开发环境的 macOS 设备上验证安装和启动。

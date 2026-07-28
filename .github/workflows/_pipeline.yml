@@ -327,7 +327,47 @@ jobs:
         run: rm -rf src-tauri/target/universal-apple-darwin/release/bundle/dmg
 
       - name: Build universal DMG
-        run: npm run tauri -- build --bundles dmg --target universal-apple-darwin --ci --no-sign
+        run: npm run tauri -- build --bundles dmg --target universal-apple-darwin --ci
+
+      - name: Verify signed macOS bundle and DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          bundle_root="src-tauri/target/universal-apple-darwin/release/bundle"
+          app_path="$(find "$bundle_root/macos" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          dmg_path="$(find "$bundle_root/dmg" -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+
+          if [[ -z "$app_path" || -z "$dmg_path" ]]; then
+            echo "::error::Expected macOS app bundle and DMG were not produced."
+            exit 1
+          fi
+
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          codesign_details="$(codesign -dv --verbose=4 "$app_path" 2>&1)"
+          printf '%s\n' "$codesign_details"
+          grep -q 'Signature=adhoc' <<< "$codesign_details"
+
+          architectures="$(lipo -archs "$app_path/Contents/MacOS/MDView")"
+          printf 'Universal architectures: %s\n' "$architectures"
+          [[ "$architectures" == *"arm64"* && "$architectures" == *"x86_64"* ]]
+
+          hdiutil verify "$dmg_path"
+
+          mount_path="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "$mount_path" -quiet >/dev/null 2>&1 || true
+            rmdir "$mount_path" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          hdiutil attach "$dmg_path" -readonly -nobrowse -mountpoint "$mount_path" >/dev/null
+          mounted_app_path="$(find "$mount_path" -maxdepth 2 -type d -name '*.app' -print -quit)"
+          if [[ -z "$mounted_app_path" ]]; then
+            echo "::error::The mounted DMG does not contain an app bundle."
+            exit 1
+          fi
+          codesign --verify --deep --strict --verbose=2 "$mounted_app_path"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
