@@ -335,22 +335,12 @@ jobs:
           set -euo pipefail
 
           bundle_root="src-tauri/target/universal-apple-darwin/release/bundle"
-          app_path="$(find "$bundle_root/macos" -maxdepth 1 -type d -name '*.app' -print -quit)"
           dmg_path="$(find "$bundle_root/dmg" -maxdepth 1 -type f -name '*.dmg' -print -quit)"
 
-          if [[ -z "$app_path" || -z "$dmg_path" ]]; then
-            echo "::error::Expected macOS app bundle and DMG were not produced."
+          if [[ -z "$dmg_path" ]]; then
+            echo "::error::Expected macOS DMG was not produced."
             exit 1
           fi
-
-          codesign --verify --deep --strict --verbose=2 "$app_path"
-          codesign_details="$(codesign -dv --verbose=4 "$app_path" 2>&1)"
-          printf '%s\n' "$codesign_details"
-          grep -q 'Signature=adhoc' <<< "$codesign_details"
-
-          architectures="$(lipo -archs "$app_path/Contents/MacOS/MDView")"
-          printf 'Universal architectures: %s\n' "$architectures"
-          [[ "$architectures" == *"arm64"* && "$architectures" == *"x86_64"* ]]
 
           hdiutil verify "$dmg_path"
 
@@ -368,6 +358,13 @@ jobs:
             exit 1
           fi
           codesign --verify --deep --strict --verbose=2 "$mounted_app_path"
+          codesign_details="$(codesign -dv --verbose=4 "$mounted_app_path" 2>&1)"
+          printf '%s\n' "$codesign_details"
+          grep -q 'Signature=adhoc' <<< "$codesign_details"
+
+          architectures="$(lipo -archs "$mounted_app_path/Contents/MacOS/mdview")"
+          printf 'Universal architectures: %s\n' "$architectures"
+          [[ "$architectures" == *"arm64"* && "$architectures" == *"x86_64"* ]]
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
