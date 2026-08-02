@@ -53,8 +53,9 @@ import { useReadingSession } from './hooks/useReadingSession'
 import { useReadingPreferences } from './hooks/useReadingPreferences'
 import { useTransientToast } from './hooks/useTransientToast'
 import { useSplitScrollSync } from './hooks/useSplitScrollSync'
-import { tauriFileAccess, type FileAccess } from './platform/fileAccess'
-import { tauriAppUpdateClient, type AppUpdateClient } from './platform/appUpdates'
+import type { FileAccess } from './platform/fileAccess'
+import type { AppUpdateClient } from './platform/appUpdates'
+import { unsupportedAppUpdateClient } from './platform/unsupportedAppUpdates'
 import {
   withShortcutTitle,
 } from './platform/keyboardShortcuts'
@@ -66,14 +67,16 @@ type ViewMode = ReadingViewMode
 
 type AppProps = {
   appUpdateClient?: AppUpdateClient
-  fileAccess?: FileAccess
+  fileAccess: FileAccess
   initialLanguage?: AppLanguage
+  supportsAppUpdates?: boolean
 }
 
 function App({
-  appUpdateClient = tauriAppUpdateClient,
-  fileAccess = tauriFileAccess,
+  appUpdateClient = unsupportedAppUpdateClient,
+  fileAccess,
   initialLanguage,
+  supportsAppUpdates = true,
 }: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
@@ -398,6 +401,7 @@ function App({
     ? undefined
     : t.nativeFileUnavailable
   const documentActionTitle = isWelcomeVisible ? t.welcomeDocumentRequired : nativeFileTitle
+  const canRevealFiles = fileAccess.canRevealFile ?? fileAccess.supportsNativeFiles
   const updateActionTitle = distribution === 'unsupported' ? t.updateUnavailable : undefined
   const newTitle = withShortcutTitle(t.createNewLabel, { key: 'n' }, shortcutPlatform)
   const openTitle = withShortcutTitle(t.openLabel, { key: 'o' }, shortcutPlatform)
@@ -508,7 +512,7 @@ function App({
                       >
                         <span className="recent-file-title">{file.title}</span>
                       </button>
-                      {fileAccess.supportsNativeFiles ? (
+                      {canRevealFiles ? (
                         <button
                           type="button"
                           className="recent-file-reveal"
@@ -620,7 +624,7 @@ function App({
                 >
                   {t.readingSettings}
                 </button>
-                <button
+                {supportsAppUpdates ? <button
                   type="button"
                   className="action-menu-item"
                   onClick={() => void handleCheckForUpdates()}
@@ -629,7 +633,7 @@ function App({
                   role="menuitem"
                 >
                   {updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}
-                </button>
+                </button> : null}
                 <button
                   type="button"
                   className="action-menu-item"

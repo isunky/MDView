@@ -1,6 +1,10 @@
-import { openUrl } from '@tauri-apps/plugin-opener'
-
 export type OpenExternalLink = (url: string) => Promise<void> | void
+
+declare global {
+  interface Window {
+    __MDVIEW_OPEN_EXTERNAL_LINK__?: OpenExternalLink
+  }
+}
 
 export function isExternalWebUrl(href: string | undefined): href is string {
   if (!href) {
@@ -20,14 +24,10 @@ export async function openExternalLink(url: string): Promise<void> {
     throw new Error('Only HTTP and HTTPS links can be opened externally.')
   }
 
-  if (isTauriRuntime()) {
-    await openUrl(url)
+  if (window.__MDVIEW_OPEN_EXTERNAL_LINK__) {
+    await window.__MDVIEW_OPEN_EXTERNAL_LINK__(url)
     return
   }
 
   window.open(url, '_blank', 'noopener,noreferrer')
-}
-
-function isTauriRuntime(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 }

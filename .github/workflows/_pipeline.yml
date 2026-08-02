@@ -68,6 +68,17 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Build Edge extension package
+        run: npm run edge:package
+
+      - name: Upload Edge extension package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-edge-extension
+          path: dist/MDView-edge.zip
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 

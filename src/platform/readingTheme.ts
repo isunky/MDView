@@ -1,5 +1,10 @@
-import { setTheme } from '@tauri-apps/api/app'
 import type { EffectiveReadingTheme, ReadingPreferences } from '../domain/readingPreferences'
+
+declare global {
+  interface Window {
+    __MDVIEW_SYNC_NATIVE_THEME__?: (theme: EffectiveReadingTheme) => Promise<void>
+  }
+}
 
 export function getSystemReadingTheme(): EffectiveReadingTheme {
   return typeof window !== 'undefined'
@@ -30,17 +35,9 @@ export function bootstrapReadingTheme(loadPreferences: () => ReadingPreferences,
 }
 
 export async function syncNativeAppTheme(theme: EffectiveReadingTheme) {
-  if (!isTauriRuntime()) {
-    return
-  }
-
   try {
-    await setTheme(theme)
+    await window.__MDVIEW_SYNC_NATIVE_THEME__?.(theme)
   } catch {
-    // Browser previews and older desktop runtimes can safely keep their native default.
+    // Browser builds and older desktop runtimes can safely keep their native default.
   }
-}
-
-function isTauriRuntime(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 }

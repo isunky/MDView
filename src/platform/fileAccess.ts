@@ -41,6 +41,7 @@ export type ImageAssetWriteRequest = {
 
 export type FileAccess = {
   supportsNativeFiles: boolean
+  canRevealFile?: boolean
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   openMarkdownFileAtPath: (path: string) => Promise<OpenedMarkdownFile>
   revealFileInFolder: (path: string) => Promise<void>
@@ -59,6 +60,7 @@ export type FileAccess = {
 
 export const tauriFileAccess: FileAccess = {
   supportsNativeFiles: isTauriRuntime(),
+  canRevealFile: isTauriRuntime(),
 
   async openMarkdownFile() {
     if (!isTauriRuntime()) {

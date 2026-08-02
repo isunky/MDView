@@ -19,6 +19,9 @@ export default defineConfig([
       globals: {
         ...globals.browser,
         ...globals.node,
+        chrome: 'readonly',
+        showOpenFilePicker: 'readonly',
+        showSaveFilePicker: 'readonly',
       },
     },
   },

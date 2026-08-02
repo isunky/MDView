@@ -8,7 +8,7 @@
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
     <a href="https://github.com/isunky/MDView/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/isunky/MDView/actions/workflows/ci.yml/badge.svg" /></a>
     <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
-    <img alt="Windows and macOS" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-334155?style=flat-square" />
+    <img alt="Windows, macOS, and Edge" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Edge-334155?style=flat-square" />
   </p>
 
   <p>
@@ -89,6 +89,7 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 | Windows | MSI | 推荐；支持安装、文件关联和应用内更新 / Recommended; installer, file associations, and in-app updates |
 | Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
 | macOS | Universal DMG | macOS 10.15 或更高版本；ad-hoc 签名 / macOS 10.15 or later; ad-hoc signed |
+| Microsoft Edge | Extension ZIP | 在 `edge://extensions` 打开开发人员模式后选择“加载解压缩的扩展”，或使用 CI 产物 ZIP 提交 Edge Add-ons / Load unpacked from `dist-edge`, or submit the CI ZIP to Edge Add-ons |
 
 > 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
 > Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
@@ -130,6 +131,7 @@ npm run test
 npm run lint
 npm run build
 npm run test:e2e
+npm run edge:package
 ```
 
 ### 构建 / Packaging
@@ -139,6 +141,7 @@ npm run test:e2e
 | Windows MSI | `npm run desktop:build -- --bundles msi` |
 | Windows installers + Portable ZIP | `npm run package:windows` |
 | macOS DMG | `npm run desktop:build -- --bundles dmg` (ad-hoc signed by default) |
+| Edge extension ZIP | `npm run edge:package` |
 
 同步所有版本文件 / Synchronize all version files:
 
@@ -152,6 +155,10 @@ npm run version:sync -- 2.0.1
 GitHub Actions 会执行单元测试、ESLint、前端构建和 Playwright E2E 测试。手动运行 CI 可生成 Windows MSI、Portable ZIP 和 macOS Universal DMG；推送 `v*` Tag 或运行 Release 工作流可创建 GitHub Release。
 
 GitHub Actions runs unit tests, ESLint, frontend builds, and Playwright E2E tests. A manual CI run can build Windows MSI, Portable ZIP, and macOS Universal DMG packages. Push a `v*` tag or run the Release workflow to create a GitHub Release.
+
+Edge 扩展使用 MV3，仅在点击扩展图标或页面右键菜单时读取当前页面；本地文件通过浏览器文件选择器授权，最近文件只保存浏览器持久化的文件句柄。首次发布必须在 Microsoft Partner Center 手动创建产品；之后可配置 `EDGE_ADDONS_API_KEY` Secret 以及 `EDGE_ADDONS_CLIENT_ID`、`EDGE_ADDONS_PRODUCT_ID` Variables，让 `v*` tag 自动上传并提交更新。
+
+The Edge extension uses MV3 and reads a page only after an action-button or context-menu command. Local files use browser-granted file handles, and recent files retain only those browser-persisted handles. The first product must be created manually in Microsoft Partner Center; afterwards configure the `EDGE_ADDONS_API_KEY` secret plus `EDGE_ADDONS_CLIENT_ID` and `EDGE_ADDONS_PRODUCT_ID` variables to upload and submit updates from `v*` tags.
 
 Windows 发布签名 / Windows release signing:
 
@@ -190,7 +197,7 @@ macOS 签名状态 / macOS signing status:
 | --- | --- |
 | 当前版本 | 2.4.1 |
 | Version | 2.4.1 |
-| 平台 / Platforms | Windows · macOS |
+| 平台 / Platforms | Windows · macOS · Microsoft Edge extension |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [Apache-2.0](LICENSE) |
 

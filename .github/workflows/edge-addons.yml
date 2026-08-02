@@ -1,0 +1,118 @@
+name: Edge Add-ons
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Submit the uploaded package for Edge Add-ons certification
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build Edge extension ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EDGE_ADDONS_API_KEY: ${{ secrets.EDGE_ADDONS_API_KEY }}
+      EDGE_ADDONS_CLIENT_ID: ${{ vars.EDGE_ADDONS_CLIENT_ID }}
+      EDGE_ADDONS_PRODUCT_ID: ${{ vars.EDGE_ADDONS_PRODUCT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run edge:package
+
+      - name: Upload Edge extension ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-edge-extension
+          path: dist/MDView-edge.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload and submit Edge Add-ons update
+        if: >-
+          ${{
+            (github.event_name == 'push' || inputs.publish) &&
+            env.EDGE_ADDONS_API_KEY != '' &&
+            env.EDGE_ADDONS_CLIENT_ID != '' &&
+            env.EDGE_ADDONS_PRODUCT_ID != ''
+          }}
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_url="https://api.addons.microsoftedge.microsoft.com/v1/products/${EDGE_ADDONS_PRODUCT_ID}/submissions"
+          headers=(
+            -H "Authorization: ApiKey ${EDGE_ADDONS_API_KEY}"
+            -H "X-ClientID: ${EDGE_ADDONS_CLIENT_ID}"
+          )
+          response_headers="$(mktemp)"
+
+          curl --fail-with-body --request POST \
+            "${headers[@]}" \
+            -H 'Content-Type: application/zip' \
+            --dump-header "$response_headers" \
+            --output /dev/null \
+            --upload-file dist/MDView-edge.zip \
+            "${base_url}/draft/package"
+
+          operation_url="$(awk 'tolower($1) == "location:" { print $2 }' "$response_headers" | tr -d '\r' | tail -n 1)"
+          if [[ -z "$operation_url" ]]; then
+            echo '::error::Edge Add-ons did not return an upload operation URL.'
+            exit 1
+          fi
+
+          for attempt in {1..60}; do
+            status="$(curl --fail-with-body --silent --show-error "${headers[@]}" "$operation_url" | jq -r '.status // empty')"
+            case "$status" in
+              Succeeded|Success|Completed)
+                break
+                ;;
+              Failed|Error)
+                echo "::error::Edge Add-ons rejected the package: $status"
+                exit 1
+                ;;
+              *)
+                if [[ "$attempt" == 60 ]]; then
+                  echo "::error::Timed out while Edge Add-ons processed the package (last status: ${status:-unknown})."
+                  exit 1
+                fi
+                sleep 5
+                ;;
+            esac
+          done
+
+          curl --fail-with-body --request POST \
+            "${headers[@]}" \
+            -H 'Content-Type: application/json' \
+            --data "{\"notes\":\"MDView ${RELEASE_VERSION} automated release.\"}" \
+            "${base_url}"
+
+      - name: Explain skipped publication
+        if: >-
+          ${{
+            (github.event_name == 'push' || inputs.publish) &&
+            (env.EDGE_ADDONS_API_KEY == '' || env.EDGE_ADDONS_CLIENT_ID == '' || env.EDGE_ADDONS_PRODUCT_ID == '')
+          }}
+        run: echo 'Edge Add-ons publish skipped because the optional API credentials are not configured.'

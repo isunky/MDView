@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  isWindowsDistribution,
-  tauriAppUpdateClient,
-  type AppDistribution,
-  type AppUpdateCandidate,
-  type AppUpdateClient,
-  type AppUpdateProgress,
+import type {
+  AppDistribution,
+  AppUpdateCandidate,
+  AppUpdateClient,
+  AppUpdateProgress,
 } from '../platform/appUpdates'
 
 export type AppUpdatePhase =
@@ -18,7 +16,7 @@ export type AppUpdatePhase =
   | 'error'
 
 type UseAppUpdaterOptions = {
-  client?: AppUpdateClient
+  client: AppUpdateClient
   checkFailedMessage: string
   installFailedMessage: string
   releaseOpenFailedMessage: string
@@ -26,7 +24,7 @@ type UseAppUpdaterOptions = {
 }
 
 export function useAppUpdater({
-  client = tauriAppUpdateClient,
+  client,
   checkFailedMessage,
   installFailedMessage,
   releaseOpenFailedMessage,
@@ -156,4 +154,8 @@ export function useAppUpdater({
     progress,
     update,
   }
+}
+
+function isWindowsDistribution(distribution: AppDistribution): boolean {
+  return distribution === 'windows-installed' || distribution === 'windows-portable'
 }

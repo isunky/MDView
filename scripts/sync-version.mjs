@@ -51,6 +51,9 @@ const files = [
       'src/appInfo.ts version',
     ),
   ),
+  updateJson('edge/public/manifest.json', (json) => {
+    json.version = version
+  }),
   updateText('README.md', (content) => {
     let nextContent = content
     nextContent = replaceRequired(

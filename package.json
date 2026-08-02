@@ -8,6 +8,8 @@
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "build": "tsc -b && vite build && npm run bundle:check",
+    "edge:build": "tsc -p tsconfig.edge.json && vite build --config vite.edge.config.ts",
+    "edge:package": "npm run edge:build && node scripts/package-edge-extension.mjs",
     "bundle:check": "node scripts/check-startup-bundle.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
