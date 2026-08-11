@@ -19,7 +19,7 @@
   </p>
 
   <p>
-    <strong>Version / 版本：</strong>2.4.1
+    <strong>Version / 版本：</strong>3.0.0
     · <a href="https://www.sunky.net">Sunky</a>
   </p>
 </div>
@@ -205,8 +205,8 @@ macOS 签名状态 / macOS signing status:
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 2.4.1 |
-| Version | 2.4.1 |
+| 当前版本 | 3.0.0 |
+| Version | 3.0.0 |
 | 平台 / Platforms | Windows · macOS · Microsoft Edge extension |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [Apache-2.0](LICENSE) |
