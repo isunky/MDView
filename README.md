@@ -63,8 +63,8 @@ MDView 是一款面向本地 Markdown 文档的轻量桌面应用。它把阅读
 - **三种视图**：在预览、编辑和分屏模式之间快速切换。
 - **长文档导航**：自动提取 `H1` 至 `H4` 生成目录，可切换展示层级、跟随当前阅读位置，并按文件恢复阅读现场。
 - **阅读主题与排版**：支持浅色、深色和跟随系统；可调整正文的字体、字号、行高和内容宽度，代码高亮会随主题自动切换。
-- **本地文件体验**：支持最近文件、相对路径图片、本地 Markdown 链接，以及把粘贴或拖入的图片保存到同级 `assets` 目录。
-- **实用编辑能力**：提供查找替换、格式工具栏、语法速查、列表续写、缩进、常用快捷键和实时编辑状态栏。
+- **本地文件体验**：支持最近文件、相对路径图片和本地 Markdown 链接；可从工具栏批量选择、粘贴或拖入图片，自动保存到同级 `assets` 目录，并显示导入进度和失败重试入口。
+- **实用编辑能力**：提供撤销重做、快速表格、H1-H4 标题、代码块、查找替换、语法速查、列表续写和实时编辑状态栏。
 - **灵活导出**：可导出独立 HTML、Word `.docx`，也可通过系统打印生成 PDF。
 
 ## English
@@ -75,8 +75,8 @@ MDView is a lightweight desktop app for local Markdown documents. It prioritizes
 - **Three views**: switch quickly between Preview, Edit, and Split modes.
 - **Long-document navigation**: generate an outline from `H1` to `H4`, choose the visible depth, follow the current reading position, and restore each file's reading state.
 - **Reading theme and typography**: choose light, dark, or system appearance; tune body font, size, line height, and content width, with code highlighting following the active theme.
-- **Local-first workflow**: recent files, relative images, local Markdown links, image paste or drag-and-drop into a sibling `assets` folder, and `.md` / `.markdown` associations.
-- **Practical editing**: find and replace, formatting toolbar, syntax reference, list continuation, indentation, keyboard shortcuts, and a live document status bar.
+- **Local-first workflow**: recent files, relative images, local Markdown links, and `.md` / `.markdown` associations; select multiple images from the toolbar, paste, or drag them into a sibling `assets` folder with progress and retry support.
+- **Practical editing**: undo and redo, quick GFM tables, H1-H4 headings, code blocks, find and replace, syntax reference, list continuation, and a live document status bar.
 - **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing.
 
 ## 下载 / Download
@@ -117,6 +117,8 @@ See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and 
 | 保存 / Save | `Ctrl+S` | `Command+S` |
 | 另存为 / Save As | `Ctrl+Shift+S` | `Command+Shift+S` |
 | 查找 / Find | `Ctrl+F` | `Command+F` |
+| 撤销 / Undo | `Ctrl+Z` | `Command+Z` |
+| 重做 / Redo | `Ctrl+Y` 或 `Ctrl+Shift+Z` | `Command+Shift+Z` |
 | 粗体 / Bold | `Ctrl+B` | `Command+B` |
 | 斜体 / Italic | `Ctrl+I` | `Command+I` |
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createImageMarkdown,
   createPendingImageAssets,
@@ -11,8 +11,19 @@ import {
 import type { SelectionRange } from '../components/MarkdownEditor'
 import type { FileAccess } from '../platform/fileAccess'
 
+export type ImageImportProgress = {
+  completed: number
+  total: number
+}
+
+type FailedImageImport = {
+  contextKey: string
+  files: File[]
+}
+
 type UseImageInsertionOptions = {
   content: string
+  contextKey: string
   documentPath: string | null
   ensureDocumentPath: () => Promise<string | null>
   fileAccess: FileAccess
@@ -21,6 +32,7 @@ type UseImageInsertionOptions = {
   messages: {
     failed: (count: number) => string
     invalid: string
+    partial: (imported: number, failed: number) => string
     success: (count: number) => string
     unsupported: string
   }
@@ -28,6 +40,7 @@ type UseImageInsertionOptions = {
 
 export function useImageInsertion({
   content,
+  contextKey,
   documentPath,
   ensureDocumentPath,
   fileAccess,
@@ -36,6 +49,109 @@ export function useImageInsertion({
   messages,
 }: UseImageInsertionOptions) {
   const [isImportingImages, setIsImportingImages] = useState(false)
+  const [progress, setProgress] = useState<ImageImportProgress | null>(null)
+  const [failedImport, setFailedImport] = useState<FailedImageImport>({ contextKey, files: [] })
+  const importingRef = useRef(false)
+  const contextKeyRef = useRef(contextKey)
+  const failedFiles = useMemo(
+    () => failedImport.contextKey === contextKey ? failedImport.files : [],
+    [contextKey, failedImport],
+  )
+
+  useEffect(() => {
+    contextKeyRef.current = contextKey
+  }, [contextKey])
+
+  const runImport = useCallback(async (
+    files: File[],
+    selection: SelectionRange,
+    rejectedCount: number,
+  ) => {
+    if (importingRef.current || files.length === 0) {
+      return
+    }
+
+    const batchContextKey = contextKeyRef.current
+    importingRef.current = true
+    setIsImportingImages(true)
+
+    try {
+      const path = documentPath ?? await ensureDocumentPath()
+      if (!path || contextKeyRef.current !== batchContextKey) {
+        return
+      }
+
+      const pendingAssets = createPendingImageAssets(files)
+      const placeholders = pendingAssets.map((asset) => asset.placeholder).join('\n')
+      onContentTransform((currentContent) => insertAtSelection(
+        currentContent,
+        content === currentContent ? selection : { start: currentContent.length, end: currentContent.length },
+        placeholders,
+      ))
+      setProgress({ completed: 0, total: pendingAssets.length })
+
+      let importedCount = 0
+      const retryableFailures: File[] = []
+      for (const [index, asset] of pendingAssets.entries()) {
+        const mimeType = getImageAssetMimeType(asset.file)
+        if (!mimeType || asset.file.size > MAX_IMAGE_ASSET_SIZE) {
+          if (contextKeyRef.current === batchContextKey) {
+            onContentTransform((currentContent) => currentContent.replace(asset.placeholder, ''))
+          }
+          retryableFailures.push(asset.file)
+          setProgress({ completed: index + 1, total: pendingAssets.length })
+          continue
+        }
+
+        try {
+          const written = await fileAccess.writeImageAsset(path, {
+            bytes: new Uint8Array(await asset.file.arrayBuffer()),
+            fileName: asset.file.name,
+            mimeType,
+          })
+          if (contextKeyRef.current === batchContextKey) {
+            const markdown = createImageMarkdown(
+              getImageAltText(asset.file),
+              encodeRelativePath(written.relativePath),
+            )
+            onContentTransform((currentContent) => currentContent.replace(asset.placeholder, markdown))
+            importedCount += 1
+          }
+        } catch {
+          if (contextKeyRef.current === batchContextKey) {
+            onContentTransform((currentContent) => currentContent.replace(asset.placeholder, ''))
+            retryableFailures.push(asset.file)
+          }
+        }
+        setProgress({ completed: index + 1, total: pendingAssets.length })
+      }
+
+      if (contextKeyRef.current !== batchContextKey) {
+        return
+      }
+
+      if (retryableFailures.length > 0) {
+        setFailedImport((currentImport) => ({
+          contextKey: batchContextKey,
+          files: currentImport.contextKey === batchContextKey
+            ? [...currentImport.files, ...retryableFailures]
+            : retryableFailures,
+        }))
+      }
+      const failedCount = retryableFailures.length + rejectedCount
+      if (importedCount > 0 && failedCount > 0) {
+        onNotify(messages.partial(importedCount, failedCount))
+      } else if (importedCount > 0) {
+        onNotify(messages.success(importedCount))
+      } else if (failedCount > 0) {
+        onNotify(messages.failed(failedCount))
+      }
+    } finally {
+      importingRef.current = false
+      setIsImportingImages(false)
+      setProgress(null)
+    }
+  }, [content, documentPath, ensureDocumentPath, fileAccess, messages, onContentTransform, onNotify])
 
   const importImages = useCallback(async (files: File[], selection: SelectionRange) => {
     const limitedFiles = files.slice(0, MAX_IMAGE_ASSETS_PER_IMPORT)
@@ -46,72 +162,36 @@ export function useImageInsertion({
       onNotify(messages.invalid)
       return
     }
-
-    if (!fileAccess.supportsNativeFiles) {
+    if (!fileAccess.supportsImageImport) {
       onNotify(messages.unsupported)
       return
     }
 
-    const path = documentPath ?? await ensureDocumentPath()
-    if (!path) {
+    await runImport(supportedFiles, selection, rejectedCount)
+  }, [fileAccess.supportsImageImport, messages.invalid, messages.unsupported, onNotify, runImport])
+
+  const retryFailedImages = useCallback(async (selection: SelectionRange) => {
+    const files = failedFiles
+    if (files.length === 0) {
       return
     }
 
-    const pendingAssets = createPendingImageAssets(supportedFiles)
-    const placeholders = pendingAssets.map((asset) => asset.placeholder).join('\n')
-    onContentTransform((currentContent) => insertAtSelection(
-      currentContent,
-      content === currentContent ? selection : { start: currentContent.length, end: currentContent.length },
-      placeholders,
-    ))
-    setIsImportingImages(true)
+    setFailedImport({ contextKey, files: [] })
+    await runImport(files, selection, 0)
+  }, [contextKey, failedFiles, runImport])
 
-    let importedCount = 0
-    let failedCount = 0
-    for (const asset of pendingAssets) {
-      const mimeType = getImageAssetMimeType(asset.file)
-      if (!mimeType || asset.file.size > MAX_IMAGE_ASSET_SIZE) {
-        failedCount += 1
-        onContentTransform((currentContent) => currentContent.replace(asset.placeholder, ''))
-        continue
-      }
+  const dismissFailedImages = useCallback(() => {
+    setFailedImport({ contextKey, files: [] })
+  }, [contextKey])
 
-      try {
-        const written = await fileAccess.writeImageAsset(path, {
-          bytes: new Uint8Array(await asset.file.arrayBuffer()),
-          fileName: asset.file.name,
-          mimeType,
-        })
-        const markdown = createImageMarkdown(
-          getImageAltText(asset.file),
-          encodeRelativePath(written.relativePath),
-        )
-        onContentTransform((currentContent) => currentContent.replace(asset.placeholder, markdown))
-        importedCount += 1
-      } catch {
-        onContentTransform((currentContent) => currentContent.replace(asset.placeholder, ''))
-        failedCount += 1
-      }
-    }
-
-    setIsImportingImages(false)
-    if (importedCount > 0) {
-      onNotify(messages.success(importedCount))
-    }
-    if (failedCount > 0 || rejectedCount > 0) {
-      onNotify(messages.failed(failedCount + rejectedCount))
-    }
-  }, [
-    content,
-    documentPath,
-    ensureDocumentPath,
-    fileAccess,
-    onContentTransform,
-    onNotify,
-    messages,
-  ])
-
-  return { importImages, isImportingImages }
+  return {
+    dismissFailedImages,
+    failedFiles,
+    importImages,
+    isImportingImages,
+    progress,
+    retryFailedImages,
+  }
 }
 
 function insertAtSelection(content: string, selection: SelectionRange, insertion: string): string {

@@ -67,7 +67,8 @@ export function useDocumentController({
   const [externalFileState, setExternalFileState] = useState<ExternalFileState | null>(null)
   const saveOperationRef = useRef<Promise<string | null> | null>(null)
   const documentRef = useRef(markdownDocument)
-  const sessionIdRef = useRef(createDocumentDraftId())
+  const [documentSessionId, setDocumentSessionId] = useState(createDocumentDraftId)
+  const sessionIdRef = useRef(documentSessionId)
   const backupFailureNotifiedRef = useRef(false)
 
   useEffect(() => {
@@ -96,6 +97,7 @@ export function useDocumentController({
 
   const startDraftSession = useCallback((id = createDocumentDraftId()) => {
     sessionIdRef.current = id
+    setDocumentSessionId(id)
     backupFailureNotifiedRef.current = false
   }, [])
 
@@ -495,6 +497,7 @@ export function useDocumentController({
 
   return {
     discardPendingDraft,
+    documentSessionId,
     externalFileState,
     handleClearRecentFiles,
     handleContentChange,

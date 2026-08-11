@@ -1,17 +1,7 @@
 import {
-  Bold,
-  BookOpen,
   Check,
-  Code2,
   Copy,
-  Heading1,
-  Image,
-  Italic,
-  Link,
-  List,
-  ListChecks,
-  ListOrdered,
-  Quote,
+  ImageUp,
   X,
 } from 'lucide-react'
 import {
@@ -22,30 +12,34 @@ import {
   useRef,
   useState,
   type ClipboardEvent,
+  type ChangeEvent,
   type DragEvent,
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
+import {
+  createEditorHistory,
+  recordEditorChange,
+  redoEditorChange,
+  undoEditorChange,
+  updateEditorHistorySelection,
+  type EditorChangeKind,
+} from '../domain/editorHistory'
+import { createMarkdownTable } from '../domain/markdownTable'
 import type { MarkdownSyntaxSection } from '../domain/markdownSyntaxReference'
 import {
   detectShortcutPlatform,
   matchesShortcut,
-  withShortcutTitle,
 } from '../platform/keyboardShortcuts'
+import {
+  MarkdownEditorToolbar,
+  type MarkdownEditorToolbarLabels,
+  type ToolbarFormatCommand,
+} from './MarkdownEditorToolbar'
 
-export type MarkdownEditorLabels = {
-  toolbarLabel: string
-  boldLabel: string
-  italicLabel: string
-  codeLabel: string
-  headingLabel: string
-  linkLabel: string
-  imageLabel: string
-  quoteLabel: string
-  unorderedListLabel: string
-  orderedListLabel: string
-  taskListLabel: string
-  syntaxReferenceLabel: string
+export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & {
+  tableHeaderPlaceholder: (column: number) => string
+  tableCellPlaceholder: string
   syntaxReferenceTitle: string
   syntaxReferenceIntro: string
   syntaxReferenceCategories: string
@@ -59,13 +53,18 @@ export type MarkdownEditorLabels = {
 
 type MarkdownEditorProps = {
   value: string
+  historyKey?: string
   onChange: (value: string) => void
   label: string
   t: MarkdownEditorLabels
   showToolbar?: boolean
   toolbarEnd?: ReactNode
   onSelectionChange?: (selection: SelectionRange) => void
-  onImportImages?: (files: File[], selection: SelectionRange) => void
+  onImportImages?: (files: File[], selection: SelectionRange) => Promise<void> | void
+  supportsImageImport?: boolean
+  isImportingImages?: boolean
+  imageImportBusyLabel?: string
+  imageDropLabel?: string
 }
 
 export type SelectionRange = {
@@ -80,20 +79,11 @@ export type MarkdownEditorHandle = {
   setSelection: (selection: SelectionRange) => void
 }
 
-type MarkdownCommand =
-  | 'bold'
-  | 'italic'
-  | 'code'
-  | 'heading'
-  | 'link'
-  | 'image'
-  | 'quote'
-  | 'unordered-list'
-  | 'ordered-list'
-  | 'task-list'
+type MarkdownCommand = ToolbarFormatCommand
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor({
   value,
+  historyKey = 'default',
   onChange,
   label,
   t,
@@ -101,11 +91,63 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   toolbarEnd,
   onSelectionChange,
   onImportImages,
+  supportsImageImport = false,
+  isImportingImages = false,
+  imageImportBusyLabel,
+  imageDropLabel,
 }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const pendingImageSelectionRef = useRef<SelectionRange>({ start: 0, end: 0 })
   const pendingSelectionRef = useRef<SelectionRange | null>(null)
+  const pendingValueRef = useRef<string | null>(null)
+  const historyKeyRef = useRef(historyKey)
+  const historyRef = useRef(createEditorHistory(value))
+  const [historyAvailability, setHistoryAvailability] = useState({ canUndo: false, canRedo: false })
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
+  const [isImageDragActive, setIsImageDragActive] = useState(false)
   const shortcutPlatform = detectShortcutPlatform()
+
+  const { canUndo, canRedo } = historyAvailability
+
+  function refreshHistoryAvailability() {
+    setHistoryAvailability({
+      canUndo: historyRef.current.past.length > 0,
+      canRedo: historyRef.current.future.length > 0,
+    })
+  }
+
+  useEffect(() => {
+    if (historyKeyRef.current === historyKey) {
+      return
+    }
+
+    historyKeyRef.current = historyKey
+    pendingValueRef.current = null
+    historyRef.current = createEditorHistory(value)
+    refreshHistoryAvailability()
+  }, [historyKey, value])
+
+  useEffect(() => {
+    if (historyKeyRef.current !== historyKey) {
+      return
+    }
+
+    if (pendingValueRef.current === value) {
+      pendingValueRef.current = null
+      return
+    }
+
+    if (historyRef.current.present.value !== value) {
+      const selection = textareaRef.current ? getSelection(textareaRef.current) : { start: 0, end: 0 }
+      historyRef.current = recordEditorChange(
+        historyRef.current,
+        { value, selection },
+        'external',
+      )
+      refreshHistoryAvailability()
+    }
+  }, [historyKey, value])
 
   useEffect(() => {
     const pendingSelection = pendingSelectionRef.current
@@ -142,9 +184,35 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     },
   }), [onSelectionChange])
 
-  function updateEditor(nextValue: string, selection: SelectionRange) {
+  function updateEditor(nextValue: string, selection: SelectionRange, kind: EditorChangeKind = 'command') {
+    const currentSelection = textareaRef.current
+      ? getSelection(textareaRef.current)
+      : historyRef.current.present.selection
+    historyRef.current = updateEditorHistorySelection(historyRef.current, currentSelection)
+    historyRef.current = recordEditorChange(
+      historyRef.current,
+      { value: nextValue, selection },
+      kind,
+    )
+    pendingValueRef.current = nextValue
     pendingSelectionRef.current = selection
+    refreshHistoryAvailability()
     onChange(nextValue)
+  }
+
+  function restoreHistory(direction: 'undo' | 'redo') {
+    const nextHistory = direction === 'undo'
+      ? undoEditorChange(historyRef.current)
+      : redoEditorChange(historyRef.current)
+    if (nextHistory === historyRef.current) {
+      return
+    }
+
+    historyRef.current = nextHistory
+    pendingValueRef.current = nextHistory.present.value
+    pendingSelectionRef.current = nextHistory.present.selection
+    refreshHistoryAvailability()
+    onChange(nextHistory.present.value)
   }
 
   function runCommand(command: MarkdownCommand) {
@@ -182,7 +250,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     const prefixByCommand: Record<Exclude<MarkdownCommand, 'bold' | 'italic' | 'code' | 'link' | 'image'>, string> = {
-      heading: '# ',
       quote: '> ',
       'unordered-list': '- ',
       'ordered-list': '1. ',
@@ -192,7 +259,72 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     prefixSelectedLines(value, selection, prefixByCommand[command], updateEditor)
   }
 
+  function runHeadingCommand(level: number) {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      return
+    }
+
+    setHeadingLevel(value, getSelection(textarea), level, updateEditor)
+  }
+
+  function runCodeBlockCommand() {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      return
+    }
+
+    const selection = getSelection(textarea)
+    const selectedText = value.slice(selection.start, selection.end) || 'code'
+    insertTemplate(value, selection, `\`\`\`\n${selectedText}\n\`\`\``, [4, 4 + selectedText.length], updateEditor)
+  }
+
+  function runHorizontalRuleCommand() {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      return
+    }
+
+    insertBlockAfterSelection(value, getSelection(textarea), '---', null, updateEditor)
+  }
+
+  function insertTable(columns: number, rows: number) {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      return
+    }
+
+    const firstHeader = t.tableHeaderPlaceholder(1)
+    const table = createMarkdownTable(columns, rows, {
+      header: t.tableHeaderPlaceholder,
+      cell: t.tableCellPlaceholder,
+    })
+    insertBlockAfterSelection(
+      value,
+      getSelection(textarea),
+      table,
+      [table.indexOf(firstHeader), table.indexOf(firstHeader) + firstHeader.length],
+      updateEditor,
+    )
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (matchesShortcut(event, { key: 'z' }, shortcutPlatform)) {
+      event.preventDefault()
+      restoreHistory('undo')
+      return
+    }
+
+    const matchesPlatformRedo = shortcutPlatform === 'macos'
+      ? matchesShortcut(event, { key: 'z', shiftKey: true }, shortcutPlatform)
+      : matchesShortcut(event, { key: 'y' }, shortcutPlatform)
+        || matchesShortcut(event, { key: 'z', shiftKey: true }, shortcutPlatform)
+    if (matchesPlatformRedo) {
+      event.preventDefault()
+      restoreHistory('redo')
+      return
+    }
+
     if (matchesShortcut(event, { key: 'b' }, shortcutPlatform)) {
       event.preventDefault()
       runCommand('bold')
@@ -240,7 +372,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   function handleSelectionChange() {
     const textarea = textareaRef.current
     if (textarea) {
-      onSelectionChange?.(getSelection(textarea))
+      const selection = getSelection(textarea)
+      historyRef.current = updateEditorHistorySelection(historyRef.current, selection)
+      onSelectionChange?.(selection)
     }
   }
 
@@ -251,88 +385,90 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
 
     event.preventDefault()
-    onImportImages(images, getSelection(event.currentTarget))
+    void onImportImages(images, getSelection(event.currentTarget))
   }
 
-  function handleDragOver(event: DragEvent<HTMLTextAreaElement>) {
-    if (getImageFiles(event.dataTransfer.files).length > 0) {
-      event.preventDefault()
-      event.dataTransfer.dropEffect = 'copy'
+  function handleImageAction() {
+    const textarea = textareaRef.current
+    if (!supportsImageImport || !onImportImages || !textarea) {
+      runCommand('image')
+      return
+    }
+
+    pendingImageSelectionRef.current = getSelection(textarea)
+    imageInputRef.current?.click()
+  }
+
+  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+    if (files.length > 0 && onImportImages) {
+      void onImportImages(files, pendingImageSelectionRef.current)
     }
   }
 
+  function handleDragEnter(event: DragEvent<HTMLTextAreaElement>) {
+    if (supportsImageImport && hasDraggedImages(event.dataTransfer)) {
+      event.preventDefault()
+      setIsImageDragActive(true)
+    }
+  }
+
+  function handleDragOver(event: DragEvent<HTMLTextAreaElement>) {
+    if (supportsImageImport && hasDraggedImages(event.dataTransfer)) {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+      setIsImageDragActive(true)
+    }
+  }
+
+  function handleDragLeave() {
+    setIsImageDragActive(false)
+  }
+
   function handleDrop(event: DragEvent<HTMLTextAreaElement>) {
+    setIsImageDragActive(false)
     const images = getImageFiles(event.dataTransfer.files)
     if (images.length === 0 || !onImportImages) {
       return
     }
 
     event.preventDefault()
-    onImportImages(images, getSelection(event.currentTarget))
+    void onImportImages(images, getSelection(event.currentTarget))
   }
 
   return (
     <div className="markdown-editor-shell">
       {showToolbar ? (
-        <div className="editor-toolbar" role="toolbar" aria-label={t.toolbarLabel}>
-          <EditorButton label={t.headingLabel} onClick={() => runCommand('heading')}>
-            <Heading1 aria-hidden="true" />
-          </EditorButton>
-          <EditorButton
-            label={t.boldLabel}
-            title={withShortcutTitle(t.boldLabel, { key: 'b' }, shortcutPlatform)}
-            onClick={() => runCommand('bold')}
-          >
-            <Bold aria-hidden="true" />
-          </EditorButton>
-          <EditorButton
-            label={t.italicLabel}
-            title={withShortcutTitle(t.italicLabel, { key: 'i' }, shortcutPlatform)}
-            onClick={() => runCommand('italic')}
-          >
-            <Italic aria-hidden="true" />
-          </EditorButton>
-          <EditorButton label={t.codeLabel} onClick={() => runCommand('code')}>
-            <Code2 aria-hidden="true" />
-          </EditorButton>
-          <EditorButton
-            label={t.linkLabel}
-            title={withShortcutTitle(t.linkLabel, { key: 'k' }, shortcutPlatform)}
-            onClick={() => runCommand('link')}
-          >
-            <Link aria-hidden="true" />
-          </EditorButton>
-          <EditorButton label={t.imageLabel} onClick={() => runCommand('image')}>
-            <Image aria-hidden="true" />
-          </EditorButton>
-          <EditorButton label={t.quoteLabel} onClick={() => runCommand('quote')}>
-            <Quote aria-hidden="true" />
-          </EditorButton>
-          <EditorButton
-            label={t.unorderedListLabel}
-            title={withShortcutTitle(t.unorderedListLabel, { key: '8', shiftKey: true }, shortcutPlatform)}
-            onClick={() => runCommand('unordered-list')}
-          >
-            <List aria-hidden="true" />
-          </EditorButton>
-          <EditorButton
-            label={t.orderedListLabel}
-            title={withShortcutTitle(t.orderedListLabel, { key: '7', shiftKey: true }, shortcutPlatform)}
-            onClick={() => runCommand('ordered-list')}
-          >
-            <ListOrdered aria-hidden="true" />
-          </EditorButton>
-          <EditorButton label={t.taskListLabel} onClick={() => runCommand('task-list')}>
-            <ListChecks aria-hidden="true" />
-          </EditorButton>
-          <EditorButton label={t.syntaxReferenceLabel} onClick={() => setIsSyntaxReferenceOpen(true)}>
-            <BookOpen aria-hidden="true" />
-          </EditorButton>
-          <span className="editor-toolbar-spacer" />
-          {toolbarEnd}
-        </div>
+        <MarkdownEditorToolbar
+          canRedo={canRedo}
+          canUndo={canUndo}
+          labels={t}
+          platform={shortcutPlatform}
+          toolbarEnd={toolbarEnd}
+          onUndo={() => restoreHistory('undo')}
+          onRedo={() => restoreHistory('redo')}
+          onFormat={runCommand}
+          onHeading={runHeadingCommand}
+          onCodeBlock={runCodeBlockCommand}
+          onHorizontalRule={runHorizontalRuleCommand}
+          onImage={handleImageAction}
+          onTable={insertTable}
+          onOpenSyntaxReference={() => setIsSyntaxReferenceOpen(true)}
+          imageBusy={isImportingImages}
+          imageBusyLabel={imageImportBusyLabel}
+        />
       ) : null}
-
+      <input
+        ref={imageInputRef}
+        className="editor-image-input"
+        type="file"
+        accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.avif,image/png,image/jpeg,image/gif,image/webp,image/bmp,image/avif"
+        multiple
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={handleImageSelection}
+      />
       <textarea
         ref={textareaRef}
         className="markdown-editor"
@@ -340,15 +476,24 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         spellCheck={false}
         value={value}
         onChange={(event) => {
-          onChange(event.currentTarget.value)
-          onSelectionChange?.(getSelection(event.currentTarget))
+          const selection = getSelection(event.currentTarget)
+          updateEditor(event.currentTarget.value, selection, 'typing')
+          onSelectionChange?.(selection)
         }}
         onKeyDown={handleKeyDown}
         onSelect={handleSelectionChange}
         onPaste={handlePaste}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       />
+      {isImageDragActive && imageDropLabel ? (
+        <div className="image-drop-overlay" role="status">
+          <ImageUp aria-hidden="true" />
+          <span>{imageDropLabel}</span>
+        </div>
+      ) : null}
 
       <MarkdownSyntaxDialog
         open={isSyntaxReferenceOpen}
@@ -366,24 +511,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     </div>
   )
 })
-
-function EditorButton({
-  label,
-  title,
-  onClick,
-  children,
-}: {
-  label: string
-  title?: string
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button type="button" aria-label={label} title={title ?? label} onClick={onClick}>
-      {children}
-    </button>
-  )
-}
 
 function MarkdownSyntaxDialog({
   open,
@@ -616,6 +743,16 @@ function getImageFiles(files: FileList): File[] {
   )
 }
 
+function hasDraggedImages(dataTransfer: DataTransfer): boolean {
+  if (getImageFiles(dataTransfer.files).length > 0) {
+    return true
+  }
+
+  return Array.from(dataTransfer.items).some((item) =>
+    item.kind === 'file' && item.type.startsWith('image/'),
+  )
+}
+
 function wrapSelection(
   value: string,
   selection: SelectionRange,
@@ -667,6 +804,57 @@ function prefixSelectedLines(
     start: range.start,
     end: range.start + replacement.length,
   })
+}
+
+function setHeadingLevel(
+  value: string,
+  selection: SelectionRange,
+  level: number,
+  updateEditor: (nextValue: string, selection: SelectionRange) => void,
+) {
+  const range = getLineRange(value, selection)
+  const prefix = `${'#'.repeat(Math.min(4, Math.max(1, level)))} `
+  const replacement = value
+    .slice(range.start, range.end)
+    .split('\n')
+    .map((line) => `${prefix}${line.replace(/^#{1,6}\s+/, '')}`)
+    .join('\n')
+
+  updateEditor(replaceRange(value, range, replacement), {
+    start: range.start,
+    end: range.start + replacement.length,
+  })
+}
+
+function insertBlockAfterSelection(
+  value: string,
+  selection: SelectionRange,
+  block: string,
+  blockSelection: [number, number] | null,
+  updateEditor: (nextValue: string, selection: SelectionRange) => void,
+) {
+  const insertionPoint = selection.end
+  const before = value.slice(0, insertionPoint)
+  const after = value.slice(insertionPoint)
+  const prefix = before.length === 0 || before.endsWith('\n\n')
+    ? ''
+    : before.endsWith('\n') ? '\n' : '\n\n'
+  const suffix = after.length === 0 || after.startsWith('\n\n')
+    ? ''
+    : after.startsWith('\n') ? '\n' : '\n\n'
+  const blockStart = insertionPoint + prefix.length
+  const nextValue = `${before}${prefix}${block}${suffix}${after}`
+
+  if (blockSelection) {
+    updateEditor(nextValue, {
+      start: blockStart + blockSelection[0],
+      end: blockStart + blockSelection[1],
+    })
+    return
+  }
+
+  const cursor = blockStart + block.length
+  updateEditor(nextValue, { start: cursor, end: cursor })
 }
 
 function indentSelectedLines(

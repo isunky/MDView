@@ -1395,10 +1395,90 @@
 }
 
 .markdown-editor-shell {
-  min-height: 100%;
+  position: relative;
+  min-height: 0;
   display: flex;
   flex: 1;
   flex-direction: column;
+}
+
+.editor-image-input {
+  display: none;
+}
+
+.editor-image-spinner {
+  animation: update-spin 0.9s linear infinite;
+}
+
+.image-drop-overlay {
+  position: absolute;
+  inset: 56px 18px 18px;
+  z-index: 6;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  border: 2px dashed color-mix(in srgb, var(--accent) 60%, var(--border));
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 88%, var(--surface-raised));
+  font: 700 14px/1.4 var(--ui-font);
+  pointer-events: none;
+}
+
+.image-drop-overlay svg {
+  width: 28px;
+  height: 28px;
+}
+
+.image-import-notice {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--dirty) 28%, var(--border));
+  color: var(--control-text);
+  background: color-mix(in srgb, var(--dirty) 7%, var(--toolbar-bg));
+  font: 600 12px/1.3 var(--ui-font);
+}
+
+.image-import-notice > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-import-notice button {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--control-text);
+  background: var(--surface-raised);
+  font: inherit;
+  cursor: pointer;
+}
+
+.image-import-notice button:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: var(--control-hover);
+}
+
+.image-import-notice button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.image-import-notice .image-import-dismiss {
+  width: 27px;
+  justify-content: center;
+  padding: 4px;
 }
 
 .draft-recovery-dialog {
@@ -1464,10 +1544,31 @@
   min-height: 42px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--toolbar-bg);
+}
+
+.editor-toolbar-scroll {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.editor-toolbar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 3px;
 }
 
 .editor-toolbar button {
@@ -1488,14 +1589,136 @@
   background: var(--control-hover);
 }
 
+.editor-toolbar button.active {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.editor-toolbar button:disabled {
+  color: var(--disabled);
+  cursor: default;
+}
+
+.editor-toolbar button:disabled:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
 .editor-toolbar svg {
   width: 16px;
   height: 16px;
   stroke-width: 2.15;
 }
 
+.editor-toolbar button:has(.editor-button-chevron) {
+  position: relative;
+}
+
+.editor-toolbar .editor-button-chevron {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 8px;
+  height: 8px;
+  stroke-width: 2.4;
+}
+
 .editor-toolbar-spacer {
   flex: 1;
+}
+
+.editor-toolbar-popover {
+  position: fixed;
+  z-index: 45;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--floating-shadow);
+  font-family: var(--ui-font);
+}
+
+.editor-command-menu {
+  width: 190px;
+  display: grid;
+  gap: 2px;
+}
+
+.editor-command-menu button {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--control-text);
+  background: transparent;
+  font: 600 13px/1.2 var(--ui-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.editor-command-menu button:hover,
+.editor-command-menu button:focus-visible {
+  border-color: var(--border);
+  background: var(--control-hover);
+}
+
+.editor-command-menu button:focus-visible,
+.table-picker-grid button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.editor-command-menu svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.heading-level-mark {
+  width: 25px;
+  color: var(--accent);
+  font-weight: 760;
+}
+
+.table-picker {
+  padding: 4px;
+}
+
+.table-picker-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.table-picker-grid [role='row'] {
+  display: flex;
+  gap: 4px;
+}
+
+.table-picker-grid button {
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.table-picker-grid button.selected {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  background: var(--accent-soft);
+}
+
+.table-picker p {
+  margin: 9px 0 1px;
+  color: var(--text-muted);
+  font: 650 12px/1.2 var(--ui-font);
+  text-align: center;
 }
 
 .split-scroll-toolbar-control {

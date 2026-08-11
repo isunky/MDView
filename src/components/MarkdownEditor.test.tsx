@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markdownSyntaxReference } from '../domain/markdownSyntaxReference'
 import { translations } from '../i18n'
@@ -7,13 +8,24 @@ import { MarkdownEditor } from './MarkdownEditor'
 
 const labels = {
   toolbarLabel: 'Markdown formatting',
+  undoLabel: 'Undo',
+  redoLabel: 'Redo',
   boldLabel: 'Bold',
   italicLabel: 'Italic',
   codeLabel: 'Code',
   headingLabel: 'Heading',
+  headingLevelLabel: (level: number) => `Heading ${level}`,
   linkLabel: 'Link',
   imageLabel: 'Image',
+  tableLabel: 'Insert table',
+  tablePickerLabel: 'Choose table size',
+  tableSizeLabel: (columns: number, rows: number) => `${columns} columns by ${rows} rows`,
+  tableHeaderPlaceholder: (column: number) => `Header ${column}`,
+  tableCellPlaceholder: 'Cell',
   quoteLabel: 'Quote',
+  blockMenuLabel: 'Block formatting',
+  codeBlockLabel: 'Code block',
+  horizontalRuleLabel: 'Horizontal rule',
   unorderedListLabel: 'Bulleted list',
   orderedListLabel: 'Numbered list',
   taskListLabel: 'Task list',
@@ -57,6 +69,82 @@ describe('MarkdownEditor', () => {
     fireEvent.keyDown(editor, { key: 'b', ctrlKey: true })
 
     expect(onChange).toHaveBeenCalledWith('**hello**')
+  })
+
+  it('inserts a selected table size without discarding selected text', async () => {
+    const user = userEvent.setup()
+    render(<ControlledEditor initialValue="keep" />)
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 4)
+    await user.click(screen.getByRole('button', { name: 'Insert table' }))
+    await user.click(screen.getByRole('gridcell', { name: '3 columns by 3 rows' }))
+
+    expect(editor.value).toBe([
+      'keep',
+      '',
+      '| Header 1 | Header 2 | Header 3 |',
+      '| --- | --- | --- |',
+      '| Cell | Cell | Cell |',
+      '| Cell | Cell | Cell |',
+    ].join('\n'))
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('Header 1')
+  })
+
+  it('undoes and redoes toolbar changes', async () => {
+    const user = userEvent.setup()
+    render(<ControlledEditor initialValue="hello" />)
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    expect(editor.value).toBe('**hello**')
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(editor.value).toBe('hello')
+
+    await user.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(editor.value).toBe('**hello**')
+  })
+
+  it('uses platform-specific undo and redo shortcuts', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<ControlledEditor initialValue="hello" />)
+
+    let editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor.value).toBe('hello')
+    fireEvent.keyDown(editor, { key: 'y', ctrlKey: true })
+    expect(editor.value).toBe('**hello**')
+
+    unmount()
+    setNavigatorPlatform('MacIntel')
+    render(<ControlledEditor initialValue="hello" />)
+    editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    fireEvent.keyDown(editor, { key: 'z', metaKey: true })
+    expect(editor.value).toBe('hello')
+    fireEvent.keyDown(editor, { key: 'z', metaKey: true, shiftKey: true })
+    expect(editor.value).toBe('**hello**')
+  })
+
+  it('applies heading levels and block commands from menus', async () => {
+    const user = userEvent.setup()
+    render(<ControlledEditor initialValue="Title" />)
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Heading' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Heading 3' }))
+    expect(editor.value).toBe('### Title')
+
+    editor.setSelectionRange(0, editor.value.length)
+    await user.click(screen.getByRole('button', { name: 'Block formatting' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Code block' }))
+    expect(editor.value).toBe('```\n### Title\n```')
   })
 
   it('uses the platform-specific modifier key for formatting shortcuts', () => {
@@ -237,6 +325,66 @@ describe('MarkdownEditor', () => {
 
     expect(onImportImages).toHaveBeenCalledWith([image], { start: 1, end: 4 })
   })
+
+  it('opens a multi-image picker from the image toolbar button and preserves the selection', async () => {
+    const user = userEvent.setup()
+    const onImportImages = vi.fn()
+    const { container } = render(
+      <MarkdownEditor
+        value="hello"
+        onChange={vi.fn()}
+        onImportImages={onImportImages}
+        supportsImageImport
+        label="Markdown source"
+        t={labels}
+      />,
+    )
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+    expect(input).not.toBeNull()
+    const clickInput = vi.spyOn(input!, 'click')
+    editor.setSelectionRange(1, 4)
+
+    await user.click(screen.getByRole('button', { name: 'Image' }))
+    expect(clickInput).toHaveBeenCalledTimes(1)
+    expect(input).toHaveAttribute('multiple')
+
+    const image = new File(['image'], 'photo.png', { type: 'image/png' })
+    fireEvent.change(input!, { target: { files: [image] } })
+    expect(onImportImages).toHaveBeenCalledWith([image], { start: 1, end: 4 })
+    expect(input).toHaveValue('')
+  })
+
+  it('shows an image drop target and disables the image button while importing', () => {
+    render(
+      <MarkdownEditor
+        value="hello"
+        onChange={vi.fn()}
+        onImportImages={vi.fn()}
+        supportsImageImport
+        isImportingImages
+        imageImportBusyLabel="Importing images 1/2"
+        imageDropLabel="Drop images here"
+        label="Markdown source"
+        t={labels}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Importing images 1/2' })).toBeDisabled()
+
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' })
+    fireEvent.dragEnter(editor, {
+      dataTransfer: {
+        files: [],
+        items: [{ kind: 'file', type: 'image/png' }],
+      },
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Drop images here')
+
+    fireEvent.dragLeave(editor)
+    expect(screen.queryByText('Drop images here')).not.toBeInTheDocument()
+  })
 })
 
 function setNavigatorPlatform(platform: string) {
@@ -244,4 +392,9 @@ function setNavigatorPlatform(platform: string) {
     configurable: true,
     value: platform,
   })
+}
+
+function ControlledEditor({ initialValue }: { initialValue: string }) {
+  const [value, setValue] = useState(initialValue)
+  return <MarkdownEditor value={value} onChange={setValue} label="Markdown source" t={labels} />
 }

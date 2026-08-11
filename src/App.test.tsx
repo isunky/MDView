@@ -1310,6 +1310,7 @@ function createFileAccess(
     startupFile?: OpenedMarkdownFile | null
     openFile?: OpenedMarkdownFile | null
     supportsNativeFiles?: boolean
+    supportsImageImport?: boolean
     saveMarkdownFile?: FileAccess['saveMarkdownFile']
     saveMarkdownFileAs?: FileAccess['saveMarkdownFileAs']
     exportHtmlFile?: FileAccess['exportHtmlFile']
@@ -1324,6 +1325,7 @@ function createFileAccess(
 ): FileAccess {
   return {
     supportsNativeFiles: overrides.supportsNativeFiles ?? true,
+    supportsImageImport: overrides.supportsImageImport ?? true,
     openMarkdownFile: vi.fn(async () => overrides.openFile ?? null),
     openMarkdownFileAtPath:
       overrides.openMarkdownFileAtPath ?? vi.fn(async (path) => file(path, '# Recent')),

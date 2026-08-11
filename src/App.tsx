@@ -28,6 +28,7 @@ import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
 import { DocumentSearchBar } from './components/DocumentSearchBar'
 import { ExternalFileBanner } from './components/ExternalFileBanner'
+import { ImageImportNotice } from './components/ImageImportNotice'
 import { EditorStatusBar } from './components/EditorStatusBar'
 import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/lazyMarkdownPreview'
 import { MarkdownEditor, type MarkdownEditorHandle, type SelectionRange } from './components/MarkdownEditor'
@@ -123,6 +124,7 @@ function App({
     restorePendingDraft,
     retryExternalFile,
     discardPendingDraft,
+    documentSessionId,
     externalFileState,
     setStatusMessage,
     statusMessage,
@@ -260,14 +262,23 @@ function App({
     onContentChange: handleContentChange,
     viewMode,
   })
-  const { importImages } = useImageInsertion({
+  const {
+    dismissFailedImages,
+    failedFiles: failedImageImports,
+    importImages,
+    isImportingImages,
+    progress: imageImportProgress,
+    retryFailedImages,
+  } = useImageInsertion({
     content: markdownDocument.content,
+    contextKey: documentSessionId,
     documentPath: markdownDocument.path,
     ensureDocumentPath,
     fileAccess,
     messages: {
       failed: t.imageImportFailed,
       invalid: t.imageImportInvalid,
+      partial: t.imageImportPartial,
       success: t.imageImportSuccess,
       unsupported: t.imageImportUnsupported,
     },
@@ -428,6 +439,9 @@ function App({
   const operationStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
     ? statusMessage
     : null
+  const visibleOperationStatus = imageImportProgress
+    ? t.imageImportProgress(imageImportProgress.completed, imageImportProgress.total)
+    : operationStatus
 
   return (
     <main
@@ -786,8 +800,15 @@ function App({
           <MarkdownEditor
             ref={editorRef}
             value={markdownDocument.content}
+            historyKey={documentSessionId}
             onChange={handleContentChange}
             onImportImages={(files, selection) => void importImages(files, selection)}
+            supportsImageImport={fileAccess.supportsImageImport}
+            isImportingImages={isImportingImages}
+            imageImportBusyLabel={imageImportProgress
+              ? t.imageImportProgress(imageImportProgress.completed, imageImportProgress.total)
+              : t.imageImportPreparing}
+            imageDropLabel={t.imageDropLabel}
             onSelectionChange={setEditorSelection}
             label={t.markdownSource}
             t={t}
@@ -800,6 +821,14 @@ function App({
                 onToggle={handleToggleSplitScrollSync}
               />
             ) : undefined}
+          />
+          <ImageImportNotice
+            count={failedImageImports.length}
+            dismissLabel={t.imageImportDismiss}
+            message={t.imageImportRetryNotice}
+            onDismiss={dismissFailedImages}
+            onRetry={() => void retryFailedImages(editorSelection)}
+            retryLabel={t.imageImportRetry}
           />
           {viewMode !== 'preview' ? <EditorStatusBar
             cursorPosition={cursorPosition}
@@ -856,8 +885,8 @@ function App({
           {shortcutToast.message}
         </div>
       ) : null}
-      {!isWelcomeVisible && operationStatus ? (
-        <div className="app-operation-status" role="status">{operationStatus}</div>
+      {!isWelcomeVisible && visibleOperationStatus ? (
+        <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
       ) : null}
       <DraftRecoveryDialog
         draft={pendingDraft}

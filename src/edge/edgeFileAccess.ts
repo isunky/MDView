@@ -22,6 +22,7 @@ type StoredFileHandle = {
 
 export const edgeFileAccess: FileAccess = {
   supportsNativeFiles: supportsFileSystemAccess(),
+  supportsImageImport: false,
   canRevealFile: false,
 
   async openMarkdownFile() {
