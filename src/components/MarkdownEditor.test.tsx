@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markdownSyntaxReference } from '../domain/markdownSyntaxReference'
+import { translations } from '../i18n'
 import { MarkdownEditor } from './MarkdownEditor'
 
 const labels = {
@@ -17,6 +19,13 @@ const labels = {
   taskListLabel: 'Task list',
   syntaxReferenceLabel: 'Markdown syntax reference',
   syntaxReferenceTitle: 'Markdown syntax reference',
+  syntaxReferenceIntro: 'Supported syntax examples.',
+  syntaxReferenceCategories: 'Syntax categories',
+  syntaxReferenceSafetyNote: 'Unsafe HTML is removed.',
+  syntaxReferenceSections: markdownSyntaxReference.en,
+  copySyntax: (name: string) => `Copy ${name} syntax`,
+  copiedSyntax: (name: string) => `${name} syntax copied`,
+  copySyntaxFailed: 'Unable to copy the syntax example.',
   closeSyntaxReference: 'Close markdown syntax reference',
 }
 
@@ -130,15 +139,83 @@ describe('MarkdownEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Markdown syntax reference' }))
 
     expect(screen.getByRole('dialog', { name: 'Markdown syntax reference' })).toBeInTheDocument()
-    expect(screen.getByText('# Heading 1')).toBeInTheDocument()
-    expect(screen.getByText('![Alt](image.png)')).toBeInTheDocument()
-    expect(screen.getByText(/```mermaid/)).toBeInTheDocument()
+    expect(screen.getByRole('tablist', { name: 'Syntax categories' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Basic formatting' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Basic formatting' })).toBeInTheDocument()
+    expect(screen.queryByText('Relative image')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'MDView enhancements' }))
+
+    expect(screen.getByRole('tab', { name: 'MDView enhancements' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Mermaid diagram')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Close markdown syntax reference' }))
 
     expect(
       screen.queryByRole('dialog', { name: 'Markdown syntax reference' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('supports keyboard navigation between syntax category tabs', async () => {
+    const user = userEvent.setup()
+    render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown source" t={labels} />)
+
+    await user.click(screen.getByRole('button', { name: 'Markdown syntax reference' }))
+    const basicTab = screen.getByRole('tab', { name: 'Basic formatting' })
+    basicTab.focus()
+    fireEvent.keyDown(basicTab, { key: 'ArrowRight' })
+
+    expect(screen.getByRole('tab', { name: 'Lists and blocks' })).toHaveFocus()
+    expect(screen.getByRole('tab', { name: 'Lists and blocks' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Lists and blocks' })).toBeInTheDocument()
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Lists and blocks' }), { key: 'End' })
+
+    expect(screen.getByRole('tab', { name: 'MDView enhancements' })).toHaveFocus()
+    expect(screen.getByText('Mermaid diagram')).toBeInTheDocument()
+  })
+
+  it('copies a complete multiline syntax example and announces success', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown source" t={labels} />)
+
+    await user.click(screen.getByRole('button', { name: 'Markdown syntax reference' }))
+    await user.click(screen.getByRole('tab', { name: 'MDView enhancements' }))
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Mermaid diagram syntax' }))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        '```mermaid\nflowchart TD\n  A[Start] --> B[Finish]\n```',
+      )
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Mermaid diagram syntax copied')
+    expect(screen.getByRole('button', { name: 'Mermaid diagram syntax copied' })).toBeInTheDocument()
+  })
+
+  it('shows localized content and reports clipboard failures', async () => {
+    const user = userEvent.setup()
+    render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown 源码" t={translations.zh} />)
+
+    await user.click(screen.getByRole('button', { name: 'Markdown 语法参考' }))
+
+    expect(screen.getByRole('heading', { name: '基础排版' })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: '链接与媒体' }))
+    expect(screen.getByText('相对路径图片')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'MDView 增强' }))
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error('Clipboard unavailable')) },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '复制颜色预览语法' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('无法复制语法示例。')
+    })
   })
 
   it('passes pasted image files and the current selection to the import handler', () => {

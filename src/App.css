@@ -1553,38 +1553,171 @@
 
 .syntax-dialog {
   position: relative;
-  width: min(720px, 100%);
-  max-height: min(720px, calc(100vh - 48px));
-  overflow: auto;
-  padding: 24px;
+  width: min(860px, 100%);
+  height: min(720px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-raised);
   box-shadow: var(--floating-shadow);
 }
 
-.syntax-dialog h2 {
-  margin: 0 42px 18px 0;
+.syntax-dialog > .about-close {
+  z-index: 2;
+}
+
+.syntax-dialog-header {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 20px 58px 11px 24px;
+}
+
+.syntax-dialog-header h2 {
+  margin: 0;
   color: var(--text-strong);
   font-size: 20px;
   line-height: 1.2;
 }
 
+.syntax-dialog-header > p:not(.syntax-copy-status) {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.syntax-copy-status {
+  position: absolute;
+  top: 22px;
+  right: 58px;
+  max-width: 260px;
+  min-height: 17px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 17px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.syntax-copy-status[data-state='failed'] {
+  color: var(--error-text);
+}
+
+.syntax-reference-tabs {
+  min-height: 43px;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  align-items: end;
+  overflow-x: auto;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+
+.syntax-reference-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.syntax-reference-tabs button {
+  height: 35px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 5px 5px 0 0;
+  color: var(--text-muted);
+  background: transparent;
+  font: 600 13px/1 var(--ui-font);
+  cursor: pointer;
+}
+
+.syntax-reference-tabs button:hover {
+  color: var(--text-strong);
+  background: var(--control-hover);
+}
+
+.syntax-reference-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.syntax-reference-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.syntax-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 24px 24px;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 48%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.syntax-dialog-body::-webkit-scrollbar {
+  width: 9px;
+}
+
+.syntax-dialog-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.syntax-dialog-body::-webkit-scrollbar-thumb {
+  border: 2px solid var(--surface-raised);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-muted) 42%, transparent);
+}
+
+.syntax-reference-section {
+  padding-top: 12px;
+  outline: none;
+}
+
+.syntax-reference-section h3 {
+  margin: 0 0 7px;
+  color: var(--text-strong);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .syntax-reference-grid {
   display: grid;
-  gap: 8px;
 }
 
 .syntax-reference-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.1fr) minmax(120px, 0.9fr);
-  gap: 12px;
+  grid-template-columns: minmax(250px, 1.15fr) minmax(180px, 0.85fr) 32px;
+  grid-template-areas: 'example description copy';
+  gap: 14px;
   align-items: start;
-  padding: 10px 0;
+  padding: 11px 0;
   border-top: 1px solid var(--border);
 }
 
-.syntax-reference-row code {
+.syntax-reference-example {
+  grid-area: example;
+  min-width: 0;
+}
+
+.syntax-reference-example strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.syntax-reference-example code {
+  display: block;
   overflow-x: auto;
   padding: 7px 8px;
   border-radius: 6px;
@@ -1594,10 +1727,53 @@
   white-space: pre;
 }
 
-.syntax-reference-row span {
+.syntax-reference-row > p {
+  grid-area: description;
+  margin: 22px 0 0;
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.syntax-copy-button {
+  grid-area: copy;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  margin-top: 19px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.syntax-copy-button:hover {
+  border-color: var(--border);
+  color: var(--accent);
+  background: var(--control-hover);
+}
+
+.syntax-copy-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.syntax-copy-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.syntax-safety-note {
+  margin: 20px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .markdown-preview {
@@ -2179,6 +2355,22 @@
     padding-top: 28px;
     border-radius: 14px;
   }
+
+  .syntax-reference-row {
+    grid-template-columns: minmax(0, 1fr) 32px;
+    grid-template-areas:
+      'example copy'
+      'description description';
+    gap: 10px;
+  }
+
+  .syntax-reference-row > p {
+    margin: 0;
+  }
+
+  .syntax-copy-button {
+    margin-top: 19px;
+  }
 }
 
 @media (max-width: 520px) {
@@ -2218,5 +2410,32 @@
   .reading-theme-modes button,
   .reading-font-options button {
     font-size: 11px;
+  }
+
+  .syntax-dialog-header {
+    padding: 17px 52px 9px 18px;
+  }
+
+  .syntax-dialog-body {
+    padding: 4px 18px 20px;
+  }
+
+  .syntax-reference-tabs {
+    padding-inline: 12px;
+  }
+
+  .syntax-reference-tabs button {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .syntax-dialog-header h2 {
+    font-size: 18px;
+  }
+
+  .syntax-copy-status {
+    top: 18px;
+    right: 52px;
+    max-width: 150px;
   }
 }

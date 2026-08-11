@@ -1,7 +1,9 @@
 import {
   Bold,
   BookOpen,
+  Check,
   Code2,
+  Copy,
   Heading1,
   Image,
   Italic,
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react'
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -23,6 +26,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
+import type { MarkdownSyntaxSection } from '../domain/markdownSyntaxReference'
 import {
   detectShortcutPlatform,
   matchesShortcut,
@@ -43,6 +47,13 @@ export type MarkdownEditorLabels = {
   taskListLabel: string
   syntaxReferenceLabel: string
   syntaxReferenceTitle: string
+  syntaxReferenceIntro: string
+  syntaxReferenceCategories: string
+  syntaxReferenceSafetyNote: string
+  syntaxReferenceSections: MarkdownSyntaxSection[]
+  copySyntax: (name: string) => string
+  copiedSyntax: (name: string) => string
+  copySyntaxFailed: string
   closeSyntaxReference: string
 }
 
@@ -80,23 +91,6 @@ type MarkdownCommand =
   | 'unordered-list'
   | 'ordered-list'
   | 'task-list'
-
-const syntaxReference = [
-  ['# Heading 1', 'Heading'],
-  ['**Bold**', 'Bold text'],
-  ['*Italic*', 'Italic text'],
-  ['[Title](https://example.com)', 'Link'],
-  ['![Alt](image.png)', 'Image'],
-  ['> Quote', 'Blockquote'],
-  ['- Item', 'Bulleted list'],
-  ['1. Item', 'Numbered list'],
-  ['- [ ] Task', 'Task list'],
-  ['`code`', 'Inline code'],
-  ['```js\nconsole.log("Hi")\n```', 'Code block'],
-  ['```mermaid\ngraph TD\n  A --> B\n```', 'Mermaid diagram'],
-  ['| A | B |\n| --- | --- |', 'Table'],
-  ['---', 'Divider'],
-]
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor({
   value,
@@ -359,6 +353,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       <MarkdownSyntaxDialog
         open={isSyntaxReferenceOpen}
         title={t.syntaxReferenceTitle}
+        intro={t.syntaxReferenceIntro}
+        categoriesLabel={t.syntaxReferenceCategories}
+        safetyNote={t.syntaxReferenceSafetyNote}
+        sections={t.syntaxReferenceSections}
+        copyLabel={t.copySyntax}
+        copiedLabel={t.copiedSyntax}
+        copyFailedLabel={t.copySyntaxFailed}
         closeLabel={t.closeSyntaxReference}
         onClose={() => setIsSyntaxReferenceOpen(false)}
       />
@@ -387,14 +388,46 @@ function EditorButton({
 function MarkdownSyntaxDialog({
   open,
   title,
+  intro,
+  categoriesLabel,
+  safetyNote,
+  sections,
+  copyLabel,
+  copiedLabel,
+  copyFailedLabel,
   closeLabel,
   onClose,
 }: {
   open: boolean
   title: string
+  intro: string
+  categoriesLabel: string
+  safetyNote: string
+  sections: MarkdownSyntaxSection[]
+  copyLabel: (name: string) => string
+  copiedLabel: (name: string) => string
+  copyFailedLabel: string
   closeLabel: string
   onClose: () => void
 }) {
+  const [copyStatus, setCopyStatus] = useState<{
+    itemId: string
+    state: 'copied' | 'failed'
+    message: string
+  } | null>(null)
+  const [activeSectionId, setActiveSectionId] = useState(sections[0]?.id ?? '')
+  const copyResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0]
+
+  const handleClose = useCallback(() => {
+    if (copyResetTimeoutRef.current) {
+      clearTimeout(copyResetTimeoutRef.current)
+      copyResetTimeoutRef.current = null
+    }
+    setCopyStatus(null)
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
     if (!open) {
       return
@@ -402,13 +435,73 @@ function MarkdownSyntaxDialog({
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose()
+        handleClose()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, open])
+  }, [handleClose, open])
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeoutRef.current) {
+        clearTimeout(copyResetTimeoutRef.current)
+        copyResetTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  async function handleCopy(itemId: string, name: string, syntax: string) {
+    if (copyResetTimeoutRef.current) {
+      clearTimeout(copyResetTimeoutRef.current)
+    }
+
+    try {
+      await navigator.clipboard.writeText(syntax)
+      setCopyStatus({ itemId, state: 'copied', message: copiedLabel(name) })
+    } catch {
+      setCopyStatus({ itemId, state: 'failed', message: copyFailedLabel })
+    }
+
+    copyResetTimeoutRef.current = setTimeout(() => {
+      setCopyStatus(null)
+      copyResetTimeoutRef.current = null
+    }, 1800)
+  }
+
+  function selectSection(sectionId: string) {
+    if (copyResetTimeoutRef.current) {
+      clearTimeout(copyResetTimeoutRef.current)
+      copyResetTimeoutRef.current = null
+    }
+    setCopyStatus(null)
+    setActiveSectionId(sectionId)
+  }
+
+  function handleSectionKeyDown(event: KeyboardEvent<HTMLButtonElement>, sectionIndex: number) {
+    let nextIndex: number | null = null
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (sectionIndex + 1) % sections.length
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (sectionIndex - 1 + sections.length) % sections.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = sections.length - 1
+    }
+
+    if (nextIndex === null) {
+      return
+    }
+
+    event.preventDefault()
+    const nextSection = sections[nextIndex]
+    selectSection(nextSection.id)
+    const tabButtons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    tabButtons?.[nextIndex]?.focus()
+  }
 
   if (!open) {
     return null
@@ -419,7 +512,7 @@ function MarkdownSyntaxDialog({
       className="dialog-backdrop"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) {
-          onClose()
+          handleClose()
         }
       }}
     >
@@ -429,17 +522,81 @@ function MarkdownSyntaxDialog({
         aria-modal="true"
         aria-labelledby="syntax-reference-title"
       >
-        <button type="button" className="about-close" onClick={onClose} aria-label={closeLabel}>
+        <button type="button" className="about-close" onClick={handleClose} aria-label={closeLabel}>
           <X aria-hidden="true" />
         </button>
-        <h2 id="syntax-reference-title">{title}</h2>
-        <div className="syntax-reference-grid">
-          {syntaxReference.map(([syntax, description]) => (
-            <div className="syntax-reference-row" key={syntax}>
-              <code>{syntax}</code>
-              <span>{description}</span>
-            </div>
-          ))}
+        <header className="syntax-dialog-header">
+          <h2 id="syntax-reference-title">{title}</h2>
+          <p>{intro}</p>
+          <p
+            className="syntax-copy-status"
+            data-state={copyStatus?.state ?? 'idle'}
+            role="status"
+            aria-live="polite"
+          >
+            {copyStatus?.message ?? ''}
+          </p>
+        </header>
+        <div className="syntax-reference-tabs" role="tablist" aria-label={categoriesLabel}>
+          {sections.map((section, index) => {
+            const isActive = section.id === activeSection?.id
+
+            return (
+              <button
+                type="button"
+                role="tab"
+                id={`syntax-tab-${section.id}`}
+                aria-selected={isActive}
+                aria-controls={`syntax-panel-${section.id}`}
+                tabIndex={isActive ? 0 : -1}
+                key={section.id}
+                onClick={() => selectSection(section.id)}
+                onKeyDown={(event) => handleSectionKeyDown(event, index)}
+              >
+                {section.title}
+              </button>
+            )
+          })}
+        </div>
+        <div className="syntax-dialog-body">
+          {activeSection ? (
+            <section
+              className="syntax-reference-section"
+              role="tabpanel"
+              id={`syntax-panel-${activeSection.id}`}
+              aria-labelledby={`syntax-tab-${activeSection.id}`}
+              tabIndex={0}
+            >
+              <h3>{activeSection.title}</h3>
+              <div className="syntax-reference-grid">
+                {activeSection.items.map((item) => {
+                  const isCopied = copyStatus?.itemId === item.id && copyStatus.state === 'copied'
+
+                  return (
+                    <div className="syntax-reference-row" key={item.id}>
+                      <div className="syntax-reference-example">
+                        <strong>{item.name}</strong>
+                        <code>{item.syntax}</code>
+                      </div>
+                      <p>{item.description}</p>
+                      <button
+                        type="button"
+                        className="syntax-copy-button"
+                        aria-label={isCopied ? copiedLabel(item.name) : copyLabel(item.name)}
+                        title={isCopied ? copiedLabel(item.name) : copyLabel(item.name)}
+                        onClick={() => void handleCopy(item.id, item.name, item.syntax)}
+                      >
+                        {isCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          ) : null}
+          {activeSection?.id === 'mdview-enhancements' ? (
+            <p className="syntax-safety-note">{safetyNote}</p>
+          ) : null}
         </div>
       </section>
     </div>

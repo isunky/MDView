@@ -1,3 +1,5 @@
+import { markdownSyntaxReference } from './domain/markdownSyntaxReference'
+
 export type AppLanguage = 'en' | 'zh'
 
 export type Translation = (typeof translations)['en']
@@ -159,6 +161,13 @@ export const translations = {
     taskListLabel: 'Task list',
     syntaxReferenceLabel: 'Markdown syntax reference',
     syntaxReferenceTitle: 'Markdown syntax reference',
+    syntaxReferenceIntro: 'Common Markdown patterns supported by MDView. Copy an example and adapt it to your document.',
+    syntaxReferenceCategories: 'Syntax categories',
+    syntaxReferenceSafetyNote: 'HTML is sanitized for safety. Scripts, event handlers, and unsafe embedded content are removed.',
+    syntaxReferenceSections: markdownSyntaxReference.en,
+    copySyntax: (name: string) => `Copy ${name} syntax`,
+    copiedSyntax: (name: string) => `${name} syntax copied`,
+    copySyntaxFailed: 'Unable to copy the syntax example.',
     closeSyntaxReference: 'Close markdown syntax reference',
     fileOperationFailed: 'File operation failed',
     externalFileUpdated: 'Updated from disk',
@@ -337,6 +346,13 @@ export const translations = {
     taskListLabel: '任务列表',
     syntaxReferenceLabel: 'Markdown 语法参考',
     syntaxReferenceTitle: 'Markdown 语法参考',
+    syntaxReferenceIntro: '这里汇总了 MDView 支持的常用 Markdown 写法，可复制示例后按需修改。',
+    syntaxReferenceCategories: '语法分类',
+    syntaxReferenceSafetyNote: '为保证安全，HTML 会经过过滤，脚本、事件属性和危险的嵌入内容不会被渲染。',
+    syntaxReferenceSections: markdownSyntaxReference.zh,
+    copySyntax: (name: string) => `复制${name}语法`,
+    copiedSyntax: (name: string) => `${name}语法已复制`,
+    copySyntaxFailed: '无法复制语法示例。',
     closeSyntaxReference: '关闭 Markdown 语法参考',
     fileOperationFailed: '文件操作失败',
     externalFileUpdated: '已从磁盘更新',
