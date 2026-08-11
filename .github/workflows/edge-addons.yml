@@ -67,47 +67,85 @@ jobs:
             -H "Authorization: ApiKey ${EDGE_ADDONS_API_KEY}"
             -H "X-ClientID: ${EDGE_ADDONS_CLIENT_ID}"
           )
-          response_headers="$(mktemp)"
+          upload_headers="$(mktemp)"
+          publish_headers="$(mktemp)"
+          trap 'rm -f "$upload_headers" "$publish_headers"' EXIT
+
+          read_operation_id() {
+            local header_file="$1"
+            local location
+            location="$(awk 'tolower($1) == "location:" { print $2 }' "$header_file" | tr -d '\r' | tail -n 1)"
+            location="${location%%\?*}"
+            location="${location%/}"
+            printf '%s' "${location##*/}"
+          }
+
+          poll_operation() {
+            local operation_url="$1"
+            local operation_name="$2"
+            local response
+            local status
+
+            for attempt in {1..60}; do
+              response="$(curl --fail-with-body --silent --show-error "${headers[@]}" "$operation_url")"
+              status="$(jq -r '.status // empty' <<< "$response")"
+              case "$status" in
+                Succeeded|Success|Completed)
+                  echo "Edge Add-ons ${operation_name} completed."
+                  return 0
+                  ;;
+                Failed|Error)
+                  echo "::error::Edge Add-ons ${operation_name} failed."
+                  jq -c '{status, message, errorCode, errors}' <<< "$response"
+                  return 1
+                  ;;
+                *)
+                  if [[ "$attempt" == 60 ]]; then
+                    echo "::error::Timed out while Edge Add-ons processed ${operation_name} (last status: ${status:-unknown})."
+                    jq -c '{status, message, errorCode, errors}' <<< "$response"
+                    return 1
+                  fi
+                  sleep 5
+                  ;;
+              esac
+            done
+          }
 
           curl --fail-with-body --request POST \
             "${headers[@]}" \
             -H 'Content-Type: application/zip' \
-            --dump-header "$response_headers" \
+            --dump-header "$upload_headers" \
             --output /dev/null \
             --upload-file dist/MDView-edge.zip \
             "${base_url}/draft/package"
 
-          operation_url="$(awk 'tolower($1) == "location:" { print $2 }' "$response_headers" | tr -d '\r' | tail -n 1)"
-          if [[ -z "$operation_url" ]]; then
-            echo '::error::Edge Add-ons did not return an upload operation URL.'
+          upload_operation_id="$(read_operation_id "$upload_headers")"
+          if [[ -z "$upload_operation_id" ]]; then
+            echo '::error::Edge Add-ons did not return a package upload operation ID.'
             exit 1
           fi
 
-          for attempt in {1..60}; do
-            status="$(curl --fail-with-body --silent --show-error "${headers[@]}" "$operation_url" | jq -r '.status // empty')"
-            case "$status" in
-              Succeeded|Success|Completed)
-                break
-                ;;
-              Failed|Error)
-                echo "::error::Edge Add-ons rejected the package: $status"
-                exit 1
-                ;;
-              *)
-                if [[ "$attempt" == 60 ]]; then
-                  echo "::error::Timed out while Edge Add-ons processed the package (last status: ${status:-unknown})."
-                  exit 1
-                fi
-                sleep 5
-                ;;
-            esac
-          done
+          poll_operation \
+            "${base_url}/draft/package/operations/${upload_operation_id}" \
+            'package upload'
 
           curl --fail-with-body --request POST \
             "${headers[@]}" \
             -H 'Content-Type: application/json' \
+            --dump-header "$publish_headers" \
+            --output /dev/null \
             --data "{\"notes\":\"MDView ${RELEASE_VERSION} automated release.\"}" \
             "${base_url}"
+
+          publish_operation_id="$(read_operation_id "$publish_headers")"
+          if [[ -z "$publish_operation_id" ]]; then
+            echo '::error::Edge Add-ons did not return a publication operation ID.'
+            exit 1
+          fi
+
+          poll_operation \
+            "${base_url}/operations/${publish_operation_id}" \
+            'publication'
 
       - name: Explain skipped publication
         if: >-
