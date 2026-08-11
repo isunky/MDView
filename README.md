@@ -91,6 +91,14 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 | macOS | Universal DMG | macOS 10.15 或更高版本；ad-hoc 签名 / macOS 10.15 or later; ad-hoc signed |
 | Microsoft Edge | Extension ZIP | 在 `edge://extensions` 打开开发人员模式后选择“加载解压缩的扩展”，或使用 CI 产物 ZIP 提交 Edge Add-ons / Load unpacked from `dist-edge`, or submit the CI ZIP to Edge Add-ons |
 
+Windows MSI 安装时可选择是否关联 `.md` 和 `.markdown`，默认开启。静默部署可传入 `ASSOCIATE_MARKDOWN_FILES=0` 禁用关联：
+
+```powershell
+msiexec /i MDView_x64.msi ASSOCIATE_MARKDOWN_FILES=0 /qn
+```
+
+The Windows MSI lets you opt out of `.md` and `.markdown` associations, which are enabled by default. For unattended deployment, pass `ASSOCIATE_MARKDOWN_FILES=0` as shown above.
+
 > 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
 > Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
 

@@ -1,6 +1,17 @@
 {
   "bundle": {
-    "targets": ["msi"]
+    "targets": ["msi"],
+    "fileAssociations": [],
+    "windows": {
+      "wix": {
+        "template": "windows/main.wxs",
+        "fragmentPaths": [
+          "windows/file-associations.wxs",
+          "windows/file-association-ui.wxs"
+        ],
+        "componentRefs": []
+      }
+    }
   },
   "plugins": {
     "updater": {
