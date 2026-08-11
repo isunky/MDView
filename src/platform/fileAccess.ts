@@ -47,7 +47,7 @@ export type FileAccess = {
   openMarkdownFileAtPath: (path: string) => Promise<OpenedMarkdownFile>
   revealFileInFolder: (path: string) => Promise<void>
   saveMarkdownFile: (path: string, content: string, expectedRevision?: string) => Promise<MarkdownFileSaveResult | string>
-  saveMarkdownFileAs: (content: string, currentPath: string | null) => Promise<SavedMarkdownFile | string | null>
+  saveMarkdownFileAs: (content: string, defaultPath: string) => Promise<SavedMarkdownFile | string | null>
   checkMarkdownFile?: (path: string, knownRevision: string) => Promise<MarkdownFileCheck>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
   exportDocxFile: (bytes: Uint8Array, currentPath: string | null, title: string) => Promise<string | null>
@@ -151,14 +151,14 @@ export const tauriFileAccess: FileAccess = {
     })
   },
 
-  async saveMarkdownFileAs(content, currentPath) {
+  async saveMarkdownFileAs(content, defaultPath) {
     if (!isTauriRuntime()) {
       return null
     }
 
     return invoke<SavedMarkdownFile | null>('save_markdown_file_dialog', {
       content,
-      defaultPath: currentPath ?? 'Untitled.md',
+      defaultPath,
     })
   },
 

@@ -88,6 +88,28 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Edit markdown source' })).toHaveClass('active')
   })
 
+  it('suggests a filename from the first meaningful line when saving a new document', async () => {
+    const user = userEvent.setup()
+    const saveMarkdownFileAs = vi.fn(async () => null)
+    renderWelcomeApp({
+      fileAccess: createFileAccess({ saveMarkdownFileAs }),
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Create new markdown file' }))
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' })
+    fireEvent.change(editor, { target: { value: '\n会议记录\n\n# 项目说明' } })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(saveMarkdownFileAs).toHaveBeenCalledWith(
+        '\n会议记录\n\n# 项目说明',
+        '会议记录.md',
+      )
+    })
+  })
+
   it('opens recent files directly from the welcome workspace', async () => {
     const user = userEvent.setup()
     const openMarkdownFileAtPath = vi.fn(async (path: string) => file(path, '# Recent document'))

@@ -333,8 +333,10 @@ export function useDocumentController({
         const currentPath = markdownDocument.path
         const contentToSave = markdownDocument.content
         const isSaveAs = forceSaveAs || !currentPath
+        const defaultPath = currentPath ?? (await import('../domain/markdownFilename'))
+          .createMarkdownSuggestedFilename(contentToSave)
         const savedResult = isSaveAs
-          ? await fileAccess.saveMarkdownFileAs(contentToSave, currentPath)
+          ? await fileAccess.saveMarkdownFileAs(contentToSave, defaultPath)
           : markdownDocument.savedRevision
             ? await fileAccess.saveMarkdownFile(currentPath, contentToSave, markdownDocument.savedRevision)
             : await fileAccess.saveMarkdownFile(currentPath, contentToSave)

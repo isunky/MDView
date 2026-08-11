@@ -107,14 +107,14 @@ describe('file access PDF export', () => {
       path: 'C:\\Docs\\readme.md',
       content: '# Readme',
     })
-    await expect(tauriFileAccess.saveMarkdownFileAs('# Saved', null)).resolves.toBe(
+    await expect(tauriFileAccess.saveMarkdownFileAs('# Saved', '项目说明.md')).resolves.toBe(
       'C:\\Docs\\saved.md',
     )
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'open_markdown_file_dialog')
     expect(invoke).toHaveBeenNthCalledWith(2, 'save_markdown_file_dialog', {
       content: '# Saved',
-      defaultPath: 'Untitled.md',
+      defaultPath: '项目说明.md',
     })
   })
 

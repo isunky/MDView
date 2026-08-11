@@ -53,9 +53,9 @@ export const edgeFileAccess: FileAccess = {
     return { status: 'saved', path, revision: await createRevision(content) }
   },
 
-  async saveMarkdownFileAs(content, currentPath) {
+  async saveMarkdownFileAs(content, defaultPath) {
     const handle = await showSaveFilePicker({
-      suggestedName: suggestedMarkdownName(currentPath),
+      suggestedName: suggestedMarkdownName(defaultPath),
       types: markdownPickerTypes,
     })
     await writeText(handle, content)
@@ -203,8 +203,8 @@ function supportsFileSystemAccess() {
   return typeof window !== 'undefined' && 'showOpenFilePicker' in window && 'showSaveFilePicker' in window
 }
 
-function suggestedMarkdownName(currentPath: string | null) {
-  return currentPath ? decodeURIComponent(currentPath.split('/').at(-1) ?? 'Untitled.md') : 'Untitled.md'
+function suggestedMarkdownName(defaultPath: string) {
+  return decodeURIComponent(defaultPath.split(/[\\/]/).at(-1) ?? 'Untitled.md')
 }
 
 function suggestedExportName(currentPath: string | null, title: string, extension: 'html' | 'docx') {
