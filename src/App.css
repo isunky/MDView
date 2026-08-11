@@ -111,12 +111,6 @@
   cursor: pointer;
 }
 
-.view-controls .split-scroll-toggle {
-  width: 36px;
-  justify-content: center;
-  padding: 0;
-}
-
 .toolbar button:hover:not(:disabled),
 .view-controls button:hover {
   background: var(--control-hover);
@@ -1502,6 +1496,46 @@
 
 .editor-toolbar-spacer {
   flex: 1;
+}
+
+.split-scroll-toolbar-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.editor-toolbar .split-scroll-control {
+  color: var(--text-muted);
+}
+
+.editor-toolbar .split-scroll-control.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.split-scroll-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  visibility: hidden;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--surface-raised);
+  background: var(--text-strong);
+  box-shadow: var(--floating-shadow);
+  font: 600 12px/1 var(--ui-font);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, visibility 120ms ease;
+  white-space: nowrap;
+}
+
+.split-scroll-toolbar-control:hover .split-scroll-tooltip,
+.split-scroll-toolbar-control:focus-within .split-scroll-tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 .markdown-editor {

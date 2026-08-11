@@ -52,6 +52,7 @@ type MarkdownEditorProps = {
   label: string
   t: MarkdownEditorLabels
   showToolbar?: boolean
+  toolbarEnd?: ReactNode
   onSelectionChange?: (selection: SelectionRange) => void
   onImportImages?: (files: File[], selection: SelectionRange) => void
 }
@@ -103,6 +104,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   label,
   t,
   showToolbar = true,
+  toolbarEnd,
   onSelectionChange,
   onImportImages,
 }, ref) {
@@ -329,10 +331,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           <EditorButton label={t.taskListLabel} onClick={() => runCommand('task-list')}>
             <ListChecks aria-hidden="true" />
           </EditorButton>
-          <span className="editor-toolbar-spacer" />
           <EditorButton label={t.syntaxReferenceLabel} onClick={() => setIsSyntaxReferenceOpen(true)}>
             <BookOpen aria-hidden="true" />
           </EditorButton>
+          <span className="editor-toolbar-spacer" />
+          {toolbarEnd}
         </div>
       ) : null}
 

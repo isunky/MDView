@@ -656,12 +656,17 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Split preview and source' }))
     const toggle = screen.getByRole('button', { name: 'Disable synchronized scrolling' })
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('toolbar', { name: 'Markdown formatting' })).toContainElement(toggle)
+    expect(screen.getByRole('group', { name: 'View mode' })).not.toContainElement(toggle)
 
     await user.click(toggle)
 
     expect(screen.getByRole('button', { name: 'Enable synchronized scrolling' })).toHaveAttribute(
       'aria-pressed',
       'false',
+    )
+    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent(
+      'Synchronized scrolling disabled',
     )
     expect(window.localStorage.getItem('mdview.splitScrollPreferences.v1')).toContain('false')
   })

@@ -13,17 +13,16 @@ import {
   Eye,
   FolderOpen,
   FolderSearch,
-  Link2,
   PanelLeftOpen,
   PencilLine,
   Settings,
   SplitSquareHorizontal,
-  Unlink2,
 } from 'lucide-react'
 import './App.css'
 import { AboutDialog } from './components/AboutDialog'
 import { DraftRecoveryDialog } from './components/DraftRecoveryDialog'
 import { ReadingSettingsDialog } from './components/ReadingSettingsDialog'
+import { SplitScrollControl } from './components/SplitScrollControl'
 import { UpdateDialog } from './components/UpdateDialog'
 import { AppLogo } from './components/AppLogo'
 import { DocumentOutline } from './components/DocumentOutline'
@@ -204,6 +203,11 @@ function App({
     previewRef,
     previewZoom,
   })
+  const handleToggleSplitScrollSync = useCallback(() => {
+    const nextEnabled = !isSplitScrollSyncEnabled
+    toggleSplitScrollSync()
+    showAppToast(nextEnabled ? t.splitScrollSyncEnabled : t.splitScrollSyncDisabled)
+  }, [isSplitScrollSyncEnabled, showAppToast, t, toggleSplitScrollSync])
   const {
     activeOutlineId,
     beginOutlineResize,
@@ -647,7 +651,7 @@ function App({
           </div>
         </nav>
 
-        {!isWelcomeVisible ? <div className="view-controls" aria-label={t.viewMode}>
+        {!isWelcomeVisible ? <div className="view-controls" role="group" aria-label={t.viewMode}>
           <button
             type="button"
             className={viewMode === 'preview' ? 'active' : ''}
@@ -681,18 +685,6 @@ function App({
             <SplitSquareHorizontal aria-hidden="true" />
             <span>{t.split}</span>
           </button>
-          {viewMode === 'split' ? (
-            <button
-              type="button"
-              className={`split-scroll-toggle ${isSplitScrollSyncEnabled ? 'active' : ''}`}
-              onClick={toggleSplitScrollSync}
-              aria-label={isSplitScrollSyncEnabled ? t.disableSplitScrollSync : t.enableSplitScrollSync}
-              aria-pressed={isSplitScrollSyncEnabled}
-              title={isSplitScrollSyncEnabled ? t.disableSplitScrollSync : t.enableSplitScrollSync}
-            >
-              {isSplitScrollSyncEnabled ? <Link2 aria-hidden="true" /> : <Unlink2 aria-hidden="true" />}
-            </button>
-          ) : null}
         </div> : null}
 
       </header>
@@ -800,6 +792,14 @@ function App({
             label={t.markdownSource}
             t={t}
             showToolbar={viewMode !== 'preview'}
+            toolbarEnd={viewMode === 'split' ? (
+              <SplitScrollControl
+                disableLabel={t.disableSplitScrollSync}
+                enableLabel={t.enableSplitScrollSync}
+                enabled={isSplitScrollSyncEnabled}
+                onToggle={handleToggleSplitScrollSync}
+              />
+            ) : undefined}
           />
           {viewMode !== 'preview' ? <EditorStatusBar
             cursorPosition={cursorPosition}
