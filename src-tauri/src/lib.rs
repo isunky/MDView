@@ -1,4 +1,5 @@
 mod distribution;
+mod file_watcher;
 mod fs_utils;
 mod image_utils;
 mod startup;
@@ -28,6 +29,7 @@ const MAX_IMAGE_ASSET_BYTES: usize = 10 * 1024 * 1024;
 const MAX_EXPORT_IMAGE_BYTES: usize = 20 * 1024 * 1024;
 
 use distribution::get_app_distribution;
+use file_watcher::FileWatcherRegistry;
 use fs_utils::{
     atomic_write_file, configure_default_path, ensure_docx_path, ensure_extension,
     ensure_html_path, ensure_image_path, ensure_markdown_path, image_mime_type, is_docx_path,
@@ -292,6 +294,28 @@ fn check_markdown_file(
 }
 
 #[tauri::command]
+fn start_markdown_file_watch(
+    app: AppHandle,
+    policy: State<'_, FileAccessPolicy>,
+    watchers: State<'_, FileWatcherRegistry>,
+    path: String,
+) -> Result<String, String> {
+    let path = PathBuf::from(path);
+    ensure_markdown_path(&path)?;
+    policy.ensure_authorized(&path)?;
+    let normalized = normalize_path_for_policy(&path)?;
+    watchers.start(app, normalized)
+}
+
+#[tauri::command]
+fn stop_markdown_file_watch(
+    watchers: State<'_, FileWatcherRegistry>,
+    watch_id: String,
+) -> Result<(), String> {
+    watchers.stop(&watch_id)
+}
+
+#[tauri::command]
 async fn save_markdown_file_dialog(
     app: AppHandle,
     policy: State<'_, FileAccessPolicy>,
@@ -498,6 +522,7 @@ pub fn run() {
     let startup_files_for_policy = startup_files.clone();
     let builder = tauri::Builder::default()
         .manage(OpenedFiles(Mutex::new(startup_files)))
+        .manage(FileWatcherRegistry::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
 
@@ -512,6 +537,8 @@ pub fn run() {
             read_markdown_file,
             save_markdown_file,
             check_markdown_file,
+            start_markdown_file_watch,
+            stop_markdown_file_watch,
             save_markdown_file_dialog,
             export_html_file_dialog,
             export_docx_file_dialog,

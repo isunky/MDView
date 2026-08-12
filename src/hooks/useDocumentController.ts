@@ -21,6 +21,7 @@ import {
   saveRecentFiles,
 } from '../domain/recentFiles'
 import type { FileAccess, OpenedMarkdownFile } from '../platform/fileAccess'
+import { useExternalFileMonitor } from './useExternalFileMonitor'
 
 type ExternalFileState =
   | { kind: 'conflict'; file: OpenedMarkdownFile }
@@ -200,34 +201,25 @@ export function useDocumentController({
           setExternalFileState(null)
           setStatusMessage(externalFileUpdatedMessage)
         }
+      } else {
+        setExternalFileState((state) => {
+          if (state?.kind !== 'missing') return state
+          setStatusMessage(latest.isDirty ? 'unsaved' : 'saved')
+          return null
+        })
       }
     } catch {
       // Temporary filesystem failures should not interrupt reading or editing.
     }
   }, [clearCurrentDraft, externalFileConflictMessage, externalFileMissingMessage, externalFileUpdatedMessage, fileAccess])
 
-  useEffect(() => {
-    if (!isStartupResolved || !markdownDocument.path || !markdownDocument.savedRevision || !fileAccess.supportsNativeFiles) {
-      return
-    }
-
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void checkCurrentFile()
-      }
-    }, 2000)
-    const onFocus = () => void checkCurrentFile()
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') void checkCurrentFile()
-    }
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => {
-      window.clearInterval(interval)
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  }, [checkCurrentFile, fileAccess.supportsNativeFiles, isStartupResolved, markdownDocument.path, markdownDocument.savedRevision])
+  useExternalFileMonitor({
+    enabled: isStartupResolved && fileAccess.supportsNativeFiles,
+    path: markdownDocument.path,
+    revision: markdownDocument.savedRevision,
+    fileAccess,
+    checkFile: checkCurrentFile,
+  })
 
   useEffect(() => {
     window.document.title = `${markdownDocument.isDirty ? '* ' : ''}${markdownDocument.title} - MDView`

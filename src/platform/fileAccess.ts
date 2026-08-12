@@ -22,6 +22,11 @@ export type MarkdownFileSaveResult =
 
 export type SavedMarkdownFile = { path: string; revision: string }
 
+export type MarkdownFileWatchEvent = {
+  kind: 'changed' | 'error'
+  path: string
+}
+
 export type LocalImageFile = {
   path: string
   dataUrl: string
@@ -49,6 +54,10 @@ export type FileAccess = {
   saveMarkdownFile: (path: string, content: string, expectedRevision?: string) => Promise<MarkdownFileSaveResult | string>
   saveMarkdownFileAs: (content: string, defaultPath: string) => Promise<SavedMarkdownFile | string | null>
   checkMarkdownFile?: (path: string, knownRevision: string) => Promise<MarkdownFileCheck>
+  watchMarkdownFile?: (
+    path: string,
+    callback: (event: MarkdownFileWatchEvent) => void,
+  ) => Promise<UnlistenFn>
   exportHtmlFile: (html: string, currentPath: string | null, title: string) => Promise<string | null>
   exportDocxFile: (bytes: Uint8Array, currentPath: string | null, title: string) => Promise<string | null>
   printExportHtml: (html: string, title: string) => Promise<void>
@@ -168,6 +177,32 @@ export const tauriFileAccess: FileAccess = {
     }
 
     return invoke<MarkdownFileCheck>('check_markdown_file', { path, knownRevision })
+  },
+
+  async watchMarkdownFile(path, callback) {
+    if (!isTauriRuntime()) {
+      throw new Error('Native file watching is only available in the desktop app.')
+    }
+
+    let watchId: string | null = null
+    const unlisten = await listen<MarkdownFileWatchEvent & { watchId: string }>(
+      'markdown-file-watch',
+      (event) => {
+        if (watchId && event.payload.watchId === watchId) callback(event.payload)
+      },
+    )
+
+    try {
+      watchId = await invoke<string>('start_markdown_file_watch', { path })
+    } catch (error) {
+      unlisten()
+      throw error
+    }
+
+    return () => {
+      unlisten()
+      if (watchId) void invoke('stop_markdown_file_watch', { watchId })
+    }
   },
 
   async readStartupMarkdownFile() {
