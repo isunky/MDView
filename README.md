@@ -86,7 +86,8 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 
 | 平台 / Platform | 包 / Package | 说明 / Notes |
 | --- | --- | --- |
-| Windows | MSI | 推荐；支持安装、文件关联和应用内更新 / Recommended; installer, file associations, and in-app updates |
+| Windows | Bilingual offline setup | 推荐；按系统语言自动使用中文或英文界面，完整离线安装 / Recommended; automatically selects Chinese or English and installs fully offline |
+| Windows | MSI | 提供英文和简体中文独立包，支持文件关联和应用内更新 / Separate English and Simplified Chinese packages with file associations and in-app updates |
 | Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
 | macOS | Universal DMG | macOS 10.15 或更高版本；ad-hoc 签名 / macOS 10.15 or later; ad-hoc signed |
 | Microsoft Edge | Extension ZIP | 在 `edge://extensions` 打开开发人员模式后选择“加载解压缩的扩展”，或使用 CI 产物 ZIP 提交 Edge Add-ons / Load unpacked from `dist-edge`, or submit the CI ZIP to Edge Add-ons |
@@ -98,6 +99,10 @@ msiexec /i MDView_x64.msi ASSOCIATE_MARKDOWN_FILES=0 /qn
 ```
 
 The Windows MSI lets you opt out of `.md` and `.markdown` associations, which are enabled by default. For unattended deployment, pass `ASSOCIATE_MARKDOWN_FILES=0` as shown above.
+
+双语离线安装程序只内嵌一份 MSI 和中文语言转换文件，因此体积接近单个 MSI；中文 Windows 自动显示中文界面，其他系统默认显示英文界面。
+
+The bilingual offline setup embeds one MSI plus a compact Chinese language transform, so its size remains close to a single MSI. Chinese Windows installations use Chinese automatically; other systems default to English.
 
 > 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
 > Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
@@ -149,6 +154,7 @@ npm run edge:package
 | 目标 / Target | 命令 / Command |
 | --- | --- |
 | Windows MSI | `npm run desktop:build -- --bundles msi` |
+| Windows bilingual offline setup | `npm run setup:windows` |
 | Windows installers + Portable ZIP | `npm run package:windows` |
 | macOS DMG | `npm run desktop:build -- --bundles dmg` (ad-hoc signed by default) |
 | Edge extension ZIP | `npm run edge:package` |

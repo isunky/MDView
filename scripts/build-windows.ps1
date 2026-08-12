@@ -74,13 +74,19 @@ Invoke-BuildStep -Label "Build Windows MSI" -Command {
   & npm.cmd run desktop:build -- --bundles msi
 }
 
+Invoke-BuildStep -Label "Build bilingual Windows setup" -Command {
+  & npm.cmd run setup:windows
+}
+
 $artifacts = @(
   Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -File -ErrorAction SilentlyContinue |
     Where-Object { $_.LastWriteTime -ge $scriptStartTime }
+  Get-ChildItem -Path "src-tauri/target/release/bundle/setup/*.exe" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -ge $scriptStartTime }
 )
 
-if ($artifacts.Count -eq 0) {
-  throw "Packaging completed, but no new Windows MSI was found."
+if ($artifacts.Count -ne 3) {
+  throw "Packaging completed, but the expected en-US MSI, zh-CN MSI, and bilingual setup were not all found."
 }
 
 Write-Host ""

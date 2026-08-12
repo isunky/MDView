@@ -237,7 +237,7 @@ jobs:
           RELEASE_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          msi_path="$(find release-assets -maxdepth 1 -type f -name "*_${RELEASE_VERSION}_*.msi" -print -quit)"
+          msi_path="$(find release-assets -maxdepth 1 -type f -name "*_${RELEASE_VERSION}_*_en-US.msi" -print -quit)"
           if [[ -z "$msi_path" ]]; then
             echo "::error::Expected a Windows MSI artifact."
             exit 1

@@ -165,6 +165,7 @@ jobs:
         run: |
           Remove-Item -LiteralPath src-tauri\target\release\bundle\msi -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -LiteralPath src-tauri\target\release\bundle\portable -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath src-tauri\target\release\bundle\setup -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Build unsigned MSI
         shell: pwsh
@@ -178,13 +179,13 @@ jobs:
           Remove-Item -LiteralPath $stagingPath -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $stagingPath | Out-Null
 
-          $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File | Select-Object -First 1
+          $msiFiles = @(Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File)
           $exe = Get-Item -LiteralPath src-tauri\target\release\MDView.exe
-          if (-not $msi -or -not $exe) {
-            throw 'Expected unsigned MSI and MDView.exe build outputs were not found.'
+          if ($msiFiles.Count -ne 2 -or -not $exe) {
+            throw 'Expected en-US and zh-CN MSI files plus MDView.exe.'
           }
 
-          Copy-Item -LiteralPath $msi.FullName -Destination (Join-Path $stagingPath $msi.Name)
+          $msiFiles | Copy-Item -Destination $stagingPath
           Copy-Item -LiteralPath $exe.FullName -Destination (Join-Path $stagingPath $exe.Name)
 
       - name: Upload unsigned Windows artifacts
@@ -218,13 +219,13 @@ jobs:
         shell: pwsh
         run: |
           $signedRoot = Join-Path $env:RUNNER_TEMP 'mdview-signpath-output'
-          $signedMsi = Get-ChildItem -Path $signedRoot -Recurse -Filter '*.msi' -File | Select-Object -First 1
+          $signedMsiFiles = @(Get-ChildItem -Path $signedRoot -Recurse -Filter '*.msi' -File)
           $signedExe = Get-ChildItem -Path $signedRoot -Recurse -Filter 'MDView.exe' -File | Select-Object -First 1
-          if (-not $signedMsi -or -not $signedExe) {
-            throw 'SignPath did not return both the signed MSI and signed MDView.exe.'
+          if ($signedMsiFiles.Count -ne 2 -or -not $signedExe) {
+            throw 'SignPath did not return both localized MSI files and signed MDView.exe.'
           }
 
-          foreach ($artifact in @($signedMsi, $signedExe)) {
+          foreach ($artifact in @($signedMsiFiles) + @($signedExe)) {
             $signature = Get-AuthenticodeSignature -FilePath $artifact.FullName
             if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'SignPath Foundation') {
               throw "Invalid SignPath signature on $($artifact.Name): $($signature.Status) $($signature.SignerCertificate.Subject)"
@@ -232,20 +233,82 @@ jobs:
           }
 
           $msiOutput = Join-Path $PWD 'src-tauri\target\release\bundle\msi'
-          Copy-Item -LiteralPath $signedMsi.FullName -Destination (Join-Path $msiOutput $signedMsi.Name) -Force
+          $signedMsiFiles | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $msiOutput $_.Name) -Force
+          }
           Copy-Item -LiteralPath $signedExe.FullName -Destination 'src-tauri\target\release\MDView.exe' -Force
 
       - name: Create updater signature
         if: ${{ inputs.sign_updater_artifacts }}
         shell: pwsh
         run: |
-          $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File | Select-Object -First 1
+          $msi = Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*_en-US.msi' -File | Select-Object -First 1
+          if (-not $msi) {
+            throw 'The canonical en-US updater MSI was not found.'
+          }
           $signaturePath = "$($msi.FullName).sig"
           Remove-Item -LiteralPath $signaturePath -Force -ErrorAction SilentlyContinue
           npm run tauri -- signer sign $msi.FullName
           if (-not (Test-Path -LiteralPath $signaturePath) -or [string]::IsNullOrWhiteSpace((Get-Content -LiteralPath $signaturePath -Raw))) {
             throw 'Tauri updater signature was not created for the signed MSI.'
           }
+
+      - name: Build bilingual offline setup
+        shell: pwsh
+        run: npm run setup:windows
+
+      - name: Stage bilingual setup for SignPath
+        if: ${{ inputs.sign_windows_artifacts }}
+        shell: pwsh
+        run: |
+          $stagingPath = Join-Path $env:RUNNER_TEMP 'mdview-setup-signpath-input'
+          Remove-Item -LiteralPath $stagingPath -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stagingPath | Out-Null
+          $setup = Get-ChildItem -Path src-tauri\target\release\bundle\setup -Filter '*.exe' -File | Select-Object -First 1
+          if (-not $setup) {
+            throw 'The bilingual setup executable was not found.'
+          }
+          Copy-Item -LiteralPath $setup.FullName -Destination (Join-Path $stagingPath $setup.Name)
+
+      - name: Upload unsigned bilingual setup
+        if: ${{ inputs.sign_windows_artifacts }}
+        id: upload-setup-signpath-input
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-setup-signpath-input-${{ github.run_id }}
+          path: ${{ runner.temp }}/mdview-setup-signpath-input
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Submit bilingual setup to SignPath
+        if: ${{ inputs.sign_windows_artifacts }}
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: mdview
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: windows-release
+          github-artifact-id: ${{ steps.upload-setup-signpath-input.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 4800
+          output-artifact-directory: ${{ runner.temp }}/mdview-setup-signpath-output
+          parameters: |
+            version: ${{ toJSON(steps.package-version.outputs.value) }}
+
+      - name: Install and verify signed bilingual setup
+        if: ${{ inputs.sign_windows_artifacts }}
+        shell: pwsh
+        run: |
+          $signedSetup = Get-ChildItem -Path (Join-Path $env:RUNNER_TEMP 'mdview-setup-signpath-output') -Recurse -Filter '*_setup.exe' -File | Select-Object -First 1
+          if (-not $signedSetup) {
+            throw 'SignPath did not return the signed bilingual setup.'
+          }
+          $signature = Get-AuthenticodeSignature -FilePath $signedSetup.FullName
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'SignPath Foundation') {
+            throw "Invalid SignPath signature on $($signedSetup.Name): $($signature.Status) $($signature.SignerCertificate.Subject)"
+          }
+          Copy-Item -LiteralPath $signedSetup.FullName -Destination (Join-Path 'src-tauri\target\release\bundle\setup' $signedSetup.Name) -Force
 
       - name: Build portable ZIP
         shell: pwsh
@@ -258,9 +321,10 @@ jobs:
           $artifacts = @(
             Get-ChildItem -Path src-tauri\target\release\bundle\msi -Filter '*.msi' -File
             Get-ChildItem -Path src-tauri\target\release\bundle\portable -Filter '*.zip' -File
+            Get-ChildItem -Path src-tauri\target\release\bundle\setup -Filter '*.exe' -File
           )
-          if ($artifacts.Count -ne 2) {
-            throw 'Expected exactly one MSI and one portable ZIP to checksum.'
+          if ($artifacts.Count -ne 4) {
+            throw 'Expected two localized MSI files, one bilingual setup, and one portable ZIP to checksum.'
           }
           $artifacts | ForEach-Object {
             "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
@@ -280,6 +344,14 @@ jobs:
         with:
           name: mdview-windows-updater-signature
           path: src-tauri/target/release/bundle/msi/*.msi.sig
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+      - name: Upload bilingual setup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdview-windows-setup
+          path: src-tauri/target/release/bundle/setup/*.exe
           if-no-files-found: error
           retention-days: ${{ inputs.retention_days }}
 

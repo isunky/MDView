@@ -268,8 +268,8 @@
 
         <Feature
                 Id="FileAssociationsFeature"
-                Title="Markdown file associations"
-                Description="Associate .md and .markdown files with MDView"
+                Title="!(loc.FileAssociationFeatureTitle)"
+                Description="!(loc.FileAssociationFeatureDescription)"
                 Level="1"
                 Display="hidden"
                 AllowAdvertise="no"

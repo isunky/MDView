@@ -19,13 +19,13 @@
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="UserExit" />
 
-      <Dialog Id="FileAssociationDlg" Width="370" Height="270" Title="[ProductName] Setup">
+      <Dialog Id="FileAssociationDlg" Width="370" Height="270" Title="!(loc.SetupTitle)">
         <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="17" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Open Markdown files with MDView" />
-        <Control Id="Description" Type="Text" X="25" Y="25" Width="320" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose whether MDView should be your Markdown app." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="17" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}!(loc.FileAssociationTitle)" />
+        <Control Id="Description" Type="Text" X="25" Y="25" Width="320" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.FileAssociationDescription)" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="AssociationCheckbox" Type="CheckBox" X="25" Y="76" Width="320" Height="22" Property="ASSOCIATE_MARKDOWN_FILES" CheckBoxValue="1" Text="Open .md and .markdown files with MDView" />
-        <Control Id="AssociationHelp" Type="Text" X="45" Y="105" Width="292" Height="38" Text="Recommended. You can change the default app later in Windows Settings." />
+        <Control Id="AssociationCheckbox" Type="CheckBox" X="25" Y="76" Width="320" Height="22" Property="ASSOCIATE_MARKDOWN_FILES" CheckBoxValue="1" Text="!(loc.FileAssociationCheckbox)" />
+        <Control Id="AssociationHelp" Type="Text" X="45" Y="105" Width="292" Height="38" Text="!(loc.FileAssociationHelp)" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="zh-CN" Codepage="936" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="LaunchApp">启动 MDView</String>
+  <String Id="DowngradeErrorMessage">已安装更新版本的 MDView。</String>
+  <String Id="PathEnvVarFeature">将 MDView 添加到系统 PATH。</String>
+  <String Id="InstallAppFeature">安装 MDView。</String>
+  <String Id="SetupTitle">[ProductName] 安装程序</String>
+  <String Id="FileAssociationTitle">使用 MDView 打开 Markdown 文件</String>
+  <String Id="FileAssociationDescription">选择是否将 MDView 设为 Markdown 文件的默认应用。</String>
+  <String Id="FileAssociationCheckbox">使用 MDView 打开 .md 和 .markdown 文件</String>
+  <String Id="FileAssociationHelp">推荐启用。稍后可在 Windows 设置中更改默认应用。</String>
+  <String Id="FileAssociationFeatureTitle">Markdown 文件关联</String>
+  <String Id="FileAssociationFeatureDescription">将 .md 和 .markdown 文件关联到 MDView</String>
+</WixLocalization>

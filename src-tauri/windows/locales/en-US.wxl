@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="LaunchApp">Launch MDView</String>
+  <String Id="DowngradeErrorMessage">A newer version of MDView is already installed.</String>
+  <String Id="PathEnvVarFeature">Add MDView to the system PATH.</String>
+  <String Id="InstallAppFeature">Install MDView.</String>
+  <String Id="SetupTitle">[ProductName] Setup</String>
+  <String Id="FileAssociationTitle">Open Markdown files with MDView</String>
+  <String Id="FileAssociationDescription">Choose whether MDView should be your Markdown app.</String>
+  <String Id="FileAssociationCheckbox">Open .md and .markdown files with MDView</String>
+  <String Id="FileAssociationHelp">Recommended. You can change the default app later in Windows Settings.</String>
+  <String Id="FileAssociationFeatureTitle">Markdown file associations</String>
+  <String Id="FileAssociationFeatureDescription">Associate .md and .markdown files with MDView</String>
+</WixLocalization>
