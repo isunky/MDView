@@ -3,6 +3,9 @@
   "private": true,
   "version": "3.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "desktop:dev": "tauri dev",
@@ -15,6 +18,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "version:check": "node scripts/check-version.mjs",
     "version:sync": "node scripts/sync-version.mjs",
     "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
     "setup:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-bootstrapper.ps1",

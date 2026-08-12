@@ -169,6 +169,7 @@ npm run edge:package
 
 ```bash
 npm run version:sync -- 2.0.1
+npm run version:check
 ```
 
 <details>

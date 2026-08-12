@@ -172,12 +172,12 @@
 
 ### 构建环境稳定性
 
-状态：部分完成。CI 与 Release 公共构建流水线已完成，但工作流仍使用 `node-version: lts/*`，仓库没有 `.node-version` / `.nvmrc`，`package.json` 也没有 `engines`；Artifact Action 仍有 Node.js 20 弃用提示。版本同步脚本已覆盖主要版本文件，但缺少独立的一致性校验命令。
+状态：已完成（2026-08-12）。CI、Release 和 Edge 工作流统一使用 Node.js 24，Artifact Actions 已升级为 Node.js 24 版本，本地工具链与全部应用版本信息都有明确约束和校验。
 
-- [ ] 固定 Node.js 主版本，增加 `.node-version` 或 `.nvmrc`。
-- [ ] 在 `package.json` 中声明 Node.js `engines`。
-- [ ] 将 `upload-artifact` / `download-artifact` 升级到 Node.js 24 兼容版本。
-- [ ] 增加版本一致性检查，覆盖 npm、Tauri、Cargo、About、Edge manifest 和 README 信息。
+- [x] 固定 Node.js 24 主版本，增加 `.node-version`。
+- [x] 在 `package.json` 中声明 Node.js `engines`。
+- [x] 将 `upload-artifact` / `download-artifact` 升级到 Node.js 24 兼容版本。
+- [x] 增加版本一致性检查，覆盖 npm、Tauri、Cargo、About、Edge manifest 和 README 信息。
 - [x] 抽取 CI 与 Release 中重复的安装、测试和构建步骤。
 - [x] 增加 Edge 扩展独立构建、打包、上传和提交状态轮询流程。
 
@@ -232,10 +232,9 @@
 
 ## 建议执行顺序
 
-1. 固定 Node.js 24 工具链，升级 Artifact Actions，并增加跨文件版本一致性检查。
-2. 实现 Mermaid 与本地图片 LRU 缓存，建立长文档输入、滚动和渲染性能基线。
-3. 统一偏好、草稿和阅读会话存储治理。
-4. 二次拆分 `App.tsx`、编辑器、预览器、Rust `lib.rs` 和超大测试文件。
-5. 补齐目录、资源、Mermaid、导出和真实 Tauri 文件流程测试。
-6. 优先实现命令面板、链接资源检查和 Markdown 质量检查，再评估多标签页与文件夹工作区。
+1. 实现 Mermaid 与本地图片 LRU 缓存，建立长文档输入、滚动和渲染性能基线。
+2. 统一偏好、草稿和阅读会话存储治理。
+3. 二次拆分 `App.tsx`、编辑器、预览器、Rust `lib.rs` 和超大测试文件。
+4. 补齐目录、资源、Mermaid、导出和真实 Tauri 文件流程测试。
+5. 优先实现命令面板、链接资源检查和 Markdown 质量检查，再评估多标签页与文件夹工作区。
 7. 完成 macOS Developer ID 签名、公证、stapling 和自动更新。

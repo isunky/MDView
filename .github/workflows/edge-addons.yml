@@ -32,17 +32,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Check version consistency
+        run: npm run version:check
+
       - name: Build package
         run: npm run edge:package
 
       - name: Upload Edge extension ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-edge-extension
           path: dist/MDView-edge.zip

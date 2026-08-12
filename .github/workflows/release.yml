@@ -48,7 +48,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
 
       - name: Generate or validate version
@@ -164,6 +164,7 @@ jobs:
             fi
 
             npm run version:sync -- "$version"
+            npm run version:check
 
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -186,6 +187,8 @@ jobs:
               echo "::error::Tag $tag does not match package version $package_version."
               exit 1
             fi
+
+            npm run version:check
 
             sha="$GITHUB_SHA"
             echo 'notes=' >> "$GITHUB_OUTPUT"
@@ -223,7 +226,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: release-assets
           merge-multiple: true

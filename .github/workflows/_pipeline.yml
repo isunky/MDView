@@ -53,11 +53,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check version consistency
+        run: npm run version:check
 
       - name: Run unit tests
         run: npm run test
@@ -72,7 +75,7 @@ jobs:
         run: npm run edge:package
 
       - name: Upload Edge extension package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-edge-extension
           path: dist/MDView-edge.zip
@@ -110,7 +113,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
 
       - name: Install Rust
@@ -191,7 +194,7 @@ jobs:
       - name: Upload unsigned Windows artifacts
         if: ${{ inputs.sign_windows_artifacts }}
         id: upload-signpath-input
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-signpath-input-${{ github.run_id }}
           path: ${{ runner.temp }}/mdview-signpath-input
@@ -273,7 +276,7 @@ jobs:
       - name: Upload unsigned bilingual setup
         if: ${{ inputs.sign_windows_artifacts }}
         id: upload-setup-signpath-input
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-setup-signpath-input-${{ github.run_id }}
           path: ${{ runner.temp }}/mdview-setup-signpath-input
@@ -331,7 +334,7 @@ jobs:
           } | Set-Content -LiteralPath $checksumPath -Encoding ascii
 
       - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-windows-msi
           path: src-tauri/target/release/bundle/msi/*.msi
@@ -340,7 +343,7 @@ jobs:
 
       - name: Upload updater signature artifact
         if: ${{ inputs.sign_updater_artifacts }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-windows-updater-signature
           path: src-tauri/target/release/bundle/msi/*.msi.sig
@@ -348,7 +351,7 @@ jobs:
           retention-days: ${{ inputs.retention_days }}
 
       - name: Upload bilingual setup artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-windows-setup
           path: src-tauri/target/release/bundle/setup/*.exe
@@ -356,7 +359,7 @@ jobs:
           retention-days: ${{ inputs.retention_days }}
 
       - name: Upload portable ZIP artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-windows-portable
           path: src-tauri/target/release/bundle/portable/*.zip
@@ -364,7 +367,7 @@ jobs:
           retention-days: ${{ inputs.retention_days }}
 
       - name: Upload Windows checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-windows-checksums
           path: src-tauri/target/release/bundle/SHA256SUMS.txt
@@ -389,7 +392,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
 
       - name: Install Rust with macOS targets
@@ -450,7 +453,7 @@ jobs:
           [[ "$architectures" == *"arm64"* && "$architectures" == *"x86_64"* ]]
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mdview-macos-universal-dmg
           path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
