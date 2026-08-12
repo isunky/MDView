@@ -5,6 +5,8 @@
     "windows": {
       "wix": {
         "template": "windows/main.wxs",
+        "bannerPath": "windows/assets/wix-banner.bmp",
+        "dialogImagePath": "windows/assets/wix-dialog.bmp",
         "fragmentPaths": [
           "windows/file-associations.wxs",
           "windows/file-association-ui.wxs"

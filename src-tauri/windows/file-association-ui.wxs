@@ -2,9 +2,9 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
     <UI Id="MDViewUI_InstallDir">
-      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
-      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
-      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="9" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="15" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="11" Bold="yes" />
 
       <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
       <Property Id="WixUI_Mode" Value="InstallDir" />
@@ -21,11 +21,11 @@
 
       <Dialog Id="FileAssociationDlg" Width="370" Height="270" Title="[ProductName] Setup">
         <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}File associations" />
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose how MDView opens Markdown files." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="17" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Open Markdown files with MDView" />
+        <Control Id="Description" Type="Text" X="25" Y="25" Width="320" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose whether MDView should be your Markdown app." />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="AssociationCheckbox" Type="CheckBox" X="25" Y="78" Width="320" Height="20" Property="ASSOCIATE_MARKDOWN_FILES" CheckBoxValue="1" Text="Associate .md and .markdown files with MDView" />
-        <Control Id="AssociationHelp" Type="Text" X="45" Y="103" Width="295" Height="34" Text="You can change the default Markdown app later in Windows Settings." />
+        <Control Id="AssociationCheckbox" Type="CheckBox" X="25" Y="76" Width="320" Height="22" Property="ASSOCIATE_MARKDOWN_FILES" CheckBoxValue="1" Text="Open .md and .markdown files with MDView" />
+        <Control Id="AssociationHelp" Type="Text" X="45" Y="105" Width="292" Height="38" Text="Recommended. You can change the default app later in Windows Settings." />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
