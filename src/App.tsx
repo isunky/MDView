@@ -7,24 +7,11 @@ import {
   useState,
   type CSSProperties,
 } from 'react'
-import {
-  ChevronDown,
-  Download,
-  Eye,
-  FolderOpen,
-  FolderSearch,
-  PanelLeftOpen,
-  PencilLine,
-  Settings,
-  SplitSquareHorizontal,
-} from 'lucide-react'
+import { PanelLeftOpen } from 'lucide-react'
 import './App.css'
-import { AboutDialog } from './components/AboutDialog'
-import { DraftRecoveryDialog } from './components/DraftRecoveryDialog'
-import { ReadingSettingsDialog } from './components/ReadingSettingsDialog'
 import { SplitScrollControl } from './components/SplitScrollControl'
-import { UpdateDialog } from './components/UpdateDialog'
-import { AppLogo } from './components/AppLogo'
+import { AppDialogs } from './components/AppDialogs'
+import { AppToolbar } from './components/AppToolbar'
 import { DocumentOutline } from './components/DocumentOutline'
 import { DocumentSearchBar } from './components/DocumentSearchBar'
 import { ExternalFileBanner } from './components/ExternalFileBanner'
@@ -53,6 +40,7 @@ import { useReadingSession } from './hooks/useReadingSession'
 import { useReadingPreferences } from './hooks/useReadingPreferences'
 import { useTransientToast } from './hooks/useTransientToast'
 import { useSplitScrollSync } from './hooks/useSplitScrollSync'
+import { useDocumentExport } from './hooks/useDocumentExport'
 import type { FileAccess } from './platform/fileAccess'
 import type { AppUpdateClient } from './platform/appUpdates'
 import { unsupportedAppUpdateClient } from './platform/unsupportedAppUpdates'
@@ -286,91 +274,21 @@ function App({
     onNotify: showAppToast,
   })
 
-  async function handleExportHtml() {
-    closeMenu()
-    setStatusMessage(t.exportHtmlPreparing)
-
-    try {
-      const { html, unresolvedResources } = await buildCurrentExportHtml()
-      const savedPath = await fileAccess.exportHtmlFile(
-        html,
-        markdownDocument.path,
-        markdownDocument.title,
-      )
-      setStatusMessage(savedPath
-        ? unresolvedResources.length > 0 ? t.exportHtmlSavedWithWarnings(unresolvedResources.length) : t.exportHtmlSaved
-        : t.exportCanceled)
-    } catch (error) {
-      setStatusMessage(getErrorMessage(error))
-    }
-  }
-
-  async function handleExportPdf() {
-    closeMenu()
-
-    try {
-      const { html, unresolvedResources } = await buildCurrentExportHtml()
-      await fileAccess.printExportHtml(html, markdownDocument.title)
-      setStatusMessage(unresolvedResources.length > 0 ? t.printDialogOpenedWithWarnings(unresolvedResources.length) : t.printDialogOpened)
-    } catch (error) {
-      setStatusMessage(getErrorMessage(error))
-    }
-  }
-
-  async function handleExportDocx() {
-    closeMenu()
-    setStatusMessage(t.exportDocxPreparing)
-
-    try {
-      const { buildExportDocx } = await import('./domain/exportDocx')
-      const bytes = await buildExportDocx({
-        title: markdownDocument.title,
-        content: markdownDocument.content,
-        sourcePath: markdownDocument.path,
-        readLocalImageFile: fileAccess.readLocalImageFile,
-      })
-      const savedPath = await fileAccess.exportDocxFile(
-        bytes,
-        markdownDocument.path,
-        markdownDocument.title,
-      )
-      setStatusMessage(savedPath ? t.exportDocxSaved : t.exportCanceled)
-    } catch (error) {
-      setStatusMessage(getErrorMessage(error))
-    }
-  }
+  const { exportDocx: handleExportDocx, exportHtml: handleExportHtml, exportPdf: handleExportPdf } = useDocumentExport({
+    closeMenu,
+    document: markdownDocument,
+    fileAccess,
+    language,
+    previewRef,
+    setStatusMessage,
+    t,
+  })
 
   async function handleRevealRecentFile(path: string) {
     try {
       await fileAccess.revealFileInFolder(path)
     } catch (error) {
       setStatusMessage(getErrorMessage(error))
-    }
-  }
-
-  async function buildCurrentExportHtml(): Promise<{ html: string; unresolvedResources: string[] }> {
-    const previewElement = previewRef.current
-    if (!previewElement) {
-      throw new Error(t.exportPreviewUnavailable)
-    }
-
-    const [{ buildExportHtml }, { createLightExportContent }] = await Promise.all([
-      import('./domain/exportHtml'),
-      import('./domain/exportPreview'),
-    ])
-
-    const content = await createLightExportContent(previewElement, {
-      sourcePath: markdownDocument.path,
-      readLocalImageFile: fileAccess.readLocalImageFile,
-      readRemoteImageFile: fileAccess.readRemoteImageFile,
-    })
-    return {
-      unresolvedResources: content.unresolvedResources,
-      html: buildExportHtml({
-      title: markdownDocument.title,
-      lang: language === 'zh' ? 'zh-CN' : 'en',
-      contentHtml: content.html,
-      }),
     }
   }
 
@@ -415,7 +333,6 @@ function App({
   const nativeFileTitle = fileAccess.supportsNativeFiles
     ? undefined
     : t.nativeFileUnavailable
-  const documentActionTitle = isWelcomeVisible ? t.welcomeDocumentRequired : nativeFileTitle
   const canRevealFiles = fileAccess.canRevealFile ?? fileAccess.supportsNativeFiles
   const updateActionTitle = distribution === 'unsupported' ? t.updateUnavailable : undefined
   const newTitle = withShortcutTitle(t.createNewLabel, { key: 'n' }, shortcutPlatform)
@@ -449,259 +366,47 @@ function App({
       data-mdview-color-theme={effectiveTheme}
       lang={language === 'zh' ? 'zh-CN' : 'en'}
     >
-      <header className="topbar">
-        <div className="brand-block">
-          <div className="app-mark" aria-hidden="true">
-            <AppLogo />
-          </div>
-          <div>
-            <h1>MDView</h1>
-            <p title={isWelcomeVisible ? t.welcomeBrand : markdownDocument.path ?? markdownDocument.title}>
-              {isWelcomeVisible ? t.welcomeBrand : markdownDocument.title}
-            </p>
-          </div>
-        </div>
-
-        <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
-          <div className="action-menu">
-            <button
-              type="button"
-              onClick={() => toggleMenu('file')}
-              aria-haspopup="menu"
-              aria-expanded={activeMenu === 'file'}
-            >
-              <FolderOpen aria-hidden="true" />
-              <span>{t.fileMenu}</span>
-              <ChevronDown aria-hidden="true" />
-            </button>
-            {activeMenu === 'file' ? (
-              <div className="action-menu-panel" role="menu">
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleNewDocumentWithPreviewPreload}
-                  title={newTitle}
-                  role="menuitem"
-                >
-                  {t.createNew}
-                </button>
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleOpenFileWithPreviewPreload}
-                  disabled={!fileAccess.supportsNativeFiles}
-                  title={nativeFileTitle ?? openTitle}
-                  role="menuitem"
-                >
-                  {t.openMarkdownFile}
-                </button>
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={() => void handleSaveFile()}
-                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles || isSaving}
-                  title={documentActionTitle ?? saveTitle}
-                  role="menuitem"
-                >
-                  {t.save}
-                </button>
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleSaveFileAs}
-                  disabled={isWelcomeVisible || !fileAccess.supportsNativeFiles || isSaving}
-                  title={documentActionTitle ?? saveAsTitle}
-                  role="menuitem"
-                >
-                  {t.saveAs}
-                </button>
-                <div className="action-menu-divider" />
-                <div className="action-menu-section-label">{t.recentFiles}</div>
-                {recentFiles.length > 0 ? (
-                  recentFiles.map((file) => (
-                    <div className="recent-file-menu-row" key={file.path}>
-                      <button
-                        type="button"
-                        className="action-menu-item recent-file-item"
-                        onClick={() => void handleOpenRecentFileWithPreviewPreload(file.path)}
-                        disabled={!fileAccess.supportsNativeFiles}
-                        title={file.path}
-                        role="menuitem"
-                      >
-                        <span className="recent-file-title">{file.title}</span>
-                      </button>
-                      {canRevealFiles ? (
-                        <button
-                          type="button"
-                          className="recent-file-reveal"
-                          onClick={() => void handleRevealRecentFile(file.path)}
-                          title={t.reveal}
-                          aria-label={t.revealInFolder(file.title)}
-                          role="menuitem"
-                        >
-                          <FolderSearch aria-hidden="true" />
-                        </button>
-                      ) : null}
-                    </div>
-                  ))
-                ) : (
-                  <div className="action-menu-empty">{t.noRecentFiles}</div>
-                )}
-                <button
-                  type="button"
-                  className="action-menu-item action-menu-clear"
-                  onClick={handleClearRecentFiles}
-                  disabled={recentFiles.length === 0}
-                  role="menuitem"
-                >
-                  {t.clearRecentFiles}
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          {!isWelcomeVisible ? <div className="action-menu">
-            <button
-              type="button"
-              onClick={() => toggleMenu('export')}
-              aria-haspopup="menu"
-              aria-expanded={activeMenu === 'export'}
-              disabled={!fileAccess.supportsNativeFiles}
-              title={nativeFileTitle}
-            >
-              <Download aria-hidden="true" />
-              <span>{t.exportMenu}</span>
-              <ChevronDown aria-hidden="true" />
-            </button>
-            {activeMenu === 'export' && fileAccess.supportsNativeFiles ? (
-              <div className="action-menu-panel action-menu-panel-compact" role="menu">
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleExportHtml}
-                  role="menuitem"
-                >
-                  {t.exportAsHtml}
-                </button>
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleExportPdf}
-                  role="menuitem"
-                >
-                  {t.exportAsPdf}
-                </button>
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleExportDocx}
-                  role="menuitem"
-                >
-                  {t.exportAsDocx}
-                </button>
-              </div>
-            ) : null}
-          </div> : null}
-
-          <div className="action-menu">
-            <button
-              type="button"
-              onClick={() => toggleMenu('app')}
-              aria-haspopup="menu"
-              aria-expanded={activeMenu === 'app'}
-            >
-              <Settings aria-hidden="true" />
-              <span>{t.appMenu}</span>
-              <ChevronDown aria-hidden="true" />
-            </button>
-            {activeMenu === 'app' ? (
-              <div className="action-menu-panel action-menu-panel-compact" role="menu">
-                <div className="action-menu-section-label">{t.languageLabel}</div>
-                <button
-                  type="button"
-                  className={`action-menu-item ${language === 'en' ? 'active' : ''}`}
-                  onClick={() => handleLanguageSelect('en')}
-                  role="menuitem"
-                >
-                  {t.languageEnglish}
-                </button>
-                <button
-                  type="button"
-                  className={`action-menu-item ${language === 'zh' ? 'active' : ''}`}
-                  onClick={() => handleLanguageSelect('zh')}
-                  role="menuitem"
-                >
-                  {t.languageChinese}
-                </button>
-                <div className="action-menu-divider" />
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleOpenReadingSettings}
-                  role="menuitem"
-                >
-                  {t.readingSettings}
-                </button>
-                {supportsAppUpdates ? <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={() => void handleCheckForUpdates()}
-                  disabled={distribution === 'unsupported' || updatePhase === 'checking'}
-                  title={updateActionTitle}
-                  role="menuitem"
-                >
-                  {updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}
-                </button> : null}
-                <button
-                  type="button"
-                  className="action-menu-item"
-                  onClick={handleOpenAboutFromAppMenu}
-                  role="menuitem"
-                >
-                  {t.about}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </nav>
-
-        {!isWelcomeVisible ? <div className="view-controls" role="group" aria-label={t.viewMode}>
-          <button
-            type="button"
-            className={viewMode === 'preview' ? 'active' : ''}
-            onClick={() => setViewMode('preview')}
-            aria-label={t.previewLabel}
-          >
-            <Eye aria-hidden="true" />
-            <span>{t.preview}</span>
-          </button>
-          <button
-            type="button"
-            className={viewMode === 'edit' ? 'active' : ''}
-            onClick={() => {
-              freezePreview()
-              setViewMode('edit')
-            }}
-            aria-label={t.editLabel}
-          >
-            <PencilLine aria-hidden="true" />
-            <span>{t.edit}</span>
-          </button>
-          <button
-            type="button"
-            className={viewMode === 'split' ? 'active' : ''}
-            onClick={() => {
-              prepareSplitPreview()
-              setViewMode('split')
-            }}
-            aria-label={t.splitLabel}
-          >
-            <SplitSquareHorizontal aria-hidden="true" />
-            <span>{t.split}</span>
-          </button>
-        </div> : null}
-
-      </header>
+      <AppToolbar
+        activeMenu={activeMenu}
+        canRevealFiles={canRevealFiles}
+        documentPath={markdownDocument.path}
+        documentTitle={markdownDocument.title}
+        isSaving={isSaving}
+        isWelcomeVisible={isWelcomeVisible}
+        language={language}
+        menuBarRef={menuBarRef}
+        nativeFileTitle={nativeFileTitle}
+        newTitle={newTitle}
+        openTitle={openTitle}
+        recentFiles={recentFiles}
+        saveAsTitle={saveAsTitle}
+        saveTitle={saveTitle}
+        supportsAppUpdates={supportsAppUpdates}
+        t={t}
+        updateActionTitle={updateActionTitle}
+        updatePhase={updatePhase}
+        viewMode={viewMode}
+        onAbout={handleOpenAboutFromAppMenu}
+        onCheckUpdates={() => void handleCheckForUpdates()}
+        onClearRecent={handleClearRecentFiles}
+        onExportDocx={() => void handleExportDocx()}
+        onExportHtml={() => void handleExportHtml()}
+        onExportPdf={() => void handleExportPdf()}
+        onLanguage={handleLanguageSelect}
+        onNew={handleNewDocumentWithPreviewPreload}
+        onOpen={() => void handleOpenFileWithPreviewPreload()}
+        onOpenRecent={(path) => void handleOpenRecentFileWithPreviewPreload(path)}
+        onOpenReadingSettings={handleOpenReadingSettings}
+        onReveal={(path) => void handleRevealRecentFile(path)}
+        onSave={() => void handleSaveFile()}
+        onSaveAs={() => void handleSaveFileAs()}
+        onToggleMenu={toggleMenu}
+        onViewMode={(mode) => {
+          if (mode === 'edit') freezePreview()
+          if (mode === 'split') prepareSplitPreview()
+          setViewMode(mode)
+        }}
+      />
 
       {isWelcomeVisible ? (
         <WelcomeWorkspace
@@ -888,32 +593,27 @@ function App({
       {!isWelcomeVisible && visibleOperationStatus ? (
         <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
       ) : null}
-      <DraftRecoveryDialog
-        draft={pendingDraft}
-        onDiscard={discardPendingDraft}
-        onRestore={() => void restorePendingDraft()}
-        t={t}
-      />
-      <AboutDialog open={isAboutOpen} onClose={() => setIsAboutOpen(false)} t={t} />
-      <ReadingSettingsDialog
-        open={isReadingSettingsOpen}
-        preferences={readingPreferences}
-        onClose={() => setIsReadingSettingsOpen(false)}
-        onReset={resetReadingPreferences}
-        onUpdate={updateReadingPreferences}
-        t={t}
-      />
-      <UpdateDialog
+      <AppDialogs
+        availableUpdate={availableUpdate}
         distribution={distribution}
-        errorMessage={updateErrorMessage}
-        onCheckAgain={() => void handleCheckForUpdates()}
-        onClose={dismissUpdateDialog}
-        onInstall={() => void handleInstallUpdate()}
-        onOpenPortableDownload={() => void openPortableDownload()}
-        phase={updatePhase}
-        progress={updateProgress}
+        isAboutOpen={isAboutOpen}
+        isReadingSettingsOpen={isReadingSettingsOpen}
+        pendingDraft={pendingDraft}
+        readingPreferences={readingPreferences}
         t={t}
-        update={availableUpdate}
+        updateErrorMessage={updateErrorMessage}
+        updatePhase={updatePhase}
+        updateProgress={updateProgress}
+        onCheckUpdates={() => void handleCheckForUpdates()}
+        onCloseAbout={() => setIsAboutOpen(false)}
+        onCloseReadingSettings={() => setIsReadingSettingsOpen(false)}
+        onDismissUpdate={dismissUpdateDialog}
+        onDiscardDraft={discardPendingDraft}
+        onInstallUpdate={() => void handleInstallUpdate()}
+        onOpenPortableDownload={() => void openPortableDownload()}
+        onResetReadingPreferences={resetReadingPreferences}
+        onRestoreDraft={() => void restorePendingDraft()}
+        onUpdateReadingPreferences={updateReadingPreferences}
       />
     </main>
   )

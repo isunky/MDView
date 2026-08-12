@@ -1,18 +1,21 @@
+mod distribution;
+mod fs_utils;
+mod image_utils;
+mod startup;
+
 use std::{
     collections::HashSet,
-    ffi::OsString,
     fs,
-    io::{self, Write},
     path::{Path, PathBuf},
     sync::Mutex,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::Duration,
 };
 
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
-use tauri_plugin_dialog::{DialogExt, FileDialogBuilder};
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
@@ -24,32 +27,16 @@ const FILE_ACCESS_DENIED: &str =
 const MAX_IMAGE_ASSET_BYTES: usize = 10 * 1024 * 1024;
 const MAX_EXPORT_IMAGE_BYTES: usize = 20 * 1024 * 1024;
 
-fn atomic_write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let parent = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let existing_permissions = fs::metadata(path)
-        .ok()
-        .map(|metadata| metadata.permissions());
-    let mut temporary = tempfile::Builder::new()
-        .prefix(".mdview-")
-        .tempfile_in(parent)?;
-
-    temporary.write_all(bytes)?;
-    temporary.as_file().sync_all()?;
-    if let Some(permissions) = existing_permissions {
-        temporary.as_file().set_permissions(permissions)?;
-    }
-    temporary.persist(path).map_err(|error| error.error)?;
-
-    #[cfg(unix)]
-    {
-        let _ = fs::File::open(parent).and_then(|directory| directory.sync_all());
-    }
-
-    Ok(())
-}
+use distribution::get_app_distribution;
+use fs_utils::{
+    atomic_write_file, configure_default_path, ensure_docx_path, ensure_extension,
+    ensure_html_path, ensure_image_path, ensure_markdown_path, image_mime_type, is_docx_path,
+    is_html_path, is_markdown_path,
+};
+use image_utils::{
+    create_image_asset_file, image_extension_for_mime_type, sanitize_image_filename_stem,
+};
+use startup::collect_opened_files_from_args;
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
@@ -261,7 +248,11 @@ fn save_markdown_file(
     policy.ensure_authorized(&path)?;
     let existing = match read_authorized_markdown_file(&policy, &path) {
         Ok(file) => file,
-        Err(error) if is_not_found_error(&error) => return Ok(MarkdownFileSavePayload::Missing { path: path.to_string_lossy().to_string() }),
+        Err(error) if is_not_found_error(&error) => {
+            return Ok(MarkdownFileSavePayload::Missing {
+                path: path.to_string_lossy().to_string(),
+            })
+        }
         Err(error) => return Err(error),
     };
     if existing.revision != expected_revision {
@@ -286,7 +277,11 @@ fn check_markdown_file(
     policy.ensure_authorized(&path)?;
     let file = match read_authorized_markdown_file(&policy, &path) {
         Ok(file) => file,
-        Err(error) if is_not_found_error(&error) => return Ok(MarkdownFileCheckPayload::Missing { path: path.to_string_lossy().to_string() }),
+        Err(error) if is_not_found_error(&error) => {
+            return Ok(MarkdownFileCheckPayload::Missing {
+                path: path.to_string_lossy().to_string(),
+            })
+        }
         Err(error) => return Err(error),
     };
     if file.revision == known_revision {
@@ -439,7 +434,10 @@ async fn read_remote_image_file(url: String) -> Result<ImageFilePayload, String>
 
     Ok(ImageFilePayload {
         path: url,
-        data_url: format!("data:{mime_type};base64,{}", general_purpose::STANDARD.encode(bytes)),
+        data_url: format!(
+            "data:{mime_type};base64,{}",
+            general_purpose::STANDARD.encode(bytes)
+        ),
     })
 }
 
@@ -492,31 +490,6 @@ fn reveal_file_in_folder(
     app.opener()
         .reveal_item_in_dir(&path)
         .map_err(|error| format!("Failed to reveal file: {error}"))
-}
-
-#[tauri::command]
-fn get_app_distribution() -> &'static str {
-    #[cfg(target_os = "windows")]
-    {
-        return if is_portable_distribution() {
-            "windows-portable"
-        } else {
-            "windows-installed"
-        };
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        "unsupported"
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn is_portable_distribution() -> bool {
-    std::env::current_exe()
-        .ok()
-        .and_then(|executable| executable.parent().map(Path::to_path_buf))
-        .is_some_and(|directory| directory.join("MDView.portable").is_file())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -643,35 +616,9 @@ fn markdown_revision(content: &str) -> String {
 }
 
 fn is_not_found_error(error: &str) -> bool {
-    error.contains("os error 2") || error.contains("The system cannot find the file") || error.contains("No such file")
-}
-
-fn configure_default_path<R: tauri::Runtime>(
-    mut dialog: FileDialogBuilder<R>,
-    default_path: &Path,
-) -> FileDialogBuilder<R> {
-    if let Some(parent) = default_path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-    {
-        dialog = dialog.set_directory(parent);
-    }
-
-    if let Some(file_name) = default_path.file_name() {
-        dialog = dialog.set_file_name(file_name.to_string_lossy());
-    }
-
-    dialog
-}
-
-fn ensure_extension(path: PathBuf, extension: &str, is_allowed_path: fn(&Path) -> bool) -> PathBuf {
-    if is_allowed_path(&path) {
-        return path;
-    }
-
-    let mut value = OsString::from(path.as_os_str());
-    value.push(format!(".{extension}"));
-    PathBuf::from(value)
+    error.contains("os error 2")
+        || error.contains("The system cannot find the file")
+        || error.contains("No such file")
 }
 
 fn normalize_path_for_policy(path: &Path) -> Result<PathBuf, String> {
@@ -690,21 +637,6 @@ fn normalize_path_for_policy(path: &Path) -> Result<PathBuf, String> {
     let parent = fs::canonicalize(parent)
         .map_err(|error| format!("Failed to resolve the parent directory: {error}"))?;
     Ok(parent.join(file_name))
-}
-
-fn collect_opened_files_from_args() -> Vec<PathBuf> {
-    std::env::args()
-        .skip(1)
-        .filter(|arg| !arg.starts_with('-'))
-        .filter_map(|arg| {
-            if arg.starts_with("file://") {
-                url::Url::parse(&arg).ok()?.to_file_path().ok()
-            } else {
-                Some(PathBuf::from(arg))
-            }
-        })
-        .filter(|path| is_markdown_path(path))
-        .collect()
 }
 
 #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
@@ -738,138 +670,6 @@ fn push_opened_files(app: &AppHandle, files: Vec<PathBuf>) {
     }
 
     let _ = app.emit("opened-files", payload);
-}
-
-fn ensure_markdown_path(path: &Path) -> Result<(), String> {
-    if is_markdown_path(path) {
-        Ok(())
-    } else {
-        Err("Only Markdown files with .md or .markdown extensions are supported.".to_string())
-    }
-}
-
-fn ensure_html_path(path: &Path) -> Result<(), String> {
-    if is_html_path(path) {
-        Ok(())
-    } else {
-        Err("Only HTML files with .html or .htm extensions are supported.".to_string())
-    }
-}
-
-fn ensure_docx_path(path: &Path) -> Result<(), String> {
-    if is_docx_path(path) {
-        Ok(())
-    } else {
-        Err("Only Word documents with .docx extensions are supported.".to_string())
-    }
-}
-
-fn ensure_image_path(path: &Path) -> Result<(), String> {
-    image_mime_type(path).map(|_| ())
-}
-
-fn is_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "md" | "markdown"))
-        .unwrap_or(false)
-}
-
-fn is_html_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), "html" | "htm"))
-        .unwrap_or(false)
-}
-
-fn is_docx_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| extension.eq_ignore_ascii_case("docx"))
-        .unwrap_or(false)
-}
-
-fn image_mime_type(path: &Path) -> Result<&'static str, String> {
-    match path
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| extension.to_ascii_lowercase())
-        .as_deref()
-    {
-        Some("png") => Ok("image/png"),
-        Some("jpg") | Some("jpeg") => Ok("image/jpeg"),
-        Some("gif") => Ok("image/gif"),
-        Some("webp") => Ok("image/webp"),
-        Some("bmp") => Ok("image/bmp"),
-        Some("svg") => Ok("image/svg+xml"),
-        Some("avif") => Ok("image/avif"),
-        _ => Err("Only common image files are supported.".to_string()),
-    }
-}
-
-fn image_extension_for_mime_type(mime_type: &str) -> Result<&'static str, String> {
-    match mime_type.to_ascii_lowercase().as_str() {
-        "image/png" => Ok("png"),
-        "image/jpeg" => Ok("jpg"),
-        "image/gif" => Ok("gif"),
-        "image/webp" => Ok("webp"),
-        "image/bmp" => Ok("bmp"),
-        "image/avif" => Ok("avif"),
-        _ => Err("Only PNG, JPEG, GIF, WebP, BMP, and AVIF images can be imported.".to_string()),
-    }
-}
-
-fn sanitize_image_filename_stem(file_name: &str) -> String {
-    let source = Path::new(file_name)
-        .file_stem()
-        .and_then(|name| name.to_str())
-        .unwrap_or_default();
-    let cleaned = source
-        .chars()
-        .filter(|character| character.is_alphanumeric() || matches!(character, ' ' | '-' | '_'))
-        .take(72)
-        .collect::<String>()
-        .trim_matches(|character: char| matches!(character, ' ' | '.' | '-'))
-        .to_string();
-
-    if cleaned.is_empty() {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| duration.as_millis())
-            .unwrap_or(0);
-        format!("pasted-image-{timestamp}")
-    } else {
-        cleaned
-    }
-}
-
-fn create_image_asset_file(
-    assets_directory: &Path,
-    stem: &str,
-    extension: &str,
-    bytes: &[u8],
-) -> Result<(PathBuf, String), String> {
-    for index in 1..10_000 {
-        let filename = if index == 1 {
-            format!("{stem}.{extension}")
-        } else {
-            format!("{stem}-{index}.{extension}")
-        };
-        let path = assets_directory.join(&filename);
-        match fs::OpenOptions::new().write(true).create_new(true).open(&path) {
-            Ok(mut file) => {
-                if let Err(error) = file.write_all(bytes) {
-                    let _ = fs::remove_file(&path);
-                    return Err(format!("Failed to write image: {error}"));
-                }
-                return Ok((path, filename));
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(error) => return Err(format!("Failed to create image file: {error}")),
-        }
-    }
-
-    Err("Unable to allocate a unique image file name.".to_string())
 }
 
 #[cfg(test)]
@@ -936,7 +736,10 @@ mod tests {
 
     #[test]
     fn sanitizes_imported_image_file_names() {
-        assert_eq!(sanitize_image_filename_stem("../report:final.png"), "reportfinal");
+        assert_eq!(
+            sanitize_image_filename_stem("../report:final.png"),
+            "reportfinal"
+        );
         assert_eq!(sanitize_image_filename_stem("中文 图片.webp"), "中文 图片");
     }
 
@@ -946,8 +749,10 @@ mod tests {
         let assets = directory.join("assets");
         fs::create_dir_all(&assets).unwrap();
 
-        let (first_path, first_name) = create_image_asset_file(&assets, "photo", "png", b"first").unwrap();
-        let (second_path, second_name) = create_image_asset_file(&assets, "photo", "png", b"second").unwrap();
+        let (first_path, first_name) =
+            create_image_asset_file(&assets, "photo", "png", b"first").unwrap();
+        let (second_path, second_name) =
+            create_image_asset_file(&assets, "photo", "png", b"second").unwrap();
 
         assert_eq!(first_name, "photo.png");
         assert_eq!(second_name, "photo-2.png");
@@ -1065,7 +870,10 @@ mod tests {
 
         atomic_write_file(&path, b"replacement").unwrap();
 
-        assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o640);
+        assert_eq!(
+            fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
         fs::remove_dir_all(root).unwrap();
     }
 

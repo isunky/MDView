@@ -18,5 +18,5 @@ export const LazyMarkdownPreview = lazy(async () => {
 })
 
 export function preloadMarkdownPreview() {
-  void loadMarkdownPreviewModule()
+  return loadMarkdownPreviewModule()
 }
