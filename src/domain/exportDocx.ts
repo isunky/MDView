@@ -6,6 +6,7 @@ import {
   HeadingLevel,
   ImageRun,
   LevelFormat,
+  Math as DocxMath,
   Packer,
   Paragraph,
   ShadingType,
@@ -35,6 +36,8 @@ import { toString } from 'mdast-util-to-string'
 import { unified } from 'unified'
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
+import remarkMath from 'remark-math'
+import type { InlineMath, Math as MarkdownMath } from 'mdast-util-math'
 import { resolveLocalMarkdownResource } from './localMarkdownResources'
 import type { LocalImageFile } from '../platform/fileAccess'
 
@@ -48,6 +51,14 @@ type BuildExportDocxOptions = {
 type ConversionContext = {
   sourcePath: string | null
   readLocalImageFile: (path: string) => Promise<LocalImageFile>
+  formulaImageFallbacks: number
+  formulaTextFallbacks: number
+}
+
+export type DocxExportResult = {
+  bytes: Uint8Array
+  formulaImageFallbacks: number
+  formulaTextFallbacks: number
 }
 
 type DocxBlock = Paragraph | Table
@@ -68,9 +79,10 @@ export async function buildExportDocx({
   content,
   sourcePath,
   readLocalImageFile,
-}: BuildExportDocxOptions): Promise<Uint8Array> {
-  const tree = unified().use(remarkParse).use(remarkGfm).parse(content) as Root
-  const children = await convertBlocks(tree.children, { sourcePath, readLocalImageFile })
+}: BuildExportDocxOptions): Promise<DocxExportResult> {
+  const tree = unified().use(remarkParse).use(remarkGfm).use(remarkMath).parse(content) as Root
+  const context: ConversionContext = { sourcePath, readLocalImageFile, formulaImageFallbacks: 0, formulaTextFallbacks: 0 }
+  const children = await convertBlocks(tree.children, context)
   const document = new Document({
     title: title || 'MDView Export',
     creator: 'MDView',
@@ -105,7 +117,7 @@ export async function buildExportDocx({
   })
   const buffer = await Packer.toArrayBuffer(document)
 
-  return new Uint8Array(buffer)
+  return { bytes: new Uint8Array(buffer), formulaImageFallbacks: context.formulaImageFallbacks, formulaTextFallbacks: context.formulaTextFallbacks }
 }
 
 async function convertBlocks(
@@ -149,6 +161,8 @@ async function convertBlock(
       ]
     case 'html':
       return convertHtmlBlock(node.value)
+    case 'math':
+      return [await convertBlockMath(node as MarkdownMath, context)]
     default:
       return toString(node as RootContent).trim()
         ? [new Paragraph(toString(node as RootContent))]
@@ -352,8 +366,44 @@ async function convertInlineNode(
       return convertImage(node, context)
     case 'html':
       return convertInlineHtml(node.value, style)
+    case 'inlineMath':
+      return [await convertInlineMath(node as InlineMath, context)]
     default:
       return toString(node).trim() ? [createTextRun(toString(node), style)] : []
+  }
+}
+
+async function convertBlockMath(node: MarkdownMath, context: ConversionContext): Promise<Paragraph> {
+  const child = await convertMath(node.value, true, context)
+  return new Paragraph({ children: [child], alignment: AlignmentType.CENTER, spacing: { before: 180, after: 220 } })
+}
+
+async function convertInlineMath(node: InlineMath, context: ConversionContext): Promise<ParagraphChild> {
+  return convertMath(node.value, false, context)
+}
+
+async function convertMath(latex: string, displayMode: boolean, context: ConversionContext): Promise<ParagraphChild> {
+  try {
+    const { convertLatexToDocxMath } = await import('./docxMath')
+    const math = convertLatexToDocxMath(latex)
+    if (math) return math as DocxMath
+  } catch {
+    // Fall through to a visual representation for unsupported LaTeX structures.
+  }
+
+  try {
+    const { renderLatexToPng } = await import('./docxMathImage')
+    const image = await renderLatexToPng(latex, displayMode)
+    context.formulaImageFallbacks += 1
+    return new ImageRun({
+      type: 'png',
+      data: image.bytes,
+      transformation: { width: image.width, height: image.height },
+      altText: { title: 'Math formula', description: latex, name: 'Math formula' },
+    })
+  } catch {
+    context.formulaTextFallbacks += 1
+    return createTextRun(latex, { code: true })
   }
 }
 

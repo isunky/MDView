@@ -29,10 +29,12 @@ import {
   type ToolbarFormatCommand,
 } from './MarkdownEditorToolbar'
 import { MarkdownSyntaxDialog } from './MarkdownSyntaxDialog'
+import { MathEditorDialog, type MathEditorDialogLabels } from './MathEditorDialog'
+import { applyMathExpression, findMathExpression, type MathDisplayMode, type MathExpression } from '../domain/markdownMath'
 import { getTextareaSelection, useEditorHistory } from '../hooks/useEditorHistory'
 import { useEditorImageInput } from '../hooks/useEditorImageInput'
 
-export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & {
+export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
   tableCellPlaceholder: string
   syntaxReferenceTitle: string
@@ -90,6 +92,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
+  const [mathEditor, setMathEditor] = useState<{ expression: MathExpression | null; selection: SelectionRange; latex: string; mode: MathDisplayMode } | null>(null)
   const shortcutPlatform = detectShortcutPlatform()
   const { canUndo, canRedo, restore, update, updateSelection } = useEditorHistory({
     historyKey, value, textareaRef, onChange, onSelectionChange,
@@ -244,6 +247,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     imageInput.openPicker(textareaRef.current)
   }
 
+  function openMathEditor() {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const selection = getTextareaSelection(textarea)
+    const expression = findMathExpression(value, selection)
+    setMathEditor({
+      expression,
+      selection,
+      latex: expression?.latex ?? value.slice(selection.start, selection.end).trim(),
+      mode: expression?.mode ?? (value.slice(selection.start, selection.end).includes('\n') ? 'block' : 'inline'),
+    })
+  }
+
   return (
     <div className="markdown-editor-shell">
       {showToolbar ? (
@@ -262,6 +278,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           onImage={handleImageAction}
           onTable={insertTable}
           onOpenSyntaxReference={() => setIsSyntaxReferenceOpen(true)}
+          onOpenMathEditor={openMathEditor}
           imageBusy={isImportingImages}
           imageBusyLabel={imageImportBusyLabel}
         />
@@ -315,6 +332,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         closeLabel={t.closeSyntaxReference}
         onClose={() => setIsSyntaxReferenceOpen(false)}
       />
+      {mathEditor ? <MathEditorDialog
+        open
+        initialLatex={mathEditor.latex}
+        initialMode={mathEditor.mode}
+        isEditing={Boolean(mathEditor.expression)}
+        labels={t}
+        onClose={() => setMathEditor(null)}
+        onConfirm={(latex, mode) => {
+          applyEdit(applyMathExpression(value, mathEditor.selection, latex, mode, mathEditor.expression))
+          setMathEditor(null)
+        }}
+      /> : null}
     </div>
   )
 })

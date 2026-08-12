@@ -37,6 +37,12 @@ describe('export html', () => {
     )
   })
 
+  it('includes formula styles only when supplied', () => {
+    const html = buildExportHtml({ title: 'Math', lang: 'en', contentHtml: '<span class="katex">x</span>', mathStyles: '.katex{font-size:1em}' })
+    expect(html).toContain('.katex{font-size:1em}')
+  })
+
+
   it('creates safe HTML filenames from document titles', () => {
     expect(createExportHtmlFilename('Untitled.md')).toBe('Untitled.html')
     expect(createExportHtmlFilename('Q1: Report / Draft')).toBe('Q1- Report - Draft.html')

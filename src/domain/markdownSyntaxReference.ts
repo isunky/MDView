@@ -85,6 +85,15 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       ],
     },
     {
+      id: 'math',
+      title: 'Math formulas',
+      items: [
+        { id: 'inline-math', name: 'Inline formula', syntax: 'The equation $E = mc^2$ is well known.', description: 'Wrap a short LaTeX expression in single dollar signs.' },
+        { id: 'display-math', name: 'Display formula', syntax: '$$\n\\int_0^1 x^2\\,dx = \\frac{1}{3}\n$$', description: 'Put double dollar signs on separate lines for a centered formula block.' },
+        { id: 'math-matrix', name: 'Matrix', syntax: '$$\nA = \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}\n$$', description: 'KaTeX supports common LaTeX matrix environments.' },
+      ],
+    },
+    {
       id: 'mdview-enhancements',
       title: 'MDView enhancements',
       items: [
@@ -138,6 +147,15 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       items: [
         { id: 'code-block', name: '围栏代码块', syntax: sharedSyntax.codeBlock, description: '在开始标记后注明语言即可启用语法高亮。' },
         { id: 'table', name: '对齐表格', syntax: '| 名称 | 状态 |\n| :--- | ---: |\n| MDView | 可用 |', description: '在分隔行添加冒号控制列的左对齐、右对齐或居中。' },
+      ],
+    },
+    {
+      id: 'math',
+      title: '数学公式',
+      items: [
+        { id: 'inline-math', name: '行内公式', syntax: '著名的质能方程是 $E = mc^2$。', description: '使用一对美元符号包围简短的 LaTeX 表达式。' },
+        { id: 'display-math', name: '独立公式块', syntax: '$$\n\\int_0^1 x^2\\,dx = \\frac{1}{3}\n$$', description: '将双美元符号分别放在独立行，显示居中的公式块。' },
+        { id: 'math-matrix', name: '矩阵', syntax: '$$\nA = \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}\n$$', description: '支持 KaTeX 常用的 LaTeX 矩阵环境。' },
       ],
     },
     {

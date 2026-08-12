@@ -59,7 +59,7 @@ export const markdownSanitizeSchema: Schema = {
     '*': ['align', 'dir', 'lang', 'title'],
     a: ['href', 'title', 'ariaLabel'],
     blockquote: ['cite'],
-    code: [['className', /^language-[A-Za-z0-9_-]+$/]],
+    code: [['className', /^language-[A-Za-z0-9_-]+$/, 'math-inline', 'math-display']],
     details: ['open'],
     img: ['src', 'alt', 'title', 'width', 'height', 'align'],
     input: [

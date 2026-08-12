@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildExportDocx } from './exportDocx'
 import { createExportDocxDefaultPath } from './exportDocxPath'
+import JSZip from 'jszip'
 
 describe('exportDocx', () => {
   it('creates a docx default path from the current markdown file path', () => {
@@ -18,7 +19,7 @@ describe('exportDocx', () => {
   })
 
   it('builds a docx zip from common markdown content', async () => {
-    const bytes = await buildExportDocx({
+    const result = await buildExportDocx({
       title: 'Guide',
       content: [
         '# Guide',
@@ -40,8 +41,24 @@ describe('exportDocx', () => {
       readLocalImageFile: vi.fn(),
     })
 
-    expect(bytes).toBeInstanceOf(Uint8Array)
-    expect(bytes[0]).toBe(0x50)
-    expect(bytes[1]).toBe(0x4b)
+    expect(result.bytes).toBeInstanceOf(Uint8Array)
+    expect(result.bytes[0]).toBe(0x50)
+    expect(result.bytes[1]).toBe(0x4b)
+  })
+
+  it('exports common formulas as editable Office Math', async () => {
+    const result = await buildExportDocx({
+      title: 'Math',
+      content: 'Inline $x^2 + \\frac{a}{b}$.\n\n$$\n\\int_0^1 x\\,dx\n$$',
+      sourcePath: null,
+      readLocalImageFile: vi.fn(),
+    })
+    const zip = await JSZip.loadAsync(result.bytes)
+    const xml = await zip.file('word/document.xml')?.async('string')
+
+    expect(xml).toContain('<m:oMath>')
+    expect(xml).toContain('<m:f>')
+    expect(xml).toContain('<m:nary>')
+    expect(result.formulaImageFallbacks).toBe(0)
   })
 })

@@ -17,6 +17,22 @@ vi.mock('mermaid', () => ({
 }))
 
 describe('MarkdownPreview', () => {
+  it('renders inline and display LaTeX formulas with KaTeX', async () => {
+    render(<MarkdownPreview content={'Inline $E=mc^2$.\n\n$$\n\\frac{a}{b}\n$$'} />)
+
+    await waitFor(() => expect(document.querySelectorAll('.katex').length).toBe(2))
+    expect(document.querySelector('.katex-mathml math')).not.toBeNull()
+    expect(document.querySelector('.katex-display')).toBeInTheDocument()
+    expect(document.querySelector('.katex-display')?.closest('.code-block')).toBeNull()
+  })
+
+  it('does not allow trusted KaTeX URL commands', async () => {
+    render(<MarkdownPreview content={'$\\href{javascript:alert(1)}{unsafe}$'} />)
+
+    await waitFor(() => expect(document.querySelector('.katex')).toBeInTheDocument())
+    expect(document.querySelector('.katex a')).not.toBeInTheDocument()
+  })
+
   it('does not parse the document again when its props are unchanged', () => {
     const codeBlockLabel = vi.fn((language: string) => `${language} code block`)
     const labels: MarkdownPreviewLabels = {

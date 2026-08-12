@@ -59,25 +59,31 @@
 
 MDView 是一款面向本地 Markdown 文档的轻量桌面应用。它把阅读体验放在首位，同时提供编辑、目录导航、导出和文件关联等常用能力。
 
-- **清晰预览**：支持 GFM 表格、任务列表、代码高亮、Mermaid、内嵌 HTML 和颜色预览。
+- **清晰预览**：支持 GFM 表格、任务列表、代码高亮、Mermaid、LaTeX 数学公式、内嵌 HTML 和颜色预览。
 - **三种视图**：在预览、编辑和分屏模式之间快速切换。
 - **长文档导航**：自动提取 `H1` 至 `H4` 生成目录，可切换展示层级、跟随当前阅读位置，并按文件恢复阅读现场。
 - **阅读主题与排版**：支持浅色、深色和跟随系统；可调整正文的字体、字号、行高和内容宽度，代码高亮会随主题自动切换。
 - **本地文件体验**：支持最近文件、相对路径图片和本地 Markdown 链接；可从工具栏批量选择、粘贴或拖入图片，自动保存到同级 `assets` 目录，并显示导入进度和失败重试入口。
-- **实用编辑能力**：提供撤销重做、快速表格、H1-H4 标题、代码块、查找替换、语法速查、列表续写和实时编辑状态栏。
-- **灵活导出**：可导出独立 HTML、Word `.docx`，也可通过系统打印生成 PDF。
+- **实用编辑能力**：提供撤销重做、公式编辑面板、快速表格、H1-H4 标题、代码块、查找替换、语法速查、列表续写和实时编辑状态栏。
+- **灵活导出**：可导出独立 HTML、Word `.docx`，也可通过系统打印生成 PDF；公式会保留在 HTML/PDF 中，常用公式在 Word 中保持原生可编辑。
 
 ## English
 
 MDView is a lightweight desktop app for local Markdown documents. It prioritizes a calm reading experience while keeping practical editing, navigation, export, and file-association tools close at hand.
 
-- **Clean preview**: GFM tables, task lists, syntax highlighting, Mermaid, inline HTML, and color swatches.
+- **Clean preview**: GFM tables, task lists, syntax highlighting, Mermaid, LaTeX math, inline HTML, and color swatches.
 - **Three views**: switch quickly between Preview, Edit, and Split modes.
 - **Long-document navigation**: generate an outline from `H1` to `H4`, choose the visible depth, follow the current reading position, and restore each file's reading state.
 - **Reading theme and typography**: choose light, dark, or system appearance; tune body font, size, line height, and content width, with code highlighting following the active theme.
 - **Local-first workflow**: recent files, relative images, local Markdown links, and `.md` / `.markdown` associations; select multiple images from the toolbar, paste, or drag them into a sibling `assets` folder with progress and retry support.
-- **Practical editing**: undo and redo, quick GFM tables, H1-H4 headings, code blocks, find and replace, syntax reference, list continuation, and a live document status bar.
-- **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing.
+- **Practical editing**: undo and redo, a live formula editor, quick GFM tables, H1-H4 headings, code blocks, find and replace, syntax reference, list continuation, and a live document status bar.
+- **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing; formulas remain visible in HTML/PDF and common formulas stay editable in Word.
+
+### 数学公式 / Math formulas
+
+行内公式使用 `$...$`，独立公式块使用单独成行的 `$$`。编辑模式可点击 `Σ` 打开公式面板，通过模板、LaTeX 输入和实时预览快速插入或修改公式。需要原样显示美元符号时请写为 `\$`。
+
+Use `$...$` for inline math and `$$` on separate lines for display math. In Edit mode, click `Σ` to insert or update a formula with templates and a live LaTeX preview. Escape a literal dollar sign as `\$`.
 
 ## 下载 / Download
 

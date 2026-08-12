@@ -52,6 +52,8 @@ function splitSearchTextNode(value: string, expression: RegExp, nextMatchIndex: 
 
 function shouldSkipSearchHighlight(node: SearchTreeNode): boolean {
   if (node.tagName === 'script' || node.tagName === 'style') return true
+  const className = node.properties?.className
+  if (Array.isArray(className) && (className.includes('katex') || className.includes('katex-mathml'))) return true
   if (node.tagName !== 'pre') return false
   return Boolean(node.children?.some((child) => {
     const className = child.properties?.className

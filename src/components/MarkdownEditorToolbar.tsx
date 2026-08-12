@@ -16,6 +16,7 @@ import {
   Quote,
   Redo2,
   SquareCode,
+  Sigma,
   Table2,
   Undo2,
 } from 'lucide-react'
@@ -64,6 +65,7 @@ export type MarkdownEditorToolbarLabels = {
   orderedListLabel: string
   taskListLabel: string
   syntaxReferenceLabel: string
+  mathLabel: string
 }
 
 type ToolbarPopoverKind = 'heading' | 'block' | 'table'
@@ -78,6 +80,7 @@ export function MarkdownEditorToolbar({
   onHorizontalRule,
   onImage,
   onOpenSyntaxReference,
+  onOpenMathEditor,
   onRedo,
   onTable,
   onUndo,
@@ -95,6 +98,7 @@ export function MarkdownEditorToolbar({
   onHorizontalRule: () => void
   onImage: () => void
   onOpenSyntaxReference: () => void
+  onOpenMathEditor: () => void
   onRedo: () => void
   onTable: (columns: number, rows: number) => void
   onUndo: () => void
@@ -205,6 +209,9 @@ export function MarkdownEditorToolbar({
               onClick={() => togglePopover('table')}
             >
               <Table2 aria-hidden="true" />
+            </EditorButton>
+            <EditorButton label={labels.mathLabel} onClick={onOpenMathEditor}>
+              <Sigma aria-hidden="true" />
             </EditorButton>
           </div>
           <div className="editor-toolbar-group">

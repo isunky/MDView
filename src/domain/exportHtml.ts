@@ -4,6 +4,7 @@ type BuildExportHtmlOptions = {
   title: string
   lang: ExportHtmlLanguage
   contentHtml: string
+  mathStyles?: string
 }
 
 const exportStyles = `
@@ -359,7 +360,7 @@ const highlightStyles = `
 }
 `
 
-export function buildExportHtml({ title, lang, contentHtml }: BuildExportHtmlOptions): string {
+export function buildExportHtml({ title, lang, contentHtml, mathStyles = '' }: BuildExportHtmlOptions): string {
   const safeTitle = escapeHtml(title || 'MDView Export')
 
   return [
@@ -372,6 +373,7 @@ export function buildExportHtml({ title, lang, contentHtml }: BuildExportHtmlOpt
     '<style>',
     exportStyles,
     highlightStyles,
+    mathStyles,
     '</style>',
     '</head>',
     '<body>',

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, type MouseEvent, type Ref } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
@@ -24,6 +24,13 @@ import {
   renderColorPreviews,
 } from './preview/previewRenderers'
 import type { MarkdownPreviewLabels } from './preview/previewTypes'
+import { containsMarkdownMath } from '../domain/markdownMath'
+import type { PluggableList } from 'unified'
+
+type MathPlugins = {
+  remarkMath: typeof import('remark-math').default
+  rehypeKatex: typeof import('rehype-katex').default
+}
 
 type MarkdownPreviewProps = {
   content: string
@@ -55,11 +62,39 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   theme = 'light',
 }: MarkdownPreviewProps) {
   const articleRef = useRef<HTMLElement | null>(null)
+  const [mathPlugins, setMathPlugins] = useState<MathPlugins | null>(null)
+  const hasMath = useMemo(() => containsMarkdownMath(content), [content])
   const searchHighlightPlugin = useMemo(() => createSearchHighlightPlugin(searchQuery), [searchQuery])
   const setPreviewRef = useCallback((element: HTMLElement | null) => {
     articleRef.current = element
     assignRef(previewRef, element)
   }, [previewRef])
+
+  useEffect(() => {
+    if (!hasMath || mathPlugins) return
+    let active = true
+    void Promise.all([
+      import('remark-math'),
+      import('rehype-katex'),
+      import('katex/dist/katex.min.css'),
+    ]).then(([remarkModule, rehypeModule]) => {
+      if (active) setMathPlugins({ remarkMath: remarkModule.default, rehypeKatex: rehypeModule.default })
+    })
+    return () => { active = false }
+  }, [hasMath, mathPlugins])
+
+  const remarkPlugins = useMemo<PluggableList>(() => mathPlugins ? [remarkGfm, mathPlugins.remarkMath] : [remarkGfm], [mathPlugins])
+  const rehypePlugins = useMemo<PluggableList>(() => {
+    const plugins: PluggableList = [
+      rehypeRaw,
+      [rehypeSanitize, markdownSanitizeSchema],
+      rehypeSourcePositions,
+      rehypeSafeHeadingIds,
+    ]
+    if (mathPlugins) plugins.push([mathPlugins.rehypeKatex, { throwOnError: false, trust: false, output: 'htmlAndMathml' }])
+    plugins.push(rehypeHighlight, searchHighlightPlugin)
+    return plugins
+  }, [mathPlugins, searchHighlightPlugin])
 
   useEffect(() => {
     const article = articleRef.current
@@ -79,15 +114,8 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   return (
     <article className="markdown-preview" aria-label="Markdown preview" ref={setPreviewRef}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[
-          rehypeRaw,
-          [rehypeSanitize, markdownSanitizeSchema],
-          rehypeSourcePositions,
-          rehypeSafeHeadingIds,
-          rehypeHighlight,
-          searchHighlightPlugin,
-        ]}
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
         urlTransform={transformMarkdownUrl}
         components={{
           pre({ children, node, ...props }) {

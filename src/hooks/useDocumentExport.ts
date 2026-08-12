@@ -34,12 +34,16 @@ export function useDocumentExport({
       readLocalImageFile: fileAccess.readLocalImageFile,
       readRemoteImageFile: fileAccess.readRemoteImageFile,
     })
+    const mathStyles = content.html.includes('class="katex')
+      ? (await import('../domain/mathExportAssets')).getEmbeddedKatexStyles()
+      : ''
     return {
       unresolvedResources: content.unresolvedResources,
       html: buildExportHtml({
         title: document.title,
         lang: language === 'zh' ? 'zh-CN' : 'en',
         contentHtml: content.html,
+        mathStyles,
       }),
     }
   }, [document.path, document.title, fileAccess, language, previewRef, t.exportPreviewUnavailable])
@@ -70,14 +74,18 @@ export function useDocumentExport({
     setStatusMessage(t.exportDocxPreparing)
     try {
       const { buildExportDocx } = await import('../domain/exportDocx')
-      const bytes = await buildExportDocx({
+      const result = await buildExportDocx({
         title: document.title,
         content: document.content,
         sourcePath: document.path,
         readLocalImageFile: fileAccess.readLocalImageFile,
       })
-      const savedPath = await fileAccess.exportDocxFile(bytes, document.path, document.title)
-      setStatusMessage(savedPath ? t.exportDocxSaved : t.exportCanceled)
+      const savedPath = await fileAccess.exportDocxFile(result.bytes, document.path, document.title)
+      setStatusMessage(savedPath
+        ? result.formulaImageFallbacks + result.formulaTextFallbacks > 0
+          ? t.exportDocxSavedWithFormulaFallbacks(result.formulaImageFallbacks, result.formulaTextFallbacks)
+          : t.exportDocxSaved
+        : t.exportCanceled)
     } catch (error) { setStatusMessage(getErrorMessage(error, t.fileOperationFailed)) }
   }, [closeMenu, document, fileAccess, setStatusMessage, t])
 

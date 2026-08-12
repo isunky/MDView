@@ -29,6 +29,17 @@ const labels = {
   unorderedListLabel: 'Bulleted list',
   orderedListLabel: 'Numbered list',
   taskListLabel: 'Task list',
+  mathLabel: 'Insert formula',
+  mathDialogTitle: 'Math formula',
+  mathInlineMode: 'Inline',
+  mathBlockMode: 'Display block',
+  mathLatexLabel: 'LaTeX expression',
+  mathPreviewLabel: 'Preview',
+  mathTemplatesLabel: 'Common templates',
+  mathInsert: 'Insert formula',
+  mathUpdate: 'Update formula',
+  mathCancel: 'Cancel',
+  mathInvalid: 'Invalid formula',
   syntaxReferenceLabel: 'Markdown syntax reference',
   syntaxReferenceTitle: 'Markdown syntax reference',
   syntaxReferenceIntro: 'Supported syntax examples.',
@@ -44,6 +55,25 @@ const labels = {
 describe('MarkdownEditor', () => {
   beforeEach(() => {
     setNavigatorPlatform('Win32')
+  })
+
+  it('inserts and reopens a formula from the toolbar', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const { rerender } = render(<MarkdownEditor value="" onChange={onChange} label="Markdown source" t={labels} />)
+
+    await user.click(screen.getAllByRole('button', { name: 'Insert formula' }).at(-1)!)
+    const input = await screen.findByRole('textbox', { name: 'LaTeX expression' })
+    await user.type(input, 'x^2')
+    await user.click(screen.getAllByRole('button', { name: 'Insert formula' }).at(-1)!)
+    expect(onChange).toHaveBeenLastCalledWith('$x^2$')
+
+    rerender(<MarkdownEditor value="$x^2$" onChange={onChange} label="Markdown source" t={labels} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(2, 2)
+    await user.click(screen.getByRole('toolbar').querySelector<HTMLButtonElement>('[aria-label="Insert formula"]')!)
+    expect(await screen.findByRole('textbox', { name: 'LaTeX expression' })).toHaveValue('x^2')
+    expect(screen.getByRole('button', { name: 'Update formula' })).toBeInTheDocument()
   })
 
   it('formats selected text from the toolbar', async () => {
