@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MDView",
   "description": "A focused Markdown reader and editor.",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "action": {
     "default_title": "Open with MDView"
   },
@@ -10,8 +10,16 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["activeTab", "scripting", "contextMenus", "storage", "tabs"],
-  "optional_host_permissions": ["file:///*"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "storage",
+    "tabs"
+  ],
+  "optional_host_permissions": [
+    "file:///*"
+  ],
   "icons": {
     "32": "icons/32.png",
     "64": "icons/64.png",
