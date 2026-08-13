@@ -42,6 +42,8 @@ import { useTransientToast } from './hooks/useTransientToast'
 import { useSplitScrollSync } from './hooks/useSplitScrollSync'
 import { useDocumentExport } from './hooks/useDocumentExport'
 import type { FileAccess } from './platform/fileAccess'
+import type { DocxImportStatus } from './platform/fileAccess'
+import { openExternalLink } from './platform/externalLinks'
 import type { AppUpdateClient } from './platform/appUpdates'
 import { unsupportedAppUpdateClient } from './platform/unsupportedAppUpdates'
 import {
@@ -70,6 +72,9 @@ function App({
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [isReadingSettingsOpen, setIsReadingSettingsOpen] = useState(false)
+  const [isDocxImportOpen, setIsDocxImportOpen] = useState(false)
+  const [docxImportPhase, setDocxImportPhase] = useState<'checking' | 'idle' | 'installing' | 'converting'>('idle')
+  const [docxImportStatus, setDocxImportStatus] = useState<DocxImportStatus | null>(null)
   const [editorSelection, setEditorSelection] = useState<SelectionRange>({ start: 0, end: 0 })
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
@@ -95,8 +100,10 @@ function App({
   const {
     handleClearRecentFiles,
     handleContentChange,
+    canDiscardUnsavedChanges,
     handleKeepLocalEdits,
     handleNewDocument,
+    handleImportedDocument,
     handleOpenFile,
     handleOpenRecentFile,
     handleReloadDiskVersion,
@@ -130,6 +137,72 @@ function App({
     onCloseMenu: closeMenu,
     onViewModeChange: setViewMode,
   })
+  const closeDocxImport = useCallback(() => {
+    if (docxImportPhase === 'installing' || docxImportPhase === 'converting') {
+      void fileAccess.docxImport?.cancel()
+    }
+    setDocxImportPhase('idle')
+    setIsDocxImportOpen(false)
+  }, [docxImportPhase, fileAccess.docxImport])
+  const checkDocxImport = useCallback(async () => {
+    const importer = fileAccess.docxImport
+    if (!importer) return
+    setDocxImportPhase('checking')
+    try {
+      setDocxImportStatus(await importer.getStatus())
+    } catch (error) {
+      setDocxImportStatus({ state: 'componentsBroken', canInstallPython: false, message: getErrorMessage(error) })
+    } finally {
+      setDocxImportPhase('idle')
+    }
+  }, [fileAccess.docxImport])
+  const openDocxImport = useCallback(() => {
+    if (!fileAccess.docxImport) return
+    closeMenu()
+    setIsDocxImportOpen(true)
+    if (!docxImportStatus) void checkDocxImport()
+  }, [checkDocxImport, closeMenu, docxImportStatus, fileAccess.docxImport])
+  const installDocxImport = useCallback(async () => {
+    const importer = fileAccess.docxImport
+    if (!importer) return
+    setDocxImportPhase('installing')
+    try {
+      setDocxImportStatus(await importer.install())
+    } catch (error) {
+      setDocxImportStatus({ state: 'componentsBroken', canInstallPython: false, message: getErrorMessage(error) })
+    } finally {
+      setDocxImportPhase('idle')
+    }
+  }, [fileAccess.docxImport])
+  const selectDocxPython = useCallback(async () => {
+    const importer = fileAccess.docxImport
+    if (!importer) return
+    setDocxImportPhase('checking')
+    try {
+      setDocxImportStatus(await importer.selectPython())
+    } catch (error) {
+      setDocxImportStatus({ state: 'pythonUnsupported', canInstallPython: true, message: getErrorMessage(error) })
+    } finally {
+      setDocxImportPhase('idle')
+    }
+  }, [fileAccess.docxImport])
+  const convertDocx = useCallback(async () => {
+    const importer = fileAccess.docxImport
+    if (!importer || !canDiscardUnsavedChanges()) return
+    setDocxImportPhase('converting')
+    try {
+      const imported = await importer.importFile()
+      if (imported) {
+        handleImportedDocument(imported.content, imported.suggestedFilename)
+        setIsDocxImportOpen(false)
+        setStatusMessage(t.docxImportSuccess)
+      }
+    } catch (error) {
+      setDocxImportStatus({ state: 'componentsBroken', canInstallPython: false, message: getErrorMessage(error) })
+    } finally {
+      setDocxImportPhase('idle')
+    }
+  }, [canDiscardUnsavedChanges, fileAccess.docxImport, handleImportedDocument, setStatusMessage, t.docxImportSuccess])
   const handleNewDocumentWithPreviewPreload = useCallback(() => {
     preloadMarkdownPreview()
     handleNewDocument()
@@ -392,6 +465,7 @@ function App({
         onExportDocx={() => void handleExportDocx()}
         onExportHtml={() => void handleExportHtml()}
         onExportPdf={() => void handleExportPdf()}
+        onImportDocx={fileAccess.docxImport ? openDocxImport : undefined}
         onLanguage={handleLanguageSelect}
         onNew={handleNewDocumentWithPreviewPreload}
         onOpen={() => void handleOpenFileWithPreviewPreload()}
@@ -415,6 +489,7 @@ function App({
           statusMessage={welcomeStatus}
           onNew={handleNewDocumentWithPreviewPreload}
           onOpen={handleOpenFileWithPreviewPreload}
+          onImportDocx={fileAccess.docxImport ? openDocxImport : undefined}
           onOpenRecent={handleOpenRecentFileWithPreviewPreload}
           onClearRecent={handleClearRecentFiles}
           t={t}
@@ -597,6 +672,9 @@ function App({
         availableUpdate={availableUpdate}
         distribution={distribution}
         isAboutOpen={isAboutOpen}
+        isDocxImportOpen={isDocxImportOpen}
+        docxImportPhase={docxImportPhase}
+        docxImportStatus={docxImportStatus}
         isReadingSettingsOpen={isReadingSettingsOpen}
         pendingDraft={pendingDraft}
         readingPreferences={readingPreferences}
@@ -614,6 +692,12 @@ function App({
         onResetReadingPreferences={resetReadingPreferences}
         onRestoreDraft={() => void restorePendingDraft()}
         onUpdateReadingPreferences={updateReadingPreferences}
+        onCloseDocxImport={closeDocxImport}
+        onConvertDocx={() => void convertDocx()}
+        onInstallDocx={() => void installDocxImport()}
+        onRefreshDocxImport={() => void checkDocxImport()}
+        onSelectDocxPython={() => void selectDocxPython()}
+        onOpenPythonDownload={() => void openExternalLink('https://www.python.org/downloads/')}
       />
     </main>
   )

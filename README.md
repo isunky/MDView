@@ -78,6 +78,7 @@ MDView is a lightweight desktop app for local Markdown documents. It prioritizes
 - **Local-first workflow**: recent files, relative images, local Markdown links, and `.md` / `.markdown` associations; select multiple images from the toolbar, paste, or drag them into a sibling `assets` folder with progress and retry support.
 - **Practical editing**: undo and redo, a live formula editor, quick GFM tables, H1-H4 headings, code blocks, find and replace, syntax reference, list continuation, and a live document status bar.
 - **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing; formulas remain visible in HTML/PDF and common formulas stay editable in Word.
+- **Offline Word import**: import local `.docx` files into an unsaved Markdown draft. MDView detects Python and can install a pinned MarkItDown converter into app data without a virtual environment or changing the original Word file.
 
 ### 数学公式 / Math formulas
 

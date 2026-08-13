@@ -38,6 +38,28 @@ export type WrittenImageAsset = {
   filename: string
 }
 
+export type DocxImportStatus = {
+  state: 'ready' | 'pythonMissing' | 'pythonUnsupported' | 'componentsMissing' | 'componentsBroken'
+  pythonPath?: string
+  pythonVersion?: string
+  message?: string
+  canInstallPython: boolean
+}
+
+export type ImportedDocxFile = {
+  sourcePath: string
+  suggestedFilename: string
+  content: string
+}
+
+export type DocxImportAccess = {
+  getStatus: () => Promise<DocxImportStatus>
+  selectPython: () => Promise<DocxImportStatus>
+  install: () => Promise<DocxImportStatus>
+  importFile: () => Promise<ImportedDocxFile | null>
+  cancel: () => Promise<void>
+}
+
 export type ImageAssetWriteRequest = {
   bytes: Uint8Array
   fileName: string
@@ -66,12 +88,20 @@ export type FileAccess = {
   writeImageAsset: (documentPath: string, image: ImageAssetWriteRequest) => Promise<WrittenImageAsset>
   readStartupMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   listenForOpenedFiles: (callback: (file: OpenedMarkdownFile) => void) => Promise<UnlistenFn | null>
+  docxImport?: DocxImportAccess
 }
 
 export const tauriFileAccess: FileAccess = {
   supportsNativeFiles: isTauriRuntime(),
   supportsImageImport: isTauriRuntime(),
   canRevealFile: isTauriRuntime(),
+  docxImport: isTauriRuntime() ? {
+    getStatus: () => invoke<DocxImportStatus>('get_docx_import_status'),
+    selectPython: () => invoke<DocxImportStatus>('select_docx_import_python'),
+    install: () => invoke<DocxImportStatus>('install_docx_import_dependencies'),
+    importFile: () => invoke<ImportedDocxFile | null>('import_docx_file'),
+    cancel: () => invoke('cancel_docx_import'),
+  } : undefined,
 
   async openMarkdownFile() {
     if (!isTauriRuntime()) {

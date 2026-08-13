@@ -12,7 +12,7 @@ export function AppToolbar({
   activeMenu, canRevealFiles, documentPath, documentTitle, isSaving, isWelcomeVisible,
   language, menuBarRef, nativeFileTitle, recentFiles, supportsAppUpdates, t, updatePhase,
   updateActionTitle, viewMode, newTitle, openTitle, saveTitle, saveAsTitle,
-  onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf,
+  onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
   onSave, onSaveAs, onToggleMenu, onViewMode,
 }: {
@@ -41,6 +41,7 @@ export function AppToolbar({
   onExportDocx: () => void
   onExportHtml: () => void
   onExportPdf: () => void
+  onImportDocx?: () => void
   onLanguage: (language: AppLanguage) => void
   onNew: () => void
   onOpen: () => void
@@ -66,6 +67,7 @@ export function AppToolbar({
         {activeMenu === 'file' ? <div className="action-menu-panel" role="menu">
           <button type="button" className="action-menu-item" onClick={onNew} title={newTitle} role="menuitem">{t.createNew}</button>
           <button type="button" className="action-menu-item" onClick={onOpen} disabled={!nativeFilesEnabled} title={nativeFileTitle ?? openTitle} role="menuitem">{t.openMarkdownFile}</button>
+          {onImportDocx ? <button type="button" className="action-menu-item" onClick={onImportDocx} disabled={!nativeFilesEnabled} title={nativeFileTitle} role="menuitem">{t.importDocx}</button> : null}
           <button type="button" className="action-menu-item" onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveTitle} role="menuitem">{t.save}</button>
           <button type="button" className="action-menu-item" onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveAsTitle} role="menuitem">{t.saveAs}</button>
           <div className="action-menu-divider" /><div className="action-menu-section-label">{t.recentFiles}</div>

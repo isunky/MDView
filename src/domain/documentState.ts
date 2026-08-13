@@ -20,6 +20,17 @@ export function createInitialDocument(): MarkdownDocument {
   }
 }
 
+export function createImportedDocument(content: string, suggestedFilename: string): MarkdownDocument {
+  return {
+    title: suggestedFilename,
+    path: null,
+    content,
+    savedContent: '',
+    savedRevision: null,
+    isDirty: true,
+  }
+}
+
 export function replaceDocumentContent(
   document: MarkdownDocument,
   content: string,

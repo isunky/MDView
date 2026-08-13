@@ -35,6 +35,45 @@ describe('App', () => {
     expect(getStoredRecentFiles().map((file) => file.path)).toEqual(['/tmp/readme.md'])
   })
 
+  it('imports a ready Word document into an unsaved Markdown draft', async () => {
+    const user = userEvent.setup()
+    const importFile = vi.fn(async () => ({
+      sourcePath: '/tmp/report.docx',
+      suggestedFilename: 'report.md',
+      content: '# Imported report',
+    }))
+    renderApp({ fileAccess: createFileAccess({ docxImport: {
+      getStatus: vi.fn(async () => ({ state: 'ready' as const, canInstallPython: true })),
+      selectPython: vi.fn(), install: vi.fn(), importFile, cancel: vi.fn(),
+    } }) })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Import Word (.docx)' }))
+    await user.click(await screen.findByRole('button', { name: 'Choose and convert .docx' }))
+
+    expect(importFile).toHaveBeenCalledOnce()
+    expect((await screen.findAllByText('Imported report')).length).toBeGreaterThan(0)
+    expect(screen.getByText('Word document imported as an unsaved Markdown draft.')).toBeInTheDocument()
+  })
+
+  it('reuses the Word converter status when reopening the dialog', async () => {
+    const user = userEvent.setup()
+    const getStatus = vi.fn(async () => ({ state: 'ready' as const, canInstallPython: true }))
+    renderApp({ fileAccess: createFileAccess({ docxImport: {
+      getStatus, selectPython: vi.fn(), install: vi.fn(), importFile: vi.fn(), cancel: vi.fn(),
+    } }) })
+
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Import Word (.docx)' }))
+    await screen.findByRole('button', { name: 'Choose and convert .docx' })
+    await user.click(screen.getByRole('button', { name: 'Close Word import dialog' }))
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Import Word (.docx)' }))
+
+    expect(getStatus).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Choose and convert .docx' })).toBeInTheDocument()
+  })
+
   it('adds markdown files opened by the desktop shell listener to recent files', async () => {
     let openedFileCallback: ((file: OpenedMarkdownFile) => void) | null = null
     const listenForOpenedFiles = vi.fn(async (callback: (file: OpenedMarkdownFile) => void) => {
@@ -108,7 +147,7 @@ describe('App', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Save As' }))
     await openFileMenu(user)
 
-    expect(screen.getByRole('menuitem', { name: 'saved-as.md' })).toHaveAttribute(
+    expect(await screen.findByRole('menuitem', { name: 'saved-as.md' })).toHaveAttribute(
       'title',
       '/tmp/saved-as.md',
     )
@@ -378,11 +417,13 @@ function createFileAccess(
     readLocalImageFile?: FileAccess['readLocalImageFile']
     writeImageAsset?: FileAccess['writeImageAsset']
     listenForOpenedFiles?: FileAccess['listenForOpenedFiles']
+    docxImport?: FileAccess['docxImport']
   } = {},
 ): FileAccess {
   return {
     supportsNativeFiles: overrides.supportsNativeFiles ?? true,
     supportsImageImport: overrides.supportsImageImport ?? true,
+    docxImport: overrides.docxImport,
     openMarkdownFile: vi.fn(async () => overrides.openFile ?? null),
     openMarkdownFileAtPath:
       overrides.openMarkdownFileAtPath ?? vi.fn(async (path) => file(path, '# Recent')),

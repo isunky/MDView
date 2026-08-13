@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createImportedDocument,
   createInitialDocument,
   markDocumentSaved,
   replaceDocumentContent,
@@ -60,5 +61,16 @@ describe('document state', () => {
     expect(saved.content).toBe('# Edited after save started')
     expect(saved.savedContent).toBe('# Saving snapshot')
     expect(saved.isDirty).toBe(true)
+  })
+
+  it('creates an unsaved document without a source path', () => {
+    expect(createImportedDocument('# Imported', 'report.md')).toEqual({
+      title: 'report.md',
+      path: null,
+      content: '# Imported',
+      savedContent: '',
+      savedRevision: null,
+      isDirty: true,
+    })
   })
 })

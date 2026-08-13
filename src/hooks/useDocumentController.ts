@@ -8,6 +8,7 @@ import {
 } from '../domain/documentDraft'
 import {
   createInitialDocument,
+  createImportedDocument,
   markDocumentSaved,
   replaceDocumentContent,
   updateDocumentDraft,
@@ -285,6 +286,16 @@ export function useDocumentController({
     }
   }, [canDiscardUnsavedChanges, fileAccess, fileOperationFailedMessage, loadFile, onCloseMenu])
 
+  const handleImportedDocument = useCallback((content: string, suggestedFilename: string) => {
+    clearCurrentDraft()
+    startDraftSession()
+    setMarkdownDocument(createImportedDocument(content, suggestedFilename))
+    setExternalFileState(null)
+    setIsWelcomeVisible(false)
+    onViewModeChange('preview')
+    setStatusMessage('unsaved')
+  }, [clearCurrentDraft, onViewModeChange, startDraftSession])
+
   const handleOpenRecentFile = useCallback(async (path: string) => {
     if (!canDiscardUnsavedChanges()) {
       return
@@ -325,8 +336,9 @@ export function useDocumentController({
         const currentPath = markdownDocument.path
         const contentToSave = markdownDocument.content
         const isSaveAs = forceSaveAs || !currentPath
-        const defaultPath = currentPath ?? (await import('../domain/markdownFilename'))
-          .createMarkdownSuggestedFilename(contentToSave)
+        const defaultPath = currentPath ?? (markdownDocument.title !== 'Untitled.md'
+          ? markdownDocument.title
+          : (await import('../domain/markdownFilename')).createMarkdownSuggestedFilename(contentToSave))
         const savedResult = isSaveAs
           ? await fileAccess.saveMarkdownFileAs(contentToSave, defaultPath)
           : markdownDocument.savedRevision
@@ -384,7 +396,7 @@ export function useDocumentController({
       }
     })
     return operation
-  }, [clearCurrentDraft, externalFileMissingMessage, externalFileSaveBlockedMessage, fileAccess, fileOperationFailedMessage, markdownDocument.content, markdownDocument.path, markdownDocument.savedRevision, rememberRecentFile])
+  }, [clearCurrentDraft, externalFileMissingMessage, externalFileSaveBlockedMessage, fileAccess, fileOperationFailedMessage, markdownDocument.content, markdownDocument.path, markdownDocument.savedRevision, markdownDocument.title, rememberRecentFile])
 
   const handleSaveFile = useCallback(async (): Promise<boolean> => {
     onCloseMenu()
@@ -497,6 +509,7 @@ export function useDocumentController({
     handleContentChange,
     handleKeepLocalEdits,
     handleNewDocument,
+    handleImportedDocument,
     handleOpenFile,
     handleOpenRecentFile,
     handleReloadDiskVersion,
@@ -506,6 +519,7 @@ export function useDocumentController({
     isSaving,
     isWelcomeVisible,
     markdownDocument,
+    canDiscardUnsavedChanges,
     openMarkdownLinkFile,
     pendingDraft: isStartupResolved ? pendingDraft : null,
     recentFiles,

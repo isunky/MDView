@@ -3,6 +3,7 @@ import {
   FilePlus2,
   FileText,
   FolderOpen,
+  FileInput,
   Trash2,
 } from 'lucide-react'
 import type { RecentFile } from '../domain/recentFiles'
@@ -15,6 +16,7 @@ type WelcomeWorkspaceProps = {
   statusMessage: string | null
   onNew: () => void | Promise<void>
   onOpen: () => void | Promise<void>
+  onImportDocx?: () => void | Promise<void>
   onOpenRecent: (path: string) => void | Promise<void>
   onClearRecent: () => void
   t: Translation
@@ -26,6 +28,7 @@ export function WelcomeWorkspace({
   statusMessage,
   onNew,
   onOpen,
+  onImportDocx,
   onOpenRecent,
   onClearRecent,
   t,
@@ -54,6 +57,14 @@ export function WelcomeWorkspace({
             <FolderOpen aria-hidden="true" />
             <span>{t.openMarkdownFile}</span>
           </button>
+          {onImportDocx ? <button
+            type="button"
+            className="welcome-action"
+            onClick={() => void onImportDocx()}
+          >
+            <FileInput aria-hidden="true" />
+            <span>{t.importDocx}</span>
+          </button> : null}
           <button
             type="button"
             className="welcome-action"

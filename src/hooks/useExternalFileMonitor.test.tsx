@@ -88,7 +88,7 @@ describe('useExternalFileMonitor', () => {
     const stop = vi.fn()
     const checkFile = vi.fn(async () => undefined)
     const fileAccess = createFileAccess({
-      watchMarkdownFile: vi.fn((_path, callback) => {
+      watchMarkdownFile: vi.fn((_path, callback): Promise<() => void> => {
         notify = callback
         return new Promise((resolve) => { finishRegistration = resolve })
       }),

@@ -1,4 +1,5 @@
 mod distribution;
+mod docx_import;
 mod file_watcher;
 mod fs_utils;
 mod image_utils;
@@ -13,6 +14,7 @@ use std::{
 };
 
 use base64::{engine::general_purpose, Engine as _};
+use docx_import::DocxImportRegistry;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
@@ -389,6 +391,43 @@ async fn export_docx_file_dialog(
 }
 
 #[tauri::command]
+fn get_docx_import_status(
+    app: AppHandle,
+    registry: State<'_, DocxImportRegistry>,
+) -> Result<docx_import::Status, String> {
+    docx_import::get_status(&app, &registry)
+}
+
+#[tauri::command]
+fn select_docx_import_python(
+    app: AppHandle,
+    registry: State<'_, DocxImportRegistry>,
+) -> Result<docx_import::Status, String> {
+    docx_import::select_python(&app, &registry)
+}
+
+#[tauri::command]
+fn install_docx_import_dependencies(
+    app: AppHandle,
+    registry: State<'_, DocxImportRegistry>,
+) -> Result<docx_import::Status, String> {
+    docx_import::install(&app, &registry)
+}
+
+#[tauri::command]
+fn import_docx_file(
+    app: AppHandle,
+    registry: State<'_, DocxImportRegistry>,
+) -> Result<Option<docx_import::ImportedFile>, String> {
+    docx_import::import_file(&app, &registry)
+}
+
+#[tauri::command]
+fn cancel_docx_import(registry: State<'_, DocxImportRegistry>) -> Result<(), String> {
+    registry.cancel()
+}
+
+#[tauri::command]
 fn read_image_file(
     policy: State<'_, FileAccessPolicy>,
     path: String,
@@ -522,6 +561,7 @@ pub fn run() {
     let startup_files_for_policy = startup_files.clone();
     let builder = tauri::Builder::default()
         .manage(OpenedFiles(Mutex::new(startup_files)))
+        .manage(DocxImportRegistry::default())
         .manage(FileWatcherRegistry::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
@@ -542,6 +582,11 @@ pub fn run() {
             save_markdown_file_dialog,
             export_html_file_dialog,
             export_docx_file_dialog,
+            get_docx_import_status,
+            select_docx_import_python,
+            install_docx_import_dependencies,
+            import_docx_file,
+            cancel_docx_import,
             read_image_file,
             read_remote_image_file,
             write_image_asset,
