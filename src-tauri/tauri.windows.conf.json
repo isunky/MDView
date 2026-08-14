@@ -10,9 +10,6 @@
         "language": {
           "en-US": {
             "localePath": "windows/locales/en-US.wxl"
-          },
-          "zh-CN": {
-            "localePath": "windows/locales/zh-CN.wxl"
           }
         },
         "fragmentPaths": [

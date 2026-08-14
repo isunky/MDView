@@ -55,7 +55,7 @@
     },
     "windows": {
       "webviewInstallMode": {
-        "type": "downloadBootstrapper"
+        "type": "skip"
       },
       "wix": {
         "fragmentPaths": ["windows/file-associations.wxs"],

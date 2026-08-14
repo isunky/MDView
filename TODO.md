@@ -7,7 +7,7 @@
 ## 当前进度
 
 - 已完成的核心能力：安全 Markdown/HTML 渲染、Mermaid、LaTeX 数学公式、DOCX/PDF/完整 HTML 导出、查找替换、增强编辑工具栏、图片导入、阅读现场恢复、阅读主题、原子保存、草稿恢复和分屏双向同步滚动。
-- 已完成的分发能力：Windows MSI、Portable ZIP、Universal DMG、Windows 应用内更新、可选 Markdown 文件关联和 Microsoft Edge 扩展构建/发布流程。
+- 已完成的分发能力：单一英文 Windows MSI、Portable ZIP、Universal DMG、Windows 应用内更新、可选 Markdown 文件关联和 Microsoft Edge 扩展构建/发布流程。Windows 包不携带 WebView2，运行前需由系统预先安装。
 - `v3.0.0` 新增或完善：撤销重做、快速表格、LaTeX 数学公式编辑与导出、Markdown 语法参考分组、新建文件智能命名、MSI 文件关联选项和 Edge Add-ons 自动提交链路。
 - 部分完成：长文档性能优化、应用模块拆分、自动更新和构建环境稳定性。
 - 主要待办：macOS Developer ID 签名与公证、Mermaid/本地图片缓存、专项 E2E 与性能基准、多标签页和文件夹工作区。

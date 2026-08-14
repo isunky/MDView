@@ -21,7 +21,6 @@
     "version:check": "node scripts/check-version.mjs",
     "version:sync": "node scripts/sync-version.mjs",
     "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1",
-    "setup:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-bootstrapper.ps1",
     "portable:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-windows-portable.ps1",
     "tauri": "tauri"
   },

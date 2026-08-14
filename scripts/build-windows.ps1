@@ -70,28 +70,61 @@ if (-not $SkipChecks) {
   }
 }
 
+function Get-Sha256Hash {
+  param([string]$Path)
+
+  $algorithm = [System.Security.Cryptography.SHA256]::Create()
+  $stream = [System.IO.File]::OpenRead($Path)
+  try {
+    return [System.BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $stream.Dispose()
+    $algorithm.Dispose()
+  }
+}
+
+$bundleRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "src-tauri/target/release/bundle"))
+$bundlePrefix = $bundleRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+foreach ($directoryName in @("msi", "portable", "setup")) {
+  $outputPath = [System.IO.Path]::GetFullPath((Join-Path $bundleRoot $directoryName))
+  if (-not $outputPath.StartsWith($bundlePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing to clean a bundle directory outside the expected output root: $outputPath"
+  }
+  Remove-Item -LiteralPath $outputPath -Recurse -Force -ErrorAction SilentlyContinue
+}
+Remove-Item -LiteralPath (Join-Path $bundleRoot "SHA256SUMS.txt") -Force -ErrorAction SilentlyContinue
+
 Invoke-BuildStep -Label "Build Windows MSI" -Command {
   & npm.cmd run desktop:build -- --bundles msi
 }
 
-Invoke-BuildStep -Label "Build bilingual Windows setup" -Command {
-  & npm.cmd run setup:windows
+Invoke-BuildStep -Label "Build Windows portable ZIP" -Command {
+  & npm.cmd run portable:windows
 }
 
-$artifacts = @(
-  Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.LastWriteTime -ge $scriptStartTime }
-  Get-ChildItem -Path "src-tauri/target/release/bundle/setup/*.exe" -File -ErrorAction SilentlyContinue |
+$msiArtifacts = @(
+  Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*_en-US.msi" -File -ErrorAction SilentlyContinue |
     Where-Object { $_.LastWriteTime -ge $scriptStartTime }
 )
+$portableArtifacts = @(
+  Get-ChildItem -Path "src-tauri/target/release/bundle/portable/*.zip" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -ge $scriptStartTime }
+)
+$artifacts = @($msiArtifacts) + @($portableArtifacts)
 
-if ($artifacts.Count -ne 3) {
-  throw "Packaging completed, but the expected en-US MSI, zh-CN MSI, and bilingual setup were not all found."
+if ($msiArtifacts.Count -ne 1 -or $portableArtifacts.Count -ne 1) {
+  throw "Packaging completed, but exactly one en-US MSI and one portable ZIP were not found."
 }
+
+$checksumPath = Join-Path $repoRoot "src-tauri/target/release/bundle/SHA256SUMS.txt"
+$artifacts | ForEach-Object {
+  "$(Get-Sha256Hash -Path $_.FullName)  $($_.Name)"
+} | Set-Content -LiteralPath $checksumPath -Encoding ascii
 
 Write-Host ""
 Write-Host "Packaging completed successfully:" -ForegroundColor Green
-foreach ($artifact in $artifacts | Sort-Object FullName) {
+$outputArtifacts = @($artifacts) + @(Get-Item -LiteralPath $checksumPath)
+foreach ($artifact in $outputArtifacts | Sort-Object FullName) {
   $sizeMb = [math]::Round($artifact.Length / 1MB, 2)
   Write-Host "  $($artifact.FullName) ($sizeMb MB)"
 }
