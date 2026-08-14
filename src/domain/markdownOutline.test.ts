@@ -34,4 +34,20 @@ describe('extractMarkdownOutline', () => {
       { id: '你好mdview', level: 1, text: '你好，MDView!' },
     ])
   })
+
+  it('uses visible heading text instead of inline Markdown syntax', () => {
+    expect(
+      extractMarkdownOutline(
+        [
+          '## **（一）整体情况说明**',
+          '### **1. [系统平台](https://example.com)**',
+          '#### `配置项`与~~旧内容~~',
+        ].join('\n'),
+      ),
+    ).toEqual([
+      { id: '一整体情况说明', level: 2, text: '（一）整体情况说明' },
+      { id: '1-系统平台', level: 3, text: '1. 系统平台' },
+      { id: '配置项与旧内容', level: 4, text: '配置项与旧内容' },
+    ])
+  })
 })

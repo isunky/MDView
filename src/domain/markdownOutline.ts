@@ -1,3 +1,9 @@
+import { toString } from 'mdast-util-to-string'
+import type { Heading, RootContent } from 'mdast'
+import remarkGfm from 'remark-gfm'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
+
 export type MarkdownOutlineItem = {
   id: string
   level: 1 | 2 | 3 | 4
@@ -6,38 +12,26 @@ export type MarkdownOutlineItem = {
 
 type HeadingIdCounts = Map<string, number>
 
-const HEADING_PATTERN = /^(#{1,4})\s+(.+?)\s*#*\s*$/
-const FENCE_PATTERN = /^\s*(```|~~~)/
+const markdownParser = unified().use(remarkParse).use(remarkGfm)
 
 export function extractMarkdownOutline(content: string): MarkdownOutlineItem[] {
   const idCounts = createHeadingIdCounts()
-  const outline: MarkdownOutlineItem[] = []
-  let inFence = false
+  const tree = markdownParser.parse(content)
 
-  for (const line of content.split(/\r?\n/)) {
-    if (FENCE_PATTERN.test(line)) {
-      inFence = !inFence
-      continue
-    }
-
-    if (inFence) {
-      continue
-    }
-
-    const match = line.match(HEADING_PATTERN)
-    if (!match) {
-      continue
-    }
-
-    const text = match[2].trim()
-    outline.push({
-      id: createUniqueHeadingId(text, idCounts),
-      level: match[1].length as 1 | 2 | 3 | 4,
-      text,
+  return tree.children
+    .filter(isOutlineHeading)
+    .map((heading) => {
+      const text = toString(heading).trim()
+      return {
+        id: createUniqueHeadingId(text, idCounts),
+        level: heading.depth as 1 | 2 | 3 | 4,
+        text,
+      }
     })
-  }
+}
 
-  return outline
+function isOutlineHeading(node: RootContent): node is Heading {
+  return node.type === 'heading' && node.depth <= 4
 }
 
 export function createHeadingIdCounts(): HeadingIdCounts {
