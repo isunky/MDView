@@ -100,7 +100,7 @@ describe('App', () => {
     const zoomToast = screen.getByRole('status', { name: 'Shortcut notification' })
     expect(zoomToast).toHaveTextContent('110%')
     expect(zoomToast).toHaveClass('zoom-toast')
-    expect(zoomToast.parentElement).toHaveClass('zoom-toast-layer')
+    expect(zoomToast.parentElement).toHaveClass('app-toast-layer')
 
     const zoomOutEvent = new WheelEvent('wheel', {
       bubbles: true,

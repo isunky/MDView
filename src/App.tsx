@@ -647,27 +647,27 @@ function App({
             />
           </Suspense>
         </section>
-        {shortcutToast?.placement === 'preview' && viewMode !== 'edit' ? (
-          <div className="zoom-toast-layer">
-            <div
-              className="shortcut-toast zoom-toast"
-              role="status"
-              aria-label={t.shortcutNotification}
-            >
-              {shortcutToast.message}
-            </div>
-          </div>
-        ) : null}
       </section>
       </>}
-      {shortcutToast?.placement === 'app' ? (
-        <div className="shortcut-toast" role="status" aria-label={t.shortcutNotification}>
-          {shortcutToast.message}
-        </div>
-      ) : null}
-      {!isWelcomeVisible && visibleOperationStatus ? (
-        <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
-      ) : null}
+      {(shortcutToast?.placement === 'app'
+        || (shortcutToast?.placement === 'preview' && viewMode !== 'edit')
+        || (!isWelcomeVisible && visibleOperationStatus)) ? (
+          <div className="app-toast-layer">
+            {shortcutToast?.placement === 'app'
+              || (shortcutToast?.placement === 'preview' && viewMode !== 'edit') ? (
+                <div
+                  className={`shortcut-toast${shortcutToast.placement === 'preview' ? ' zoom-toast' : ''}`}
+                  role="status"
+                  aria-label={t.shortcutNotification}
+                >
+                  {shortcutToast.message}
+                </div>
+              ) : null}
+            {!isWelcomeVisible && visibleOperationStatus ? (
+              <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
+            ) : null}
+          </div>
+        ) : null}
       <AppDialogs
         availableUpdate={availableUpdate}
         distribution={distribution}
