@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MDView",
   "description": "A focused Markdown reader and editor.",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "action": {
     "default_title": "Open with MDView"
   },
