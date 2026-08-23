@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "MDView"
+  },
+  "extensionDescription": {
+    "message": "A focused Markdown reader and editor."
+  },
+  "actionTitle": {
+    "message": "Open with MDView"
+  }
+}

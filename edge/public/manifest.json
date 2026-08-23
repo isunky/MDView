@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "MDView",
-  "description": "A focused Markdown reader and editor.",
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
   "version": "3.2.0",
   "action": {
-    "default_title": "Open with MDView"
+    "default_title": "__MSG_actionTitle__"
   },
   "background": {
     "service_worker": "background.js",
