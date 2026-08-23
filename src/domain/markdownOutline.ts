@@ -6,7 +6,7 @@ import { unified } from 'unified'
 
 export type MarkdownOutlineItem = {
   id: string
-  level: 1 | 2 | 3 | 4
+  level: 1 | 2 | 3 | 4 | 5
   text: string
 }
 
@@ -24,14 +24,14 @@ export function extractMarkdownOutline(content: string): MarkdownOutlineItem[] {
       const text = toString(heading).trim()
       return {
         id: createUniqueHeadingId(text, idCounts),
-        level: heading.depth as 1 | 2 | 3 | 4,
+        level: heading.depth as 1 | 2 | 3 | 4 | 5,
         text,
       }
     })
 }
 
 function isOutlineHeading(node: RootContent): node is Heading {
-  return node.type === 'heading' && node.depth <= 4
+  return node.type === 'heading' && node.depth <= 5
 }
 
 export function createHeadingIdCounts(): HeadingIdCounts {

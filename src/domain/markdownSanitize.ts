@@ -106,7 +106,7 @@ export function rehypeSafeHeadingIds() {
     const idCounts = createHeadingIdCounts()
 
     visitHastNode(tree, (element) => {
-      const match = /^h([1-4])$/.exec(element.tagName)
+      const match = /^h([1-5])$/.exec(element.tagName)
       if (!match) {
         return
       }

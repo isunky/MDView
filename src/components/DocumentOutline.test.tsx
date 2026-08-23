@@ -99,5 +99,10 @@ describe('DocumentOutline', () => {
     await user.click(screen.getByRole('button', { name: 'Show through heading level 4' }))
 
     expect(onMaxDepthChange).toHaveBeenCalledWith(4)
+
+    await user.click(screen.getByLabelText('Set outline depth'))
+    await user.click(screen.getByRole('button', { name: 'Show through heading level 5' }))
+
+    expect(onMaxDepthChange).toHaveBeenCalledWith(5)
   })
 })

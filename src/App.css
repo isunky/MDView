@@ -1079,6 +1079,12 @@
   font-weight: 520;
 }
 
+.outline-link.depth-5 {
+  padding-left: 56px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .outline-empty {
   margin: 0;
   color: var(--text-muted);

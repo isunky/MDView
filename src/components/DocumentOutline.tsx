@@ -4,7 +4,7 @@ import type { MarkdownOutlineItem } from '../domain/markdownOutline'
 import type { OutlineDepth } from '../domain/outlinePreferences'
 import type { Translation } from '../i18n'
 
-const OUTLINE_DEPTH_OPTIONS: OutlineDepth[] = [1, 2, 3, 4]
+const OUTLINE_DEPTH_OPTIONS: OutlineDepth[] = [1, 2, 3, 4, 5]
 
 type DocumentOutlineProps = {
   items: MarkdownOutlineItem[]

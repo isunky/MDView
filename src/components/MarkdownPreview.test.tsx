@@ -163,7 +163,7 @@ describe('MarkdownPreview', () => {
   it('adds stable ids to rendered headings', () => {
     render(
       <StrictMode>
-        <MarkdownPreview content={['# Project Plan', '## Scope', '## Scope'].join('\n')} />
+        <MarkdownPreview content={['# Project Plan', '## Scope', '## Scope', '##### Appendix'].join('\n')} />
       </StrictMode>,
     )
 
@@ -173,6 +173,7 @@ describe('MarkdownPreview', () => {
     )
     expect(screen.getAllByRole('heading', { name: 'Scope' })[0]).toHaveAttribute('id', 'scope')
     expect(screen.getAllByRole('heading', { name: 'Scope' })[1]).toHaveAttribute('id', 'scope-2')
+    expect(screen.getByRole('heading', { name: 'Appendix' })).toHaveAttribute('id', 'appendix')
   })
 
   it('loads local images relative to the current markdown file and previews them', async () => {

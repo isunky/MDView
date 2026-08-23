@@ -45,6 +45,14 @@ describe('outline preferences', () => {
     })
   })
 
+  it('accepts H5 as a saved outline depth', () => {
+    const storage = createStorage({
+      [OUTLINE_PREFERENCES_STORAGE_KEY]: JSON.stringify({ width: 260, isOpen: true, maxDepth: 5 }),
+    })
+
+    expect(loadOutlinePreferences(storage).maxDepth).toBe(5)
+  })
+
   it('falls back to the default depth when a saved depth is invalid', () => {
     const storage = createStorage({
       [OUTLINE_PREFERENCES_STORAGE_KEY]: JSON.stringify({

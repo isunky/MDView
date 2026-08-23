@@ -301,7 +301,7 @@ describe('App', () => {
       fileAccess: createFileAccess({
         startupFile: file(
           '/tmp/outline.md',
-          '# Level 1\n\n## Level 2\n\n### Level 3\n\n#### Level 4',
+          '# Level 1\n\n## Level 2\n\n### Level 3\n\n#### Level 4\n\n##### Level 5',
         ),
       }),
     })
@@ -314,6 +314,12 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: 'Jump to Level 4' })).toBeInTheDocument()
     expect(getStoredOutlinePreferences()).toMatchObject({ maxDepth: 4 })
+
+    await user.click(screen.getByLabelText('Set outline depth'))
+    await user.click(screen.getByRole('button', { name: 'Show through heading level 5' }))
+
+    expect(screen.getByRole('button', { name: 'Jump to Level 5' })).toBeInTheDocument()
+    expect(getStoredOutlinePreferences()).toMatchObject({ maxDepth: 5 })
   })
 
   it('syncs the active outline item with preview scrolling', async () => {

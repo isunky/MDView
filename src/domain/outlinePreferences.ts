@@ -4,7 +4,7 @@ export type OutlinePreferences = {
   maxDepth: OutlineDepth
 }
 
-export type OutlineDepth = 1 | 2 | 3 | 4
+export type OutlineDepth = 1 | 2 | 3 | 4 | 5
 
 export const OUTLINE_PREFERENCES_STORAGE_KEY = 'mdview.outlinePreferences.v1'
 export const MIN_OUTLINE_WIDTH = 180
@@ -72,7 +72,7 @@ function normalizeOutlinePreferences(value: unknown): OutlinePreferences {
 }
 
 function normalizeOutlineDepth(value: unknown): OutlineDepth {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 4
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 5
     ? value as OutlineDepth
     : DEFAULT_OUTLINE_PREFERENCES.maxDepth
 }
