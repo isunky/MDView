@@ -57,14 +57,6 @@ export function WelcomeWorkspace({
             <FolderOpen aria-hidden="true" />
             <span>{t.openMarkdownFile}</span>
           </button>
-          {onImportDocx ? <button
-            type="button"
-            className="welcome-action"
-            onClick={() => void onImportDocx()}
-          >
-            <FileInput aria-hidden="true" />
-            <span>{t.importDocx}</span>
-          </button> : null}
           <button
             type="button"
             className="welcome-action"
@@ -74,6 +66,14 @@ export function WelcomeWorkspace({
             <FilePlus2 aria-hidden="true" />
             <span>{t.createNew}</span>
           </button>
+          {onImportDocx ? <button
+            type="button"
+            className="welcome-action"
+            onClick={() => void onImportDocx()}
+          >
+            <FileInput aria-hidden="true" />
+            <span>{t.importDocx}</span>
+          </button> : null}
         </div>
 
         {statusMessage ? (

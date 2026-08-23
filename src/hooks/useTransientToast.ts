@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 
+export type ToastPlacement = 'app' | 'preview'
+
 export type TransientToast = {
-  id: number
   message: string
-  placement: 'app' | 'preview'
+  placement: ToastPlacement
 } | null
 
 export function useTransientToast(duration = 1800) {
@@ -19,11 +20,11 @@ export function useTransientToast(duration = 1800) {
   }, [duration, toast])
 
   const showAppToast = useCallback((message: string) => {
-    setToast({ id: Date.now(), message, placement: 'app' })
+    setToast({ message, placement: 'app' })
   }, [])
 
   const showPreviewToast = useCallback((message: string) => {
-    setToast({ id: Date.now(), message, placement: 'preview' })
+    setToast({ message, placement: 'preview' })
   }, [])
 
   return {

@@ -97,10 +97,10 @@ describe('App', () => {
 
     expect(zoomInEvent.defaultPrevented).toBe(true)
     expect(previewPanel).toHaveStyle('--preview-zoom: 1.1')
-    const zoomToast = screen.getByRole('status', { name: 'Shortcut notification' })
+    const zoomToast = screen.getByRole('status', { name: 'Notification' })
     expect(zoomToast).toHaveTextContent('110%')
-    expect(zoomToast).toHaveClass('zoom-toast')
-    expect(zoomToast.parentElement).toHaveClass('app-toast-layer')
+    expect(zoomToast).toHaveClass('toast')
+    expect(zoomToast.parentElement).toHaveClass('toast-layer')
 
     const zoomOutEvent = new WheelEvent('wheel', {
       bubbles: true,
@@ -116,7 +116,7 @@ describe('App', () => {
     expect(zoomOutEvent.defaultPrevented).toBe(true)
     expect(previewPanel).toHaveStyle('--preview-zoom: 1')
     expect(
-      screen.getByRole('status', { name: 'Shortcut notification' }),
+      screen.getByRole('status', { name: 'Notification' }),
     ).toHaveTextContent('100%')
   })
 
@@ -227,7 +227,7 @@ describe('App', () => {
       'aria-pressed',
       'false',
     )
-    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent(
+    expect(screen.getByRole('status', { name: 'Notification' })).toHaveTextContent(
       'Synchronized scrolling disabled',
     )
     expect(window.localStorage.getItem('mdview.splitScrollPreferences.v1')).toContain('false')

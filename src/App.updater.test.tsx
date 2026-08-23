@@ -44,7 +44,7 @@ describe('App', () => {
     expect(dialog).toBeInTheDocument()
     expect(screen.getByText('MDView is up to date')).toBeInTheDocument()
     expect(screen.getByText(appInfo.version)).toBeInTheDocument()
-    expect(screen.queryByRole('status', { name: 'Shortcut notification' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: 'Notification' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
     expect(screen.queryByRole('dialog', { name: 'Software Update' })).not.toBeInTheDocument()

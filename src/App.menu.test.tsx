@@ -171,7 +171,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/draft.md', '# Draft')
     })
-    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent('Saved')
+    expect(screen.getByRole('status', { name: 'Notification' })).toHaveTextContent('Saved')
 
     fireEvent.keyDown(window, { key: 's', ctrlKey: true, shiftKey: true })
     await waitFor(() => {
@@ -228,7 +228,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(saveMarkdownFile).toHaveBeenCalledWith('/tmp/mac.md', '# Mac')
     })
-    expect(screen.getByRole('status', { name: 'Shortcut notification' })).toHaveTextContent('Saved')
+    expect(screen.getByRole('status', { name: 'Notification' })).toHaveTextContent('Saved')
   })
 
   it('keeps the file menu available but disables native file actions when unavailable', async () => {

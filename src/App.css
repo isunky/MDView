@@ -359,21 +359,8 @@
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
 }
 
-.app-toast-layer {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  z-index: 40;
-  display: flex;
-  width: min(420px, calc(100vw - 48px));
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.shortcut-toast {
+.toast,
+.app-operation-status {
   max-width: min(280px, calc(100vw - 48px));
   padding: 10px 14px;
   border: 1px solid rgba(15, 118, 110, 0.22);
@@ -384,15 +371,20 @@
   font: 700 13px/1.2 var(--ui-font);
 }
 
+.toast--app {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+}
+
 .app-operation-status {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 39;
   max-width: min(360px, calc(100vw - 48px));
-  padding: 10px 14px;
-  border: 1px solid rgba(15, 118, 110, 0.22);
-  border-radius: 8px;
-  color: var(--saved);
-  background: var(--accent-soft);
-  box-shadow: var(--floating-shadow);
-  font: 700 13px/1.2 var(--ui-font);
+  font-size: 13px;
 }
 
 .workspace {
@@ -729,6 +721,23 @@
 
 .welcome-empty span {
   font-size: 13px;
+}
+
+.toast-layer {
+  position: absolute;
+  right: 0;
+  bottom: 24px;
+  left: 0;
+  z-index: 40;
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.workspace.outline-open .toast-layer {
+  grid-column: 3;
 }
 
 .outline-panel,

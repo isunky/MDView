@@ -10,6 +10,7 @@ import {
 import { PanelLeftOpen } from 'lucide-react'
 import './App.css'
 import { SplitScrollControl } from './components/SplitScrollControl'
+import { Toast } from './components/Toast'
 import { AppDialogs } from './components/AppDialogs'
 import { AppToolbar } from './components/AppToolbar'
 import { DocumentOutline } from './components/DocumentOutline'
@@ -95,7 +96,7 @@ function App({
   const {
     showAppToast,
     showPreviewToast,
-    toast: shortcutToast,
+    toast,
   } = useTransientToast()
   const {
     handleClearRecentFiles,
@@ -649,25 +650,18 @@ function App({
         </section>
       </section>
       </>}
-      {(shortcutToast?.placement === 'app'
-        || (shortcutToast?.placement === 'preview' && viewMode !== 'edit')
-        || (!isWelcomeVisible && visibleOperationStatus)) ? (
-          <div className="app-toast-layer">
-            {shortcutToast?.placement === 'app'
-              || (shortcutToast?.placement === 'preview' && viewMode !== 'edit') ? (
-                <div
-                  className={`shortcut-toast${shortcutToast.placement === 'preview' ? ' zoom-toast' : ''}`}
-                  role="status"
-                  aria-label={t.shortcutNotification}
-                >
-                  {shortcutToast.message}
-                </div>
-              ) : null}
-            {!isWelcomeVisible && visibleOperationStatus ? (
-              <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
-            ) : null}
-          </div>
-        ) : null}
+      {toast ? (
+        <Toast
+          label={t.toastNotification}
+          placement={toast.placement}
+          showPreviewLayer={viewMode !== 'edit'}
+        >
+          {toast.message}
+        </Toast>
+      ) : null}
+      {!isWelcomeVisible && visibleOperationStatus ? (
+        <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
+      ) : null}
       <AppDialogs
         availableUpdate={availableUpdate}
         distribution={distribution}
