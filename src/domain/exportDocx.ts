@@ -3,18 +3,24 @@ import {
   BorderStyle,
   Document,
   ExternalHyperlink,
+  Footer,
+  Header,
   HeadingLevel,
   ImageRun,
   LevelFormat,
+  LineRuleType,
   Math as DocxMath,
+  PageNumber,
   Packer,
   Paragraph,
   ShadingType,
   Table,
+  TableLayoutType,
   TableCell,
   TableRow,
   TextRun,
   UnderlineType,
+  VerticalAlign,
   WidthType,
   convertInchesToTwip,
   type ParagraphChild,
@@ -49,10 +55,12 @@ type BuildExportDocxOptions = {
 }
 
 type ConversionContext = {
+  sourceContent: string
   sourcePath: string | null
   readLocalImageFile: (path: string) => Promise<LocalImageFile>
   formulaImageFallbacks: number
   formulaTextFallbacks: number
+  nextOrderedListInstance: number
 }
 
 export type DocxExportResult = {
@@ -73,6 +81,31 @@ type TextStyle = {
 
 const orderedListReference = 'mdview-numbered-list'
 const maxListLevel = 5
+const bodyFont = {
+  ascii: 'SimSun',
+  hAnsi: 'SimSun',
+  eastAsia: 'SimSun',
+  cs: 'SimSun',
+}
+const headingFont = {
+  ascii: 'SimHei',
+  hAnsi: 'SimHei',
+  eastAsia: 'SimHei',
+  cs: 'SimHei',
+}
+
+type DocxImageData = {
+  type: 'png' | 'jpg' | 'gif' | 'bmp'
+  bytes: Uint8Array
+}
+const codeFont = {
+  ascii: 'Cascadia Mono',
+  hAnsi: 'Cascadia Mono',
+  eastAsia: 'Microsoft YaHei UI',
+  cs: 'Cascadia Mono',
+}
+const bodyFontSize = 28
+const bodyFirstLineIndent = 560
 
 export async function buildExportDocx({
   title,
@@ -81,12 +114,43 @@ export async function buildExportDocx({
   readLocalImageFile,
 }: BuildExportDocxOptions): Promise<DocxExportResult> {
   const tree = unified().use(remarkParse).use(remarkGfm).use(remarkMath).parse(content) as Root
-  const context: ConversionContext = { sourcePath, readLocalImageFile, formulaImageFallbacks: 0, formulaTextFallbacks: 0 }
+  const context: ConversionContext = {
+    sourceContent: content,
+    sourcePath,
+    readLocalImageFile,
+    formulaImageFallbacks: 0,
+    formulaTextFallbacks: 0,
+    nextOrderedListInstance: 1,
+  }
   const children = await convertBlocks(tree.children, context)
+  const documentTitle = title || 'MDView Export'
   const document = new Document({
-    title: title || 'MDView Export',
+    title: documentTitle,
     creator: 'MDView',
     description: 'Exported from MDView',
+    styles: {
+      default: {
+        document: {
+          run: { font: bodyFont, size: bodyFontSize, color: '26323F' },
+          paragraph: {
+            spacing: { after: 180, line: 360, lineRule: LineRuleType.AUTO },
+          },
+        },
+        heading1: createHeadingStyle(32, 0, 280),
+        heading2: createHeadingStyle(30, 420, 160),
+        heading3: createHeadingStyle(28, 340, 140),
+        heading4: createHeadingStyle(26, 300, 120),
+        heading5: createHeadingStyle(24, 260, 100, '475467'),
+        heading6: createHeadingStyle(22, 240, 100, '667085'),
+        listParagraph: {
+          run: { font: bodyFont, size: bodyFontSize, color: '26323F' },
+          paragraph: { spacing: { after: 90, line: 340, lineRule: LineRuleType.AUTO } },
+        },
+        hyperlink: {
+          run: { color: '1D4ED8', underline: { type: UnderlineType.SINGLE } },
+        },
+      },
+    },
     numbering: {
       config: [
         {
@@ -99,8 +163,8 @@ export async function buildExportDocx({
             style: {
               paragraph: {
                 indent: {
-                  left: convertInchesToTwip(0.35 + level * 0.25),
-                  hanging: convertInchesToTwip(0.18),
+                  left: bodyFirstLineIndent + 420 + level * 360,
+                  hanging: 420,
                 },
               },
             },
@@ -110,7 +174,38 @@ export async function buildExportDocx({
     },
     sections: [
       {
-        properties: {},
+        properties: {
+          page: {
+            margin: {
+              top: millimetersToTwip(20),
+              right: millimetersToTwip(14),
+              bottom: millimetersToTwip(20),
+              left: millimetersToTwip(14),
+              header: millimetersToTwip(8),
+              footer: millimetersToTwip(8),
+            },
+          },
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: documentTitle, font: headingFont, size: 18, color: '667085' })],
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ children: [PageNumber.CURRENT], font: bodyFont, size: 18, color: '667085' })],
+              }),
+            ],
+          }),
+        },
         children: children.length > 0 ? children : [new Paragraph('')],
       },
     ],
@@ -118,6 +213,21 @@ export async function buildExportDocx({
   const buffer = await Packer.toArrayBuffer(document)
 
   return { bytes: new Uint8Array(buffer), formulaImageFallbacks: context.formulaImageFallbacks, formulaTextFallbacks: context.formulaTextFallbacks }
+}
+
+function createHeadingStyle(size: number, before: number, after: number, color = '111827') {
+  return {
+    run: { font: headingFont, size, bold: true, color },
+    paragraph: {
+      spacing: { before, after, line: 280, lineRule: LineRuleType.AUTO },
+      keepNext: true,
+      keepLines: true,
+    },
+  }
+}
+
+function millimetersToTwip(value: number): number {
+  return Math.round(value * 1440 / 25.4)
 }
 
 async function convertBlocks(
@@ -142,8 +252,15 @@ async function convertBlock(
   switch (node.type) {
     case 'heading':
       return [await convertHeading(node, context)]
-    case 'paragraph':
-      return [new Paragraph({ children: await convertInlineChildren(node.children, context) })]
+    case 'paragraph': {
+      const isStandaloneImage = node.children.length === 1 && node.children[0].type === 'image'
+      return [new Paragraph({
+        children: await convertInlineChildren(node.children, context),
+        ...(isStandaloneImage
+          ? { alignment: AlignmentType.CENTER, spacing: { before: 160, after: 220 } }
+          : { indent: { firstLine: bodyFirstLineIndent } }),
+      })]
+    }
     case 'list':
       return convertList(node, context, listLevel)
     case 'blockquote':
@@ -153,29 +270,37 @@ async function convertBlock(
     case 'table':
       return [await convertTable(node, context)]
     case 'thematicBreak':
-      return [
-        new Paragraph({
-          children: [new TextRun('')],
-          thematicBreak: true,
-        }),
-      ]
+      return isExplicitThematicBreak(node, context.sourceContent)
+        ? [
+            new Paragraph({
+              children: [new TextRun('')],
+              thematicBreak: true,
+            }),
+          ]
+        : []
     case 'html':
       return convertHtmlBlock(node.value)
     case 'math':
       return [await convertBlockMath(node as MarkdownMath, context)]
     default:
       return toString(node as RootContent).trim()
-        ? [new Paragraph(toString(node as RootContent))]
+        ? [new Paragraph({
+            children: [new TextRun(toString(node as RootContent))],
+            indent: { firstLine: bodyFirstLineIndent },
+          })]
         : []
   }
 }
 
 async function convertHeading(node: Heading, context: ConversionContext): Promise<Paragraph> {
-  const heading = node.depth === 1
-    ? HeadingLevel.HEADING_1
-    : node.depth === 2
-      ? HeadingLevel.HEADING_2
-      : HeadingLevel.HEADING_3
+  const heading = [
+    HeadingLevel.HEADING_1,
+    HeadingLevel.HEADING_2,
+    HeadingLevel.HEADING_3,
+    HeadingLevel.HEADING_4,
+    HeadingLevel.HEADING_5,
+    HeadingLevel.HEADING_6,
+  ][node.depth - 1]
 
   return new Paragraph({
     heading,
@@ -190,9 +315,10 @@ async function convertList(
 ): Promise<DocxBlock[]> {
   const blocks: DocxBlock[] = []
   const level = Math.min(listLevel, maxListLevel)
+  const numberingInstance = node.ordered ? context.nextOrderedListInstance++ : undefined
 
   for (const item of node.children) {
-    blocks.push(...await convertListItem(item, node.ordered ?? false, level, context))
+    blocks.push(...await convertListItem(item, node.ordered ?? false, level, numberingInstance, context))
   }
 
   return blocks
@@ -202,6 +328,7 @@ async function convertListItem(
   item: ListItem,
   ordered: boolean,
   level: number,
+  numberingInstance: number | undefined,
   context: ConversionContext,
 ): Promise<DocxBlock[]> {
   const blocks: DocxBlock[] = []
@@ -212,7 +339,7 @@ async function convertListItem(
       ? '[x] '
       : '[ ] '
   const listOptions = ordered
-    ? { numbering: { reference: orderedListReference, level } }
+    ? { numbering: { reference: orderedListReference, level, instance: numberingInstance } }
     : { bullet: { level } }
 
   if (firstChild?.type === 'paragraph') {
@@ -248,6 +375,8 @@ async function convertBlockquote(children: readonly Content[]): Promise<DocxBloc
     .map((text) => new Paragraph({
       children: [new TextRun({ text, italics: true, color: '475467' })],
       indent: { left: convertInchesToTwip(0.25) },
+      spacing: { before: 80, after: 180, line: 340, lineRule: LineRuleType.AUTO },
+      shading: { type: ShadingType.CLEAR, fill: 'EDF7F6', color: 'auto' },
       border: {
         left: { style: BorderStyle.SINGLE, size: 8, color: '0F766E', space: 8 },
       },
@@ -255,26 +384,49 @@ async function convertBlockquote(children: readonly Content[]): Promise<DocxBloc
 }
 
 function convertCodeBlock(value: string, language: string | null | undefined): Paragraph {
-  const label = language ? `${language}\n` : ''
-  const lines = `${label}${value}`.split('\n')
+  const lines = value.split('\n')
 
   return new Paragraph({
-    children: lines.flatMap((line, index) => [
+    children: [
+      ...(language
+        ? [
+            new TextRun({ text: language.toUpperCase(), font: codeFont, size: 16, bold: true, color: '667085' }),
+            new TextRun({ break: 1 }),
+          ]
+        : []),
+      ...lines.flatMap((line, index) => [
       ...(index > 0 ? [new TextRun({ break: 1 })] : []),
       new TextRun({
         text: line || ' ',
-        font: 'Consolas',
+        font: codeFont,
         size: 20,
         color: '24292F',
       }),
-    ]),
+      ]),
+    ],
     shading: {
       type: ShadingType.CLEAR,
       fill: 'F6F8FA',
       color: 'auto',
     },
-    spacing: { before: 120, after: 180 },
+    border: {
+      top: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5', space: 8 },
+      right: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5', space: 8 },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5', space: 8 },
+      left: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5', space: 8 },
+    },
+    indent: { left: 140, right: 140 },
+    spacing: { before: 120, after: 220, line: 300, lineRule: LineRuleType.AUTO },
   })
+}
+
+function isExplicitThematicBreak(node: RootContent, sourceContent: string): boolean {
+  const start = node.position?.start.offset
+  const end = node.position?.end.offset
+  if (start === undefined || end === undefined) return false
+
+  const source = sourceContent.slice(start, end).trim()
+  return /^(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/.test(source)
 }
 
 async function convertTable(
@@ -283,8 +435,10 @@ async function convertTable(
 ): Promise<Table> {
   const rows = await Promise.all(
     node.children.map(async (row, rowIndex) => new TableRow({
+      cantSplit: true,
+      tableHeader: rowIndex === 0,
       children: await Promise.all(
-        row.children.map((cell) => convertTableCell(cell, context, rowIndex === 0)),
+        row.children.map((cell) => convertTableCell(cell, context, rowIndex)),
       ),
     })),
   )
@@ -292,29 +446,42 @@ async function convertTable(
   return new Table({
     rows,
     width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.AUTOFIT,
+    alignment: AlignmentType.CENTER,
+    margins: { top: 100, bottom: 100, left: 120, right: 120 },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+      right: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+      left: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+      insideVertical: { style: BorderStyle.SINGLE, size: 4, color: 'D9E0E5' },
+    },
   })
 }
 
 async function convertTableCell(
   cell: MarkdownTableCell,
   context: ConversionContext,
-  isHeader: boolean,
+  rowIndex: number,
 ): Promise<TableCell> {
+  const isHeader = rowIndex === 0
   const children = await convertInlineChildren(cell.children, context, isHeader ? { bold: true } : {})
 
   return new TableCell({
     children: [
       new Paragraph({
         children: children.length > 0 ? children : [new TextRun('')],
+        spacing: { after: 0, line: 300, lineRule: LineRuleType.AUTO },
       }),
     ],
-    shading: isHeader
-      ? {
-          type: ShadingType.CLEAR,
-          fill: 'EEF4F6',
-          color: 'auto',
-        }
-      : undefined,
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top: 100, bottom: 100, left: 120, right: 120 },
+    shading: {
+      type: ShadingType.CLEAR,
+      fill: isHeader ? 'EEF4F6' : rowIndex % 2 === 0 ? 'FBFDFE' : 'FFFFFF',
+      color: 'auto',
+    },
   })
 }
 
@@ -325,7 +492,12 @@ function convertHtmlBlock(value: string): DocxBlock[] {
     .replace(/\s+/g, ' ')
     .trim()
 
-  return text ? [new Paragraph(text)] : []
+  return text
+    ? [new Paragraph({
+        children: [new TextRun(text)],
+        indent: { firstLine: bodyFirstLineIndent },
+      })]
+    : []
 }
 
 async function convertInlineChildren(
@@ -442,10 +614,7 @@ async function convertImage(
       new ImageRun({
         type: imageData.type,
         data: imageData.bytes,
-        transformation: {
-          width: 480,
-          height: 270,
-        },
+        transformation: createImageTransformation(imageData),
         altText: {
           title: node.alt ?? 'Markdown image',
           description: node.alt ?? resource.path,
@@ -479,7 +648,14 @@ function createTextRun(text: string, style: TextStyle): TextRun {
     ...(style.bold ? { bold: true } : {}),
     ...(style.italics ? { italics: true } : {}),
     ...(style.strike ? { strike: true } : {}),
-    ...(style.code ? { font: 'Consolas', color: '9F1239' } : {}),
+    ...(style.code
+      ? {
+          font: codeFont,
+          size: 20,
+          color: '9F1239',
+          shading: { type: ShadingType.CLEAR, fill: 'E9EEF2', color: 'auto' },
+        }
+      : {}),
     ...(style.link
       ? {
           color: '1D4ED8',
@@ -489,9 +665,7 @@ function createTextRun(text: string, style: TextStyle): TextRun {
   })
 }
 
-function dataUrlToImageData(dataUrl: string):
-  | { type: 'png' | 'jpg' | 'gif' | 'bmp'; bytes: Uint8Array }
-  | null {
+function dataUrlToImageData(dataUrl: string): DocxImageData | null {
   const match = /^data:([^;,]+);base64,(.*)$/i.exec(dataUrl)
   if (!match) {
     return null
@@ -510,6 +684,94 @@ function dataUrlToImageData(dataUrl: string):
   }
 
   return { type, bytes }
+}
+
+function createImageTransformation(image: DocxImageData): { width: number; height: number } {
+  const dimensions = readImageDimensions(image)
+  if (!dimensions) return { width: 480, height: 270 }
+
+  const scale = Math.min(1, 560 / dimensions.width, 420 / dimensions.height)
+  return {
+    width: Math.max(1, Math.round(dimensions.width * scale)),
+    height: Math.max(1, Math.round(dimensions.height * scale)),
+  }
+}
+
+function readImageDimensions(image: DocxImageData): { width: number; height: number } | null {
+  const { bytes, type } = image
+
+  if (type === 'png' && bytes.length >= 24) {
+    return validDimensions(readUint32Be(bytes, 16), readUint32Be(bytes, 20))
+  }
+
+  if (type === 'gif' && bytes.length >= 10) {
+    return validDimensions(readUint16Le(bytes, 6), readUint16Le(bytes, 8))
+  }
+
+  if (type === 'bmp' && bytes.length >= 26) {
+    return validDimensions(readUint32Le(bytes, 18), Math.abs(readInt32Le(bytes, 22)))
+  }
+
+  if (type === 'jpg') {
+    return readJpegDimensions(bytes)
+  }
+
+  return null
+}
+
+function readJpegDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  let offset = 2
+
+  while (offset + 8 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1
+      continue
+    }
+
+    const marker = bytes[offset + 1]
+    const segmentLength = (bytes[offset + 2] << 8) | bytes[offset + 3]
+    const isStartOfFrame = marker >= 0xc0 && marker <= 0xcf
+      && ![0xc4, 0xc8, 0xcc].includes(marker)
+
+    if (isStartOfFrame && offset + 8 < bytes.length) {
+      const height = (bytes[offset + 5] << 8) | bytes[offset + 6]
+      const width = (bytes[offset + 7] << 8) | bytes[offset + 8]
+      return validDimensions(width, height)
+    }
+
+    if (segmentLength < 2) break
+    offset += 2 + segmentLength
+  }
+
+  return null
+}
+
+function validDimensions(width: number, height: number): { width: number; height: number } | null {
+  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+    ? { width, height }
+    : null
+}
+
+function readUint16Le(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8)
+}
+
+function readUint32Be(bytes: Uint8Array, offset: number): number {
+  return ((bytes[offset] << 24) >>> 0)
+    + (bytes[offset + 1] << 16)
+    + (bytes[offset + 2] << 8)
+    + bytes[offset + 3]
+}
+
+function readUint32Le(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset]
+    + (bytes[offset + 1] << 8)
+    + (bytes[offset + 2] << 16)
+    + ((bytes[offset + 3] << 24) >>> 0)) >>> 0
+}
+
+function readInt32Le(bytes: Uint8Array, offset: number): number {
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getInt32(0, true)
 }
 
 function mimeTypeToDocxImageType(mimeType: string): 'png' | 'jpg' | 'gif' | 'bmp' | null {
