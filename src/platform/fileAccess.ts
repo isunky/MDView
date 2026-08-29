@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { createExportDocxDefaultPath } from '../domain/exportDocxPath'
 import { createExportHtmlDefaultPath } from '../domain/exportHtmlPath'
+import { printHtmlInBrowser } from './printHtml'
 
 export type OpenedMarkdownFile = {
   path: string
@@ -158,7 +158,7 @@ export const tauriFileAccess: FileAccess = {
   },
 
   async printExportHtml(html, title) {
-    await printHtmlDocument(html, title)
+    await printHtmlInBrowser(html, title)
   },
 
   async readLocalImageFile(path) {
@@ -259,61 +259,6 @@ export const tauriFileAccess: FileAccess = {
       callback(await invoke<OpenedMarkdownFile>('open_markdown_file_at_path', { path }))
     })
   },
-}
-
-async function printHtmlDocument(html: string, title: string) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    throw new Error('Printing is only available in a browser window.')
-  }
-
-  if (isTauriRuntime()) {
-    await printHtmlInTauriWindow(html, title)
-    return
-  }
-
-  const printWindow = window.open('', '_blank', 'popup,width=900,height=700')
-  if (!printWindow) {
-    throw new Error('Unable to open print window.')
-  }
-
-  printWindow.document.open()
-  printWindow.document.write(html)
-  printWindow.document.close()
-  printWindow.focus()
-  printWindow.print()
-}
-
-async function printHtmlInTauriWindow(html: string, title: string) {
-  const label = `pdf-export-${Date.now()}`
-  const printWindow = new WebviewWindow(label, {
-    title,
-    url: createHtmlDataUrl(html),
-    width: 900,
-    height: 700,
-    center: true,
-    resizable: true,
-    focus: true,
-  })
-
-  await new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error('Unable to open print window.')), 5000)
-
-    printWindow.once('tauri://created', () => {
-      window.clearTimeout(timeout)
-      resolve()
-    })
-    printWindow.once('tauri://error', (event) => {
-      window.clearTimeout(timeout)
-      reject(new Error(String(event.payload)))
-    })
-  })
-
-  await new Promise<void>((resolve) => window.setTimeout(resolve, 500))
-  await invoke('plugin:webview|print', { label })
-}
-
-function createHtmlDataUrl(html: string): string {
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
 }
 
 function isTauriRuntime(): boolean {

@@ -62,6 +62,7 @@ export function useDocumentExport({
 
   const exportPdf = useCallback(async () => {
     closeMenu()
+    setStatusMessage(t.exportPdfPreparing)
     try {
       const { html, unresolvedResources } = await buildCurrentExportHtml()
       await fileAccess.printExportHtml(html, document.title)

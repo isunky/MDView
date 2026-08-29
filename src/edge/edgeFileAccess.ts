@@ -6,6 +6,7 @@ import type {
   MarkdownFileCheck,
   OpenedMarkdownFile,
 } from '../platform/fileAccess'
+import { printHtmlInBrowser } from '../platform/printHtml'
 
 const DATABASE_NAME = 'mdview.edge.files.v1'
 const STORE_NAME = 'handles'
@@ -100,14 +101,7 @@ export const edgeFileAccess: FileAccess = {
   },
 
   async printExportHtml(html, title) {
-    const printWindow = window.open('', '_blank', 'popup,width=900,height=700')
-    if (!printWindow) throw new Error('Unable to open print window.')
-    printWindow.document.open()
-    printWindow.document.write(html)
-    printWindow.document.title = title
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
+    await printHtmlInBrowser(html, title)
   },
 
   async readLocalImageFile(path): Promise<LocalImageFile> {

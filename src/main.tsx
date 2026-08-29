@@ -10,6 +10,7 @@ import { bootstrapReadingTheme } from './platform/readingTheme.ts'
 import { setTheme } from '@tauri-apps/api/app'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { createTauriWindowFrame } from './platform/tauriWindowFrame.ts'
+import { nativeWindowFrame } from './platform/windowFrame.ts'
 
 declare global {
   interface Window {
@@ -24,7 +25,9 @@ bootstrapReadingTheme(loadReadingPreferences, (preferences, systemTheme) =>
 window.__MDVIEW_SYNC_NATIVE_THEME__ = setTheme
 window.__MDVIEW_OPEN_EXTERNAL_LINK__ = openUrl
 
-const windowFrame = createTauriWindowFrame()
+const windowFrame = '__TAURI_INTERNALS__' in window
+  ? createTauriWindowFrame()
+  : nativeWindowFrame
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
