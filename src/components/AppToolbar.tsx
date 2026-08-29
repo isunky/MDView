@@ -1,10 +1,12 @@
 import { ChevronDown, Download, Eye, FolderOpen, FolderSearch, PencilLine, Settings, SplitSquareHorizontal } from 'lucide-react'
-import type { RefObject } from 'react'
+import type { MouseEvent, RefObject } from 'react'
 import type { RecentFile } from '../domain/recentFiles'
 import type { AppMenuId } from '../hooks/useAppMenu'
 import type { AppLanguage, Translation } from '../i18n'
 import type { AppUpdatePhase } from '../hooks/useAppUpdater'
+import type { AppWindowFrame } from '../platform/windowFrame'
 import { AppLogo } from './AppLogo'
+import { WindowControls } from './WindowControls'
 
 type ViewMode = 'preview' | 'edit' | 'split'
 
@@ -12,6 +14,7 @@ export function AppToolbar({
   activeMenu, canRevealFiles, documentPath, documentTitle, isSaving, isWelcomeVisible,
   language, menuBarRef, nativeFileTitle, recentFiles, supportsAppUpdates, t, updatePhase,
   updateActionTitle, viewMode, newTitle, openTitle, saveTitle, saveAsTitle,
+  windowFrame,
   onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
   onSave, onSaveAs, onToggleMenu, onViewMode,
@@ -31,6 +34,7 @@ export function AppToolbar({
   updatePhase: AppUpdatePhase
   updateActionTitle?: string
   viewMode: ViewMode
+  windowFrame: AppWindowFrame
   newTitle: string
   openTitle: string
   saveTitle: string
@@ -54,12 +58,25 @@ export function AppToolbar({
   onViewMode: (mode: ViewMode) => void
 }) {
   const nativeFilesEnabled = nativeFileTitle === undefined
-  return <header className="topbar">
+  const handleTitlebarMouseDown = (event: MouseEvent<HTMLElement>) => {
+    if (windowFrame.kind === 'native' || event.button !== 0) return
+    if ((event.target as HTMLElement).closest('[data-window-interactive="true"]')) return
+
+    const action = event.detail === 2
+      ? windowFrame.toggleMaximize
+      : windowFrame.startDragging
+    void action().catch(() => undefined)
+  }
+
+  return <header
+    className={`topbar window-frame-${windowFrame.kind}`}
+    onMouseDown={handleTitlebarMouseDown}
+  >
     <div className="brand-block">
       <div className="app-mark" aria-hidden="true"><AppLogo /></div>
       <div><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</p></div>
     </div>
-    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
+    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef} data-window-interactive="true">
       <div className="action-menu">
         <button type="button" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-expanded={activeMenu === 'file'}>
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />
@@ -99,10 +116,19 @@ export function AppToolbar({
         </div> : null}
       </div>
     </nav>
-    {!isWelcomeVisible ? <div className="view-controls" role="group" aria-label={t.viewMode}>
+    {!isWelcomeVisible ? <div className="view-controls" role="group" aria-label={t.viewMode} data-window-interactive="true">
       <button type="button" className={viewMode === 'preview' ? 'active' : ''} onClick={() => onViewMode('preview')} aria-label={t.previewLabel}><Eye aria-hidden="true" /><span>{t.preview}</span></button>
       <button type="button" className={viewMode === 'edit' ? 'active' : ''} onClick={() => onViewMode('edit')} aria-label={t.editLabel}><PencilLine aria-hidden="true" /><span>{t.edit}</span></button>
       <button type="button" className={viewMode === 'split' ? 'active' : ''} onClick={() => onViewMode('split')} aria-label={t.splitLabel}><SplitSquareHorizontal aria-hidden="true" /><span>{t.split}</span></button>
     </div> : null}
+    {windowFrame.kind === 'windows-custom' ? <WindowControls
+      frame={windowFrame}
+      labels={{
+        close: t.windowClose,
+        maximize: t.windowMaximize,
+        minimize: t.windowMinimize,
+        restore: t.windowRestore,
+      }}
+    /> : null}
   </header>
 }

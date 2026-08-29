@@ -1,4 +1,21 @@
 {
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MDView",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 520,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "shadow": true,
+        "dragDropEnabled": false
+      }
+    ]
+  },
   "bundle": {
     "targets": ["msi"],
     "fileAssociations": [],

@@ -9,6 +9,7 @@ import { tauriAppUpdateClient } from './platform/appUpdates.ts'
 import { bootstrapReadingTheme } from './platform/readingTheme.ts'
 import { setTheme } from '@tauri-apps/api/app'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { createTauriWindowFrame } from './platform/tauriWindowFrame.ts'
 
 declare global {
   interface Window {
@@ -23,11 +24,14 @@ bootstrapReadingTheme(loadReadingPreferences, (preferences, systemTheme) =>
 window.__MDVIEW_SYNC_NATIVE_THEME__ = setTheme
 window.__MDVIEW_OPEN_EXTERNAL_LINK__ = openUrl
 
+const windowFrame = createTauriWindowFrame()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App
       appUpdateClient={tauriAppUpdateClient}
       fileAccess={window.__MDVIEW_E2E_FILE_ACCESS__ ?? tauriFileAccess}
+      windowFrame={windowFrame}
     />
   </StrictMode>,
 )

@@ -53,6 +53,7 @@ import {
 import { useFileShortcuts } from './hooks/useFileShortcuts'
 import { getCursorPosition, getDocumentStatistics } from './domain/documentStatistics'
 import type { ReadingViewMode } from './domain/readingSessions'
+import { nativeWindowFrame, type AppWindowFrame } from './platform/windowFrame'
 
 type ViewMode = ReadingViewMode
 
@@ -61,6 +62,7 @@ type AppProps = {
   fileAccess: FileAccess
   initialLanguage?: AppLanguage
   supportsAppUpdates?: boolean
+  windowFrame?: AppWindowFrame
 }
 
 function App({
@@ -68,6 +70,7 @@ function App({
   fileAccess,
   initialLanguage,
   supportsAppUpdates = true,
+  windowFrame = nativeWindowFrame,
 }: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
@@ -460,6 +463,7 @@ function App({
         updateActionTitle={updateActionTitle}
         updatePhase={updatePhase}
         viewMode={viewMode}
+        windowFrame={windowFrame}
         onAbout={handleOpenAboutFromAppMenu}
         onCheckUpdates={() => void handleCheckForUpdates()}
         onClearRecent={handleClearRecentFiles}
