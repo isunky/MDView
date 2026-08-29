@@ -1,3 +1,5 @@
+import { createExportDisplayTitle } from '../domain/exportDisplayTitle'
+
 const PRINT_RESOURCE_TIMEOUT_MS = 10_000
 const PRINT_LAYER_CLEANUP_TIMEOUT_MS = 5 * 60_000
 
@@ -25,7 +27,7 @@ export async function printHtmlInBrowser(html: string, title: string): Promise<v
   printStyles.media = 'print'
   printStyles.textContent = [
     ...Array.from(exportDocument.querySelectorAll('style'), (style) => style.textContent ?? ''),
-    createPrintOverrideStyles(title),
+    createPrintOverrideStyles(createExportDisplayTitle(title)),
   ].join('\n')
 
   document.head.append(printStyles)

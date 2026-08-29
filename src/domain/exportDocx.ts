@@ -45,6 +45,7 @@ import remarkParse from 'remark-parse'
 import remarkMath from 'remark-math'
 import type { InlineMath, Math as MarkdownMath } from 'mdast-util-math'
 import { resolveLocalMarkdownResource } from './localMarkdownResources'
+import { createExportDisplayTitle } from './exportDisplayTitle'
 import type { LocalImageFile } from '../platform/fileAccess'
 
 type BuildExportDocxOptions = {
@@ -124,6 +125,7 @@ export async function buildExportDocx({
   }
   const children = await convertBlocks(tree.children, context)
   const documentTitle = title || 'MDView Export'
+  const headerTitle = createExportDisplayTitle(documentTitle)
   const document = new Document({
     title: documentTitle,
     creator: 'MDView',
@@ -191,7 +193,7 @@ export async function buildExportDocx({
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: documentTitle, font: headingFont, size: 18, color: '667085' })],
+                children: [new TextRun({ text: headerTitle, font: headingFont, size: 18, color: '667085' })],
               }),
             ],
           }),
