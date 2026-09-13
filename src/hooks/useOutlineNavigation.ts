@@ -33,6 +33,7 @@ type OutlineResizeStart = {
 } | null
 
 type UseOutlineNavigationOptions = {
+  documentSessionId?: string
   content: string
   isPreview: boolean
   previewZoom: number
@@ -41,6 +42,7 @@ type UseOutlineNavigationOptions = {
 }
 
 export function useOutlineNavigation({
+  documentSessionId,
   content,
   isPreview,
   previewZoom,
@@ -57,13 +59,65 @@ export function useOutlineNavigation({
   const headingPositionsRef = useRef<OutlineHeadingPosition[]>([])
   const jumpLockRef = useRef<string | null>(null)
   const jumpSettleTimeoutRef = useRef<number | null>(null)
-  const outlineItems = useMemo(
+  const allItems = useMemo(
     () => isPreview
-      ? extractMarkdownOutline(content).filter((item) => item.level <= outlineDepth)
+      ? extractMarkdownOutline(content)
       : EMPTY_OUTLINE_ITEMS,
-    [content, isPreview, outlineDepth],
+    [content, isPreview],
+  )
+  const outlineItems = useMemo(
+    () => allItems.filter((item) => item.level <= outlineDepth),
+    [allItems, outlineDepth],
   )
   const outlineIds = useMemo(() => outlineItems.map((item) => item.id), [outlineItems])
+  const [branches, setBranches] = useState({
+    session: documentSessionId,
+    items: allItems,
+    active: activeOutlineId,
+    collapsed: new Set<string>(),
+  })
+  if (branches.session !== documentSessionId || branches.items !== allItems || branches.active !== activeOutlineId) {
+    const validIds = new Set(allItems.map((item) => item.id))
+    const collapsed = branches.session !== documentSessionId
+      ? new Set<string>()
+      : new Set([...branches.collapsed].filter((id) => !isPreview || validIds.has(id)))
+    if (branches.active !== activeOutlineId && activeOutlineId) {
+      const parents: typeof outlineItems = []
+      for (const item of outlineItems) {
+        while (parents.length && parents[parents.length - 1].level >= item.level) parents.pop()
+        if (item.id === activeOutlineId) {
+          parents.forEach((parent) => collapsed.delete(parent.id))
+          break
+        }
+        parents.push(item)
+      }
+    }
+    setBranches({ session: documentSessionId, items: allItems, active: activeOutlineId, collapsed })
+  }
+  const toggleOutlineBranch = (id: string) => setBranches((current) => {
+    const collapsed = new Set(current.collapsed)
+    if (collapsed.has(id)) collapsed.delete(id)
+    else collapsed.add(id)
+    return { ...current, collapsed }
+  })
+  const setOutlineSubtree = (id: string, expanded: boolean) => setBranches((current) => {
+    const index = allItems.findIndex((item) => item.id === id)
+    if (index < 0) return current
+    const collapsed = new Set(current.collapsed)
+    for (let cursor = index; cursor < allItems.length; cursor++) {
+      const item = allItems[cursor]
+      if (cursor > index && item.level <= allItems[index].level) break
+      if (expanded) collapsed.delete(item.id)
+      else if (allItems[cursor + 1]?.level > item.level) collapsed.add(item.id)
+    }
+    return { ...current, collapsed }
+  })
+  const setAllOutlineBranches = (expanded: boolean) => setBranches((current) => ({
+    ...current,
+    collapsed: expanded ? new Set<string>() : new Set(allItems
+      .filter((item, index) => allItems[index + 1]?.level > item.level)
+      .map((item) => item.id)),
+  }))
 
   const updateActiveOutlineFromPreview = useCallback(() => {
     const previewPanel = previewPanelRef.current
@@ -316,6 +370,10 @@ export function useOutlineNavigation({
   }, [])
 
   return {
+    collapsedOutlineIds: branches.collapsed,
+    setOutlineSubtree,
+    toggleOutlineBranch,
+    setAllOutlineBranches,
     activeOutlineId,
     beginOutlineResize,
     closeOutline,

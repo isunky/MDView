@@ -277,6 +277,10 @@ function App({
   }, [isSplitScrollSyncEnabled, showAppToast, t, toggleSplitScrollSync])
   const {
     activeOutlineId,
+    collapsedOutlineIds,
+    setOutlineSubtree,
+    toggleOutlineBranch,
+    setAllOutlineBranches,
     beginOutlineResize,
     closeOutline,
     handleOutlineJump,
@@ -290,6 +294,7 @@ function App({
     restoreOutlineLayout,
     setOutlineDepth,
   } = useOutlineNavigation({
+    documentSessionId,
     content: markdownDocument.content,
     isPreview: !isWelcomeVisible && viewMode === 'preview',
     previewZoom,
@@ -547,6 +552,10 @@ function App({
             style={{ width: `${outlineWidth}px` }}
           >
             <DocumentOutline
+              collapsedIds={collapsedOutlineIds}
+              onSetSubtree={setOutlineSubtree}
+              onToggleBranch={toggleOutlineBranch}
+              onSetAllBranches={setAllOutlineBranches}
               items={outlineItems}
               activeId={activeOutlineId}
               maxDepth={outlineDepth}

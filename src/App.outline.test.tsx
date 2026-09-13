@@ -56,7 +56,9 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Jump to Scope' }))
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 404, behavior: 'smooth' })
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith({ top: 404, behavior: 'smooth' })
+    })
     expect(scrollIntoView).toHaveBeenLastCalledWith({
       block: 'nearest',
       inline: 'nearest',
