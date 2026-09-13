@@ -60,7 +60,9 @@ export function AppToolbar({
   const nativeFilesEnabled = nativeFileTitle === undefined
   const handleTitlebarMouseDown = (event: MouseEvent<HTMLElement>) => {
     if (windowFrame.kind === 'native' || event.button !== 0) return
-    if ((event.target as HTMLElement).closest('[data-window-interactive="true"]')) return
+    if ((event.target as HTMLElement).closest(
+      '[data-window-interactive="true"], button, a, input, select, textarea, [role="menu"]',
+    )) return
 
     const action = event.detail === 2
       ? windowFrame.toggleMaximize
@@ -74,9 +76,9 @@ export function AppToolbar({
   >
     <div className="brand-block">
       <div className="app-mark" aria-hidden="true"><AppLogo /></div>
-      <div><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</p></div>
+      <div className="brand-text"><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</p></div>
     </div>
-    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef} data-window-interactive="true">
+    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
       <div className="action-menu">
         <button type="button" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-expanded={activeMenu === 'file'}>
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />

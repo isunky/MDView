@@ -8,8 +8,10 @@
 }
 
 .topbar {
-  height: 64px;
-  min-height: 64px;
+  --titlebar-height: 64px;
+  height: var(--titlebar-height);
+  min-height: var(--titlebar-height);
+  flex-shrink: 0;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -40,6 +42,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.brand-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .logo-menu {
@@ -85,7 +92,7 @@
 }
 
 .brand-block p {
-  max-width: 42vw;
+  max-width: 100%;
   overflow: hidden;
   margin: 4px 0 0;
   color: var(--text-muted);
@@ -367,7 +374,7 @@
 }
 
 .window-controls {
-  height: 64px;
+  height: var(--titlebar-height);
   display: flex;
   flex: 0 0 auto;
   align-self: stretch;
@@ -376,7 +383,7 @@
 
 .window-control {
   width: 46px;
-  height: 64px;
+  height: var(--titlebar-height);
   display: grid;
   place-items: center;
   padding: 0;
@@ -953,7 +960,7 @@
   top: calc(100% + 7px);
   left: -4px;
   z-index: 12;
-  width: 160px;
+  width: 196px;
   box-sizing: border-box;
   padding: 9px;
   border: 1px solid var(--border);
@@ -970,7 +977,7 @@
 
 .outline-depth-options {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -2620,6 +2627,14 @@
 }
 
 @media (max-width: 900px) {
+  .topbar:not(.window-frame-native) {
+    gap: 8px;
+  }
+
+  .topbar:not(.window-frame-native) .brand-block {
+    gap: 8px;
+  }
+
   .topbar:not(.window-frame-native) .view-controls button {
     width: 32px;
     justify-content: center;
@@ -2630,8 +2645,13 @@
     display: none;
   }
 
-  .topbar:not(.window-frame-native) .brand-block p {
-    max-width: 24vw;
+  .topbar:not(.window-frame-native) .toolbar > .action-menu > button {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .topbar:not(.window-frame-native) .toolbar > .action-menu > button > svg:last-child {
+    display: none;
   }
 }
 
