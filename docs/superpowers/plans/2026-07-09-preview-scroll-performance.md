@@ -1,6 +1,6 @@
 # Preview Scroll Performance Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implement the applicable tasks directly; use superpowers:subagent-driven-development or superpowers:executing-plans only if available and useful. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Keep Markdown preview scrolling responsive while synchronizing the active outline heading.
 
@@ -18,7 +18,7 @@
 - Modify: `src/App.tsx`
 
 - [ ] Write tests proving active heading lookup handles the first heading, boundaries, and a large sorted position index.
-- [ ] Run `npm test -- --run src/domain/outlineScroll.test.ts` and confirm it fails because the module is missing.
+- [ ] Run `npm test -- --run src/domain/outlineScroll.test.ts`; add a failing regression only for missing or incorrect behavior.
 - [ ] Implement a sorted heading-position index and binary-search active lookup.
 - [ ] Run the focused test and confirm it passes.
 - [ ] Replace per-frame `getBoundingClientRect()` traversal with cached positions, recomputed after content, zoom, resize, and preview layout changes.
@@ -32,7 +32,7 @@
 - Modify: `src/components/MarkdownPreview.test.tsx`
 
 - [ ] Add a render-count regression test proving unrelated parent state does not re-render `MarkdownPreview`.
-- [ ] Run the focused test and confirm it fails before memoization.
+- [ ] Run the render-count regression; change memoization only if the regression fails.
 - [ ] Export a memoized `MarkdownPreview` while retaining the existing props contract.
 - [ ] Stabilize preview callback props in `App`.
 - [ ] Run focused component and App tests.
@@ -42,7 +42,7 @@
 **Files:**
 - Modify only files required by failures found during verification.
 
-- [ ] Run `npm test -- --run`.
+- [ ] Run affected tests; expand to the full suite for release or cross-cutting changes.
 - [ ] Run `npm run lint`.
 - [ ] Run `npm run build`.
 - [ ] Inspect the diff to ensure the change remains limited to preview scrolling performance.

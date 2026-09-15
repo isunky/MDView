@@ -1,0 +1,130 @@
+# MDView v3.3.0 项目审查报告
+
+日期：2026-07-08 · 审查对象：`main` 分支（工作区 D:\AICode\MDView）
+
+## 审查方法
+
+- 四个并行领域审查（Rust/Tauri 后端、前端 hooks 与平台层、组件与领域逻辑安全、构建/依赖/测试/脚本），每个领域独立成文、交叉印证。
+- 独立验证（本机实跑）：
+  - `npm test`：48 个测试文件 / 225 个用例全部通过
+  - `npm run lint`：零告警
+  - `npm run build`（tsc + vite + bundle:check）：通过，启动分块 461.2 KB 达标
+  - 更新器链路核查：`tauri.windows.conf.json` 中 `plugins.updater`（HTTPS GitHub endpoint + minisign 公钥）由 Tauri CLI 平台配置机制自动合并（已在 CLI 二进制中验证该合并逻辑存在）；updater 插件仅 `#[cfg(target_os = "windows")]` 注册，macOS 端由前端 `getDistribution()` 降级到 Releases 页 —— 链路完整。
+
+## 总体评价
+
+**工程质量优秀，可放心继续迭代。** 测试/lint/构建全绿，文档完善（双语 README + 结构化 TODO 路线图），版本治理闭环（9 处版本号一致 + CI 门禁），安全上采用多层纵深防御且核心 XSS 面经逐一核对源码后确认无漏洞。
+
+主要风险集中在**异步竞态与网络访问边界**：1 个数据丢失级保存竞态、1 个 SSRF 面、1 个文件授权退化、1 个 `file://` 导航回退。这些都有明确的低成本修复方案，建议在下个版本前处理 P0 四项。
+
+## 问题清单
+
+### 严重（1）
+
+#### S1. 保存不校验文档身份：快速切换文档可让新文档覆盖旧文件（数据丢失）
+- 位置：`src/hooks/useDocumentController.ts:328-399`（`saveDocument`）、`:401-408`（`handleSaveFile`）、`src/domain/documentState.ts:62-76`
+- 场景：文档 A 保存进行中 → 打开 B → 保存 B：直接复用 A 的在途保存操作（B 内容未落盘）；A 的成功回调把 A 的 path/title 应用到"当前文档=B"；再保存一次即 `saveMarkdownFile(A.path, B.content)`，**B 的内容覆盖 A 的文件**。
+- 修复：保存开始时记录文档身份（path + 会话 id / revision），await 返回后与 `documentRef.current` 比对，不一致则丢弃结果；打开新文档时重置 `saveOperationRef`，普通 Save 不继承他文档的在途操作。补一个"A 保存中切到 B 再保存"的竞态测试。
+
+### 高（6）
+
+#### H1. `read_remote_image_file` SSRF：无私网/回环过滤，重定向后不复检（两份独立报告确认）
+- 位置：`src-tauri/src/lib.rs:448-505`；前端调用 `src/platform/fileAccess.ts:172-178`
+- 现有防护：仅 http/https、URL 禁止内嵌凭据、15s 超时、最多 5 次重定向、20MB 上限、Content-Type 必须 `image/*`。
+- 缺口：解析后的主机不做私网段过滤（`127.0.0.0/8`、`10/8`、`172.16/12`、`192.168/16`、`169.254/16` 云元数据、`::1`/`fe80`）；**重定向目标不复检**。
+- 攻击路径：恶意 Markdown `![](https://attacker/x.png)` → 攻击者 302 到内网地址 → 若返回 `image/*`，内容以 base64 data URL 渲染回页面（内网数据外带）；即使非图片也可触发内网 GET 副作用（盲 SSRF）。
+- 修复：对初始 URL 与每次重定向后的 URL 解析主机 IP，拒绝 loopback/私网/链路本地/元数据段（reqwest 重定向 policy 回调中判断），或收紧到受信域名白名单；保留现有 Content-Type 与大小限制。
+
+#### H2. `open_markdown_file_at_path` 对任意 `.md` 路径自动批准并持久化，访问控制退化为"扩展名门禁"
+- 位置：`src-tauri/src/lib.rs:221-235`（自动批准+持久化 `:230-232`；`approve_and_persist_markdown_file` `:634-641`）
+- 问题：只要扩展名是 `.md/.markdown`，未授权路径即被批准并写入 `approved-markdown-files.json`，之后可被 `read_markdown_file` 读、`save_markdown_file` 写。
+- 影响：`FileAccessPolicy` 的"按用户同意"语义被该命令绕过；若前端按恶意文档中的文件引用调用此命令，即可读/改写本机其它 `.md` 文件，持久化授权还会被攻击者路径污染。
+- 修复：不要无条件持久化授权；仅对 OS 启动/文件关联传入、或已活动文档根内的路径放行，其余要求显式用户确认。
+
+#### H3. `file://` 及未处理协议链接回退到主框架原生导航 → 本地文件内容泄露
+- 位置：`src/components/MarkdownPreview.tsx:142-164`（`handleClick` 仅拦截锚点/本地 md/http(s) 外链）、`:182-186`（`transformMarkdownUrl` 放行 `file://`）；`src/domain/markdownSanitize.ts:79`（`href` 协议白名单含 `file`）
+- 攻击向量：不受信 Markdown 写 `<a href="file:///C:/Users/<victim>/Documents/notes.html">点击查看</a>` → 无处理器拦截 → webview 顶层导航到该本地文件并渲染其内容（`.html/.txt/.json` 等文本可被读出）。CSP 未含 `navigate-to`，`default-src 'self'` 不约束顶层导航。代码执行被 `script-src 'self'` 阻断，后果为信息泄露且需用户点击。
+- 修复：`handleClick` 对"非锚点/非本地 md/非 http(s)"的 href 一律 `preventDefault()`（含 `file:`）；收紧 `href` 协议白名单；CSP 增加 `navigate-to 'self'`。
+
+#### H4. 全应用无错误边界
+- 位置：`ErrorBoundary` 全仓库零命中。预览渲染任意 Markdown（rehype-raw/mermaid/KaTeX），任何一处渲染异常都会导致整棵 React 树卸载白屏，只能靠草稿备份恢复。
+- 修复：至少为 `LazyMarkdownPreview`（及编辑器）加错误边界，降级为"预览渲染失败，显示源码"。
+
+#### H5. 启动初始化 effect 无 catch + 消费式读取与 StrictMode 冲突
+- 位置：`src/hooks/useDocumentController.ts:144-177` + `src/platform/fileAccess.ts:238-246`；Rust 侧 `take_opened_files` 为消费式读取（`src-tauri/src/lib.rs:188-189`）
+- 问题：`readStartupMarkdownFile` reject（文件被删/无权限）→ unhandled rejection 且 `listenForOpenedFiles` 永不注册，本会话"系统双击打开文件"全部失效、无用户反馈。另外 StrictMode 开发环境下，启动文件在第一次挂载被消费后丢弃，永远打不开。
+- 修复：初始化链加 catch 并保证监听注册不依赖启动文件读取成功；`take_opened_files` 改为非消费式（或提供"重新取回"命令），StrictMode 双挂载安全。
+
+#### H6. IME 组合输入逐字符污染撤销历史（中文用户可感知）
+- 位置：`src/components/MarkdownEditor.tsx:302-306` + `src/hooks/useEditorHistory.ts:81-91`
+- 问题：`onChange` 在每次 compositionupdate 触发，拼音中间态各记一条 'typing' 历史并整树重渲染；组合期 Ctrl+Z 逐字撤销。
+- 修复：`isComposing` 时跳过历史记录，`compositionend` 补记一条。
+
+### 中（19）
+
+**Rust 后端**
+1. `reqwest = "=0.12.15"` 精确锁版阻断安全补丁更新（`src-tauri/Cargo.toml:32`；两份报告提及）→ 改为 `^0.12.15` 或记录锁版原因。
+2. 本地文件读取无大小上限（Markdown/图片全量读入）→ 加字节上限或流式读取（两份报告提及）。
+3. DOCX 导入子进程无超时、`thread::sleep(120ms)` 轮询（`src-tauri/src/docx_import.rs:109,474-485,534-549`）→ 加超时 + `child.wait()`。
+4. async 命令内执行阻塞调用（对话框 `blocking_pick_file`/`std::fs`，`lib.rs:197-219,321-391`）→ 改同步命令或 `spawn_blocking`。
+5. `is_not_found_error` 匹配本地化错误文案（`lib.rs:690-694`）→ 用 `io::ErrorKind::NotFound`，否则中文 Windows 上"文件已删除"分支不生效。
+
+**工程化/构建**
+6. TypeScript 未启用 `strict`（三个 tsconfig 均无）→ 分步开启（先 `strictNullChecks`）。
+7. Edge 扩展 `tabs` 权限超最小化（`edge/public/manifest.json:19`，`activeTab` 已足够）→ 移除。
+8. CI 缺依赖漏洞扫描 → quality job 加 `npm audit --audit-level=high` + `cargo audit` 门禁。
+9. E2E 只覆盖 dev 构建 → 增加 `vite build` + `preview` 的生产 E2E 变体。
+
+**组件/渲染**
+10. 搜索每次键入触发整篇 markdown 重解析（`MarkdownPreview.tsx:67,87-97`，高亮插件依赖 `searchQuery` 且在 rehype 管线末端）→ 渲染后对 DOM 增量标注或防抖。
+11. 大文档预览无虚拟化/块级 memo → 窗口化 + 未变区块 memo。
+12. 编辑器历史按条数（100 份全量快照）而非字节封顶（`editorHistory.ts:21,54`）→ 大文档内存可达数百 MB。
+
+**Hooks/平台层**
+13. Edge 导入页面 `edge-page://` 伪路径：普通保存必然失败且报误导性错误，外部监控每 2s 空轮询抛错被吞（`edge/edgeFileAccess.ts:117-127,174-179`）→ path 置 null 或对该前缀禁用监控。
+14. 搜索"下一个/上一个"偷焦点（`useDocumentSearch.ts:38-45` → `MarkdownEditor.tsx:116-125`）→ 提供不抢焦点的选区高亮。
+15. 大纲目标标题集与 DOM 实际 id 不一致（`markdownOutline.ts` 仅顶层 heading，`markdownSanitize.ts:104-117` 对全部 h1-h5 含原始 HTML 标题赋 id）→ 含 `<h1>` 原始 HTML 的文档中大纲跳转指错标题。
+16. 保存成功后 `clearCurrentDraft()` 可能清掉保存期间新写入的备份 → 按内容比较后再清。
+17. 启动文件异步返回晚于用户手动打开时会覆盖用户选择（`useDocumentController.ts:148-160`）。
+18. `restorePendingDraft` 在 `await openMarkdownFileAtPath` 期间用户输入会被无确认覆盖（`:454-486`）。
+19. 冷启动首次"打开 md 链接+跳标题"可能静默丢失（`useOutlineNavigation.ts:126-140`，懒 chunk 未就绪即放弃、无重试）。
+
+### 低（择要，按领域）
+
+**Rust**：保存 TOCTOU 窗口（版本号仅防前端陈旧编辑）；每次远程取图新建 `reqwest::Client` 无连接复用；文件监视无去重/上限（前端不 stop 会泄漏句柄）；`can_install_python()` 每次状态查询 spawn 子进程；DOCX install 与并发 import 的 rename 竞态；`reveal_file_in_folder` 不校验扩展名；命令处理器 `expect("…poisoned")` 风格不一致；HTML/DOCX 导出非原子写（会留半截文件）；重启后不恢复"活动文档根"（fail-closed，行为性差异）；`check_packages` Python 路径转义脆弱；`opener:allow-open-url` 与 `core:default` 能力面可按需收敛；生产 CSP `img-src https:` 偏宽（与 H1 联动收敛）；`docx_import.rs:444` 冗余 `env::var_os`。
+
+**组件/领域**：SVG 作为本地图片/放行 `data:image/svg+xml`（img 上下文不执行脚本，但有外部请求跟踪向量）；硬编码英文 a11y 标签（`EditorStatusBar.tsx:31`、`MarkdownPreview.tsx:115`）且 `defaultPreviewLabels` 与 `i18n.ts` en 文案重复；`MarkdownEditor.tsx:128-171` 五个命令函数结构重复；`containsMarkdownMath` 启发式过宽（任意非转义 `$` 即加载数学管线）；`getCursorPosition` 大文档 O(n)。
+
+**构建/脚本/Edge**：`bundle:check` 懒加载判定基于 chunk 文件名 token，误静态引入时可能漏报；E2E 注入钩子 `window.__MDVIEW_E2E_FILE_ACCESS__` 随桌面生产包发布（`main.tsx:36`）；Edge 只读图片申请 `readwrite`（`edgeFileAccess.ts:107-111`）；Edge 后台静默 catch 可能复用上一次导入残留（`edge/background.ts:47-49`）；`latest.json` 缺失时检查更新报 404 而非"已是最新"；`sync-version.mjs` 正则只替换首个 `"version"`；`decodeURIComponent` 无容错（非法 `%` 序列抛 URIError）。
+
+**Hooks/平台层**：state updater 内含 `setStatusMessage` 副作用；`getErrorMessage` 回退硬编码英文（中文 UI 下显英文）；每次选区变化触发整树重渲染（`App.tsx:597`，工具栏/编辑器未 memo）；非原生模式 Ctrl+O/S preventDefault 后无动作无提示；使用已废弃 `navigator.platform`；版本号双源（`appInfo.ts` vs `tauri.conf.json`）可漂移；Edge IDB `registerHandle` 同文件重复记录无上限、`withStore` 同步抛错时 Promise 永不落定、`isImportedPage` 的 title 校验与 `title || 'webpage.md'` 矛盾（title 缺失时导入被静默丢弃）；`retryFailedImages` 先清列表再导入、在途导入时列表消失但未重试；`checkCurrentFile` 空 catch 吞一切；关键操作使用原生 `window.confirm`；`MathEditorDialog.onConfirm` 闭包旧 value；`useAppUpdater` distribution 初始 'unsupported' 时点击检查更新直接报 failed；`tauriFileAccess` 模块加载时冻结 `isTauriRuntime()`，"纯浏览器模式"非独立实现。
+
+## 做得好的地方
+
+1. **质量门禁全绿**（本机验证）：225 个单测/48 文件通过、ESLint 零告警、生产构建 + 启动分块预算通过；仓库无 skip/todo 测试。
+2. **XSS 纵深防御且经源码级核对**：`rehype-sanitize` 严格白名单（strip script/svg/iframe 等、剔除 `on*`、`safeProtocol` 严格首冒号协议匹配）+ `urlTransform` 二次过滤 + CSP（`script-src 'self'`、`object-src/frame-src 'none'`、`base-uri 'none'`）+ Mermaid `strict`+`htmlLabels:false`+渲染后 SVG 白名单清洗 + KaTeX `trust:false` —— 未发现可确认的脚本执行漏洞。
+3. **Rust 侧安全与工程质量**：全程无 `unsafe`；未引入 `tauri-plugin-fs`，用受 `FileAccessPolicy`（canonicalize + starts_with + 扩展名白名单）门禁的自定义命令；`atomic_write_file`（临时文件 + sync_all + 失败清理）带测试；保存用 SHA-256 版本号乐观并发。
+4. **更新链安全**：HTTPS endpoint + minisign 公钥内嵌/私钥仅存 CI secrets；manifest 生成脚本强制 GitHub 域名、校验 `.sig` 与 MSI 匹配、有专门单测；安装版走签名更新、便携版降级到 Releases。
+5. **版本治理闭环**：单一事实源 + `version:sync/check` 覆盖 9 处（含 README 三处、Cargo.lock、edge manifest），三个 CI 入口 + 本地打包脚本全部门禁，release 强制 tag==版本。
+6. **架构与竞态防御**：平台抽象（`FileAccess`/`AppUpdateClient`/`WindowFrame` 接口 + 入口注入）边界干净；异步竞态防御成体系（documentRef 回读、path/revision 双校验、requestId 序号、外部监控串行化）；监听/订阅清理彻底；i18n 类型由 en 结构派生（zh 被编译器结构校验）。
+7. **文档**：双语 README 完整、TODO.md 是带完成状态与验收标准的结构化路线图，P0 安全项均已完成并有对应测试。
+
+## 建议修复顺序
+
+**P0（建议下个版本前，均有明确低成本方案）**
+1. S1 保存文档身份校验 + 竞态测试
+2. H1 SSRF：私网/回环过滤 + 重定向复检
+3. H2 `open_markdown_file_at_path` 不再无条件持久化授权
+4. H3 `file://` 点击层 `preventDefault` + CSP `navigate-to 'self'`
+
+**P1（近期）**
+5. H4 预览/编辑器错误边界
+6. H5 启动初始化 catch + StrictMode 消费式读取
+7. H6 IME 组合输入跳过历史记录
+8. TypeScript 开启 `strict`（分步）
+9. CI 增加 `npm audit`/`cargo audit` 门禁、Edge 移除 `tabs` 权限
+
+**P2（体验与性能）**
+10. 搜索高亮增量化、大文档虚拟化、编辑器历史按字节封顶
+11. 生产构建 E2E 变体
+12. 其余中/低危项按 TODO.md 既有节奏推进
