@@ -7,7 +7,7 @@
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
     <a href="https://github.com/isunky/MDView/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/isunky/MDView/actions/workflows/ci.yml/badge.svg" /></a>
-    <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
+    <a href="LICENSE"><img alt="GPL-3.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
     <img alt="Windows, macOS, and Edge" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Edge-334155?style=flat-square" />
   </p>
 
@@ -221,7 +221,7 @@ macOS 签名状态 / macOS signing status:
 | Version | 3.4.0 |
 | 平台 / Platforms | Windows · macOS · Microsoft Edge extension |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
-| 许可证 / License | [Apache-2.0](LICENSE) |
+| 许可证 / License | [GPL-3.0](LICENSE)（项目自有代码 / Project code；第三方依赖遵循各自原许可证 / third-party dependencies retain their original licenses） |
 
 </details>
 

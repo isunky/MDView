@@ -40,6 +40,6 @@ The current ad-hoc signature prevents the damaged-app error for downloads from G
 
 ## License / 许可证
 
-MDView is distributed under the [Apache-2.0 License](LICENSE).
+MDView is distributed under the [GNU General Public License v3.0](LICENSE).
 
-MDView 使用 [Apache-2.0 License](LICENSE) 发布。
+MDView 使用 [GNU General Public License v3.0](LICENSE) 发布。
