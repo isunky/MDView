@@ -1,126 +1,161 @@
 <div align="center">
-  <img src="src/assets/app-icon.png" alt="MDView logo" width="104" height="104" />
+  <img src="src/assets/app-icon.png" alt="MDView logo" width="96" height="96" />
   <h1>MDView</h1>
-  <p><strong>打开 Markdown，专注阅读，随手编辑。</strong></p>
-  <p>Read Markdown comfortably. Make quick edits. Keep your files local.</p>
-
+  <p><strong>为阅读而设计的 Markdown 工具。</strong><br />A Markdown app built for reading.</p>
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
-    <a href="https://github.com/isunky/MDView/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/isunky/MDView/actions/workflows/ci.yml/badge.svg" /></a>
     <a href="LICENSE"><img alt="GPL-3.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
     <img alt="Windows, macOS, and Edge" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Edge-334155?style=flat-square" />
   </p>
-
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><strong>下载 / Download</strong></a>
     · <a href="#中文">中文</a>
     · <a href="#english">English</a>
-    · <a href="#macos-build">Mac 源码编译 / Build for Mac</a>
+    · <a href="#macos-build">Mac 编译 / Build for Mac</a>
   </p>
-
-  <p>
-    <strong>Version / 版本：</strong>3.4.0
-    · <a href="https://www.sunky.net">Sunky</a>
-  </p>
+  <p><strong>Version / 版本：</strong>3.4.0 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
 
-## 界面预览 / Interface Preview
+## 界面预览 / Preview
 
 <table>
   <tr>
-    <td width="50%" align="center"><strong>阅读工作区 / Reading workspace</strong></td>
-    <td width="50%" align="center"><strong>欢迎页 / Welcome screen</strong></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <a href="main2.png">
-        <img src="main2.png" alt="MDView 阅读工作区，展示 Markdown 预览与目录导航" width="100%" />
-      </a>
+    <td width="50%" align="center">
+      <a href="main2.png"><img src="main2.png" alt="MDView 阅读工作区与目录导航 / Reading workspace and outline" width="100%" /></a>
+      <br /><sub>阅读工作区 / Reading workspace</sub>
     </td>
-    <td width="50%" valign="top">
-      <a href="main.png">
-        <img src="main.png" alt="MDView 欢迎页，展示打开文件与最近文件入口" width="100%" />
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <sub>目录导航、沉浸预览与长文档阅读<br />Outline navigation, focused preview, and long-document reading</sub>
-    </td>
-    <td align="center">
-      <sub>快速打开、新建和继续最近文档<br />Open, create, or continue recent documents</sub>
+    <td width="50%" align="center">
+      <a href="main.png"><img src="main.png" alt="MDView 欢迎页与最近文件 / Welcome screen and recent files" width="100%" /></a>
+      <br /><sub>欢迎页 / Welcome screen</sub>
     </td>
   </tr>
 </table>
 
-<p align="center"><sub>点击截图查看原图 · Click either screenshot to view it at full size.</sub></p>
-
 ## 中文
 
-MDView 让本地 Markdown 文件像普通文档一样方便阅读。打开笔记、项目说明或长篇资料，用目录快速找到内容；需要修改时，切到编辑或分屏视图，边写边看效果。文档保存在自己的电脑上，不需要注册账号。
+从一份 README 到一篇长文档，MDView 让你打开就能读，需要时也能直接修改。它以阅读为中心，将目录导航、清晰排版和实用编辑放在同一个窗口。无需账号，文件始终由你自己管理。
 
-- **长文档也好读**：可折叠目录支持一至五级标题、点击跳转与当前章节高亮。调整目录宽度、阅读缩放和视图后，再次打开同一文件可以继续上次的阅读现场。
-- **按自己的习惯阅读**：浅色、深色或跟随系统，自由调整字体、字号、行距和正文宽度。表格、任务列表、代码、Mermaid 图表与 LaTeX 公式都能直接预览。
-- **修改几处，也很顺手**：在源码编辑器中快速插入标题、列表、表格和公式，使用查找替换、撤销重做与语法参考；分屏时可同步滚动正文和预览。未保存内容提供本地草稿备份与恢复。
-- **图片和文档连得起来**：批量选择、粘贴或拖入图片，自动保存到文档旁的 `assets` 文件夹并插入引用；支持相对路径图片、本地 Markdown 链接和最近文件列表。
-- **方便交换和分享**：导出 Word、独立 HTML，或通过系统打印生成 PDF。也可将 Word `.docx` 导入为 Markdown 草稿，转换在本机完成；首次使用需要准备 Python 和转换组件，下载这些组件需要联网。
+**长文档，读得有条理**
 
-第一次使用：从下方选择适合你的版本，打开一个 `.md` 文件即可开始阅读。Windows 安装版可关联 Markdown 文件，之后双击文件就能打开 MDView。
+用可折叠目录浏览结构，点击标题直达正文。章节高亮跟随阅读位置，再次打开时接着上次读。明暗主题、字体与页面宽度都可以按习惯调整。
+
+**图表与公式，随正文一起呈现**
+
+从代码片段、表格到 Mermaid 流程图、LaTeX 公式，在同一篇文档中直接查看。阅读技术说明或项目方案时，文字和图示连贯呈现。
+
+**看到哪里，改到哪里**
+
+随时切换源码编辑，或在分屏中对照预览修改，两侧同步滚动。粘贴图片即可插入，表格和公式也有快捷入口；查找替换与草稿恢复照顾日常编辑。
+
+**用 Markdown 写，用需要的格式交付**
+
+将 Word 导入为 Markdown 继续整理，再导出为 Word、独立 HTML，或通过系统打印生成 PDF。保留便于维护的文本，也方便与使用不同工具的人协作。
 
 ## English
 
-MDView makes local Markdown files comfortable to read. Open notes, project documentation, or a long reference, then use the outline to find what you need. Switch to Edit or Split view to make changes and see the result. Your documents stay on your computer, with no account required.
+From a README to a lengthy technical document, MDView opens your Markdown for reading and keeps editing close at hand. Navigation, typography, and practical editing tools share one window. No account required; you manage your own files.
 
-- **Navigate long documents**: a collapsible outline supports heading levels one through five, section jumps, and current-section highlighting. Reopen a file to restore its reading position, zoom, view, and outline preferences.
-- **Read your way**: choose light, dark, or system appearance and adjust the font, size, line spacing, and page width. Preview tables, task lists, code, Mermaid diagrams, and LaTeX formulas.
-- **Make quick edits**: insert headings, lists, tables, and formulas in the source editor, with find and replace, undo and redo, and a syntax reference. Split view can scroll the editor and preview together. Local draft backups help recover unsaved work.
-- **Keep images and files connected**: select, paste, or drop images to save them in an `assets` folder beside your document and insert their references. Relative image paths, local Markdown links, and recent files are supported.
-- **Share in familiar formats**: export Word or standalone HTML, or create a PDF through system printing. Import Word `.docx` files as Markdown drafts using a local converter; initial setup requires Python and conversion components, which need internet access to download.
+**Find your place in long documents**
 
-To get started, choose a version below and open a `.md` file. The Windows installer can associate Markdown files with MDView so you can open them with a double-click.
+Explore a collapsible outline and jump straight to a section. The current heading stays highlighted as you scroll, and reopening a file brings you back to where you left off. Adjust the theme, font, and page width to suit your reading habits.
 
-### 数学公式 / Math formulas
+**Read diagrams and formulas in context**
 
-行内公式使用 `$...$`，独立公式块使用单独成行的 `$$`。编辑模式可点击 `Σ` 打开公式面板，通过模板、LaTeX 输入和实时预览快速插入或修改公式。需要原样显示美元符号时请写为 `\$`。
+View code, tables, Mermaid diagrams, and LaTeX formulas alongside the text they explain. Technical notes and project documentation stay readable in a single view.
 
-Use `$...$` for inline math and `$$` on separate lines for display math. In Edit mode, click `Σ` to insert or update a formula with templates and a live LaTeX preview. Escape a literal dollar sign as `\$`.
+**Edit as you read**
 
-## 下载 / Download
+Switch to source editing or compare your changes with a synchronized split preview. Paste images directly and insert tables or formulas from the toolbar. Find and replace and draft recovery support everyday revisions.
 
-从 [GitHub Releases](https://github.com/isunky/MDView/releases/latest) 获取最新版本。
-Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/releases/latest).
+**Write in Markdown. Share in the format you need.**
 
-| 平台 / Platform | 包 / Package | 说明 / Notes |
-| --- | --- | --- |
-| Windows | MSI | 日常使用推荐；可关联文件并检查更新，安装界面为英文 / Recommended for everyday use; file associations and update checks, with an English installer |
-| Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
-| macOS | 源码编译 / Build from source（推荐 / Recommended） | 因签名与公证尚未完善，建议在自己的 Mac 上编译；[查看步骤 / Instructions](#macos-build) |
-| macOS | Universal DMG | 供尝试，支持 Intel 与 Apple Silicon，macOS 10.15+；首次打开可能被系统拦截 / Optional prebuilt package for Intel and Apple Silicon, macOS 10.15+; macOS may block first launch |
-| Microsoft Edge | Extension ZIP | 解压后在 `edge://extensions` 开启开发人员模式，选择“加载解压缩的扩展”并选中含 `manifest.json` 的文件夹 / Extract, enable Developer mode at `edge://extensions`, then load the folder containing `manifest.json` |
+Import a Word document to continue working in Markdown, then export to Word or standalone HTML, or print to PDF. Keep an editable text source while sharing documents with people who use different tools.
 
-Windows MSI 安装时可选择是否关联 `.md` 和 `.markdown`，默认开启。静默部署可传入 `ASSOCIATE_MARKDOWN_FILES=0` 禁用关联：
+## 下载与安装 / Installation
+
+从 [GitHub Releases](https://github.com/isunky/MDView/releases/latest) 选择适合的版本。 / Choose a package from GitHub Releases.
+
+| 平台 / Platform | 推荐方式 / Recommended option |
+| --- | --- |
+| Windows | **MSI**：安装、文件关联与更新检查 / Installer, file associations, and update checks |
+| Windows 绿色版 / Portable | **ZIP**：解压后运行 / Extract and run |
+| macOS | **[本机源码编译 / Local build](#macos-build)**：推荐使用 AI 编程工具辅助 / AI-assisted build recommended |
+| Microsoft Edge | **Extension ZIP**：解压后加载 / Extract and load unpacked |
+
+**Windows：**需要预先安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)，MDView 不附带或下载运行时。MSI 安装界面为英文，应用支持中英文。
+
+**macOS：**预编译 Universal DMG 支持 Intel 与 Apple Silicon（macOS 10.15+），但仅有 ad-hoc 签名，尚未完成 Developer ID 签名与 Apple 公证，可能被系统拦截。建议下载源码，在自己的 Mac 上编译。
+
+<details>
+<summary>English installation notes</summary>
+
+Windows requires WebView2 Runtime to be installed separately; MDView does not bundle or download it. The MSI uses an English installer; the app supports Chinese and English.
+
+The macOS Universal DMG supports Intel and Apple Silicon on macOS 10.15+. It uses ad-hoc signing without Developer ID signing or Apple notarization and may be blocked by macOS. We recommend building from source on your own Mac.
+
+</details>
+
+<details>
+<summary>Edge 扩展与 Windows 部署 / Edge and Windows deployment</summary>
+
+**Edge：**在 `edge://extensions` 开启开发人员模式，选择“加载解压缩的扩展”，选中解压后含 `manifest.json` 的文件夹。
+
+**Edge:** enable Developer mode at `edge://extensions`, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
+
+**Windows：**MSI 默认关联 `.md` 和 `.markdown`，安装时可取消。静默安装时可通过以下参数禁用关联，请替换为实际 MSI 文件名。
+
+**Windows:** Markdown associations are enabled by default and can be deselected. To disable them during unattended installation, replace the example filename below with your MSI:
 
 ```powershell
 msiexec /i MDView_x64.msi ASSOCIATE_MARKDOWN_FILES=0 /qn
 ```
 
-The Windows MSI lets you opt out of `.md` and `.markdown` associations, which are enabled by default. For unattended deployment, pass `ASSOCIATE_MARKDOWN_FILES=0` as shown above.
+签名状态以各版本发布说明为准；详见[代码签名政策](CODE_SIGNING_POLICY.md)。 / See each release's signing status and the [code signing policy](CODE_SIGNING_POLICY.md).
 
-Windows MSI 和 Portable ZIP 不内嵌、下载或安装 WebView2。运行 MDView 前，请确保系统已经安装 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)；应用界面仍会根据系统语言显示中文或英文。
+</details>
 
-The Windows MSI and Portable ZIP do not bundle, download, or install WebView2. Before running MDView, ensure that [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) is installed. The app UI still follows the system language and supports both Chinese and English.
+<a id="macos-build"></a>
 
-> 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
-> Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
+## Mac 源码编译 / Build for Mac
 
-> **Mac 用户建议优先下载源码，在自己的 Mac 上编译。** 当前发布包仅使用 ad-hoc 签名，尚未配置 Apple Developer ID 签名与公证，下载的 DMG 仍可能被系统拦截。已有构建环境的用户可按[源码编译步骤](#macos-build)生成自用版本；本地编译不等于通过 Apple 公证，也不能保证消除所有安全提示。
->
-> **For Mac users, we recommend downloading the source and building on your own Mac.** Release packages use ad-hoc signing without Apple Developer ID signing or notarization, so macOS may still block the downloaded DMG. Follow the [build instructions](#macos-build) for a personal build. Building locally does not notarize the app or guarantee that every security prompt disappears.
+**推荐使用 AI 编程工具辅助编译。** 从 [Releases](https://github.com/isunky/MDView/releases/latest) 下载所需版本的 **Source code (zip)** 并解压，在 Mac 上用支持本地终端的 AI 编程工具打开项目目录，然后发送：
 
-签名政策与发布审批流程见 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
-See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and release approval process.
+> 请在这台 Mac 上编译 MDView。先检查 Node.js 24、Rust/Cargo stable 和 Xcode Command Line Tools，说明缺失依赖并协助安装；按照项目配置执行 npm ci 和 npm run desktop:build -- --bundles dmg。遇到构建错误请定位原因，修复后重试。完成后确认 DMG 已生成，提供完整路径和安装步骤。沿用项目的 ad-hoc 签名配置，不关闭系统安全机制。
 
-## 快捷键 / Shortcuts
+**AI-assisted builds are recommended.** Download and extract a release's **Source code (zip)**, open the project in an AI coding tool with local terminal access on your Mac, and use this prompt:
+
+> Build MDView on this Mac. Check Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools; explain missing dependencies and help install them. Follow the project configuration to run npm ci and npm run desktop:build -- --bundles dmg. Diagnose build failures, fix them, and retry. Confirm the DMG exists and provide its full path and installation steps. Keep the project's ad-hoc signing configuration and leave system security protections enabled.
+
+首次准备依赖需要联网。默认产物位于 `src-tauri/target/release/bundle/dmg/`，打开 DMG 后将 MDView 拖入“应用程序”。本地编译不等于 Apple 公证，也不保证消除所有安全提示。
+
+Initial dependency setup requires internet access. Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView into Applications. A local build is not Apple-notarized and may still show security prompts.
+
+<details>
+<summary>手动编译 / Manual build</summary>
+
+准备 [Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo stable](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
+
+Install Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools. See the Tauri prerequisites linked above.
+
+```bash
+# 仅在缺少 Apple 编译工具时执行 / Only if Apple's build tools are missing
+xcode-select --install
+
+# 在解压后的源码目录执行 / Run from the extracted source directory
+npm ci
+npm run desktop:build -- --bundles dmg
+```
+
+默认构建当前 Mac 架构的版本。签名机制参见 [Tauri macOS 签名说明](https://v2.tauri.app/distribute/sign/macos/)。
+
+The default build targets your Mac's architecture. See the Tauri macOS signing guide above for signing details.
+
+</details>
+
+## 使用参考 / Reference
+
+<details>
+<summary>常用快捷键 / Keyboard shortcuts</summary>
 
 | 操作 / Action | Windows | macOS |
 | --- | --- | --- |
@@ -130,146 +165,83 @@ See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and 
 | 另存为 / Save As | `Ctrl+Shift+S` | `Command+Shift+S` |
 | 查找 / Find | `Ctrl+F` | `Command+F` |
 | 撤销 / Undo | `Ctrl+Z` | `Command+Z` |
-| 重做 / Redo | `Ctrl+Y` 或 `Ctrl+Shift+Z` | `Command+Shift+Z` |
+| 重做 / Redo | `Ctrl+Y` / `Ctrl+Shift+Z` | `Command+Shift+Z` |
 | 粗体 / Bold | `Ctrl+B` | `Command+B` |
 | 斜体 / Italic | `Ctrl+I` | `Command+I` |
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |
-| 缩进 / 反向缩进 | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
+| 缩进 / 反向缩进 / Indent / Outdent | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
 
-## 源码编译与开发 / Build from source and development
+</details>
 
-以下内容适合希望自行编译或参与开发的用户。Windows 用户通常直接下载 MSI 即可；macOS 用户建议先阅读下面的本机编译说明。
-This section is for building or contributing to MDView. Windows users can usually use the MSI directly; Mac users should read the local build instructions below.
+<details>
+<summary>Word 导入 / Word import</summary>
 
-<a id="macos-build"></a>
+Word 转换在本机完成。首次使用需要 Python 和转换组件，下载组件需要联网。
 
-### 在 Mac 上自行编译 / Build on your Mac
+Word conversion runs locally. Initial setup requires Python and conversion components, with internet access for downloads.
 
-由于官方发布包尚未完成 Developer ID 签名与 Apple 公证，**目前更推荐 Mac 用户自行下载源码编译**。需要一台 Mac、[Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo（stable）](https://rustup.rs/) 和 Xcode Command Line Tools。环境准备可参考 [Tauri 官方说明](https://v2.tauri.app/start/prerequisites/)。首次安装依赖和构建需要联网。
+</details>
 
-Until release packages have Developer ID signing and Apple notarization, **building from source on your own Mac is the recommended option**. Install Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools using the links above. Initial dependency installation and compilation require internet access.
+<details>
+<summary>数学公式 / Math formulas</summary>
 
-1. 在终端运行以下命令安装 Apple 编译工具；已安装则跳过。Install Apple's command-line tools, if needed:
+使用 `$...$` 插入行内公式，单独成行的 `$$` 包裹公式块。编辑时点击 `Σ` 可使用公式模板与实时预览；普通美元符号写为 `\$`。
 
-   ```bash
-   xcode-select --install
-   ```
+Use `$...$` for inline math and `$$` on separate lines for display math. Click `Σ` for templates and a live preview. Escape a literal dollar sign as `\$`.
 
-2. 下载源码。在 [Releases](https://github.com/isunky/MDView/releases/latest) 选择所需版本的 **Source code (zip)** 并解压，在终端进入该目录；也可用以下命令获取最新开发代码。Download and extract a release's **Source code (zip)** and open its directory in Terminal, or clone the latest development code:
+</details>
 
-   ```bash
-   git clone https://github.com/isunky/MDView.git
-   cd MDView
-   ```
+<details>
+<summary>开发与打包 / Development and packaging</summary>
 
-3. 安装依赖并生成 DMG。Install dependencies and build:
+技术栈 / Stack：Tauri 2 · React 19 · TypeScript · Vite。
 
-   ```bash
-   npm ci
-   npm run desktop:build -- --bundles dmg
-   ```
-
-构建完成后，在 `src-tauri/target/release/bundle/dmg/` 打开生成的 `.dmg`，将 MDView 拖入“应用程序”。默认生成适合当前 Mac 架构的版本；自用不需要构建 Universal 包。
-
-Open the generated `.dmg` in `src-tauri/target/release/bundle/dmg/` and drag MDView into Applications. The default build targets your Mac's architecture; a Universal build is unnecessary for personal use.
-
-本地构建使用项目配置中的 ad-hoc 签名，无需提供付费 Apple Developer 证书。若向其他人分发，仍需另行处理签名和公证；详见 [Tauri macOS 签名说明](https://v2.tauri.app/distribute/sign/macos/)。
-
-Local builds use the project's ad-hoc signing configuration without a paid Apple Developer certificate. Distribution to other users still requires considering signing and notarization; see the Tauri macOS signing guide above.
-
-### 开发与验证 / Develop and verify
-
-需要 Node.js 24、Rust/Cargo，以及对应平台的[桌面构建工具链](https://v2.tauri.app/start/prerequisites/)。在源码目录运行：
-Requires Node.js 24, Rust/Cargo, and your platform's desktop build tools. From the source directory:
+准备 Node.js 24、Rust/Cargo 和[对应平台构建工具](https://v2.tauri.app/start/prerequisites/)，在源码目录运行： / Install Node.js 24, Rust/Cargo, and platform build tools, then run from the source directory:
 
 ```bash
 npm ci
 npm run desktop:dev
 ```
 
-质量检查 / Quality checks:
-
-```bash
-npm run test
-npm run lint
-npm run build
-npm run test:e2e
-npm run edge:package
-```
-
-### 构建 / Packaging
-
 | 目标 / Target | 命令 / Command |
 | --- | --- |
 | Windows MSI | `npm run desktop:build -- --bundles msi` |
-| Windows MSI + Portable ZIP + checksums | `npm run package:windows` |
-| macOS DMG | `npm run desktop:build -- --bundles dmg` (ad-hoc signed by default) |
-| Edge extension ZIP | `npm run edge:package` |
+| Windows MSI + Portable ZIP + SHA-256 | `npm run package:windows` |
+| macOS DMG | `npm run desktop:build -- --bundles dmg` |
+| Edge ZIP | `npm run edge:package` |
 
-同步所有版本文件 / Synchronize all version files:
+验证命令 / Verification：`npm test` · `npm run lint` · `npm run build` · `npm run test:e2e`。
 
-```bash
-npm run version:sync -- 2.0.1
-npm run version:check
-```
-
-<details>
-<summary><strong>CI、发布与签名 / CI, release, and signing</strong></summary>
-
-GitHub Actions 会执行单元测试、ESLint、前端构建和 Playwright E2E 测试。手动运行 CI 可生成 Windows MSI、Portable ZIP 和 macOS Universal DMG；推送 `v*` Tag 或运行 Release 工作流可创建 GitHub Release。
-
-GitHub Actions runs unit tests, ESLint, frontend builds, and Playwright E2E tests. A manual CI run can build Windows MSI, Portable ZIP, and macOS Universal DMG packages. Push a `v*` tag or run the Release workflow to create a GitHub Release.
-
-Edge 扩展使用 MV3，仅在点击扩展图标或页面右键菜单时读取当前页面；本地文件通过浏览器文件选择器授权，最近文件只保存浏览器持久化的文件句柄。首次发布必须在 Microsoft Partner Center 手动创建产品；之后可配置 `EDGE_ADDONS_API_KEY` Secret 以及 `EDGE_ADDONS_CLIENT_ID`、`EDGE_ADDONS_PRODUCT_ID` Variables，让 `v*` tag 自动上传并提交更新。
-
-The Edge extension uses MV3 and reads a page only after an action-button or context-menu command. Local files use browser-granted file handles, and recent files retain only those browser-persisted handles. The first product must be created manually in Microsoft Partner Center; afterwards configure the `EDGE_ADDONS_API_KEY` secret plus `EDGE_ADDONS_CLIENT_ID` and `EDGE_ADDONS_PRODUCT_ID` variables to upload and submit updates from `v*` tags.
-
-Windows 发布签名 / Windows release signing:
-
-- 申请并配置 [SignPath Foundation](https://signpath.org/) 后，在 GitHub Actions Secrets 中设置 `SIGNPATH_API_TOKEN`。
-- 在 GitHub Actions Variables 中设置 `SIGNPATH_ORGANIZATION_ID`。
-- 仅 Release 工作流请求 SignPath 签名；普通 CI 构建保持未签名。
-- After configuring [SignPath Foundation](https://signpath.org/), set `SIGNPATH_API_TOKEN` in GitHub Actions Secrets and `SIGNPATH_ORGANIZATION_ID` in GitHub Actions Variables. Only the Release workflow requests signing; regular CI builds remain unsigned.
-
-Tauri 自动更新签名 Secrets / Tauri updater signing secrets:
-
-- `TAURI_SIGNING_PRIVATE_KEY`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
-
-macOS 签名状态 / macOS signing status:
-
-- 当前构建仅使用 ad-hoc 签名，不能保证下载的应用通过 macOS 安全检查；建议自用时按上面的步骤在本机编译。
-- Apple Developer ID 签名、公证和 stapling 尚未配置；取得付费 Apple Developer Program 凭据后，再将其接入 Release 工作流。
-- Current builds use ad-hoc signing, which does not guarantee downloaded apps pass macOS security checks; local builds are recommended for personal use.
-- Developer ID signing, notarization, and stapling will be added after paid Apple Developer Program credentials are available.
+版本管理 / Versioning：`npm run version:sync -- <major.minor.patch>`，然后 / then `npm run version:check`。
 
 </details>
 
-## 技术栈 / Stack
-
-| 层 / Layer | 技术 / Technology |
-| --- | --- |
-| Desktop | Tauri 2 |
-| Frontend | React 19 · TypeScript · Vite |
-| Markdown | react-markdown · remark-gfm · rehype-highlight · Mermaid |
-| Quality | Vitest · Testing Library · Playwright · ESLint · GitHub Actions |
-
 <details>
-<summary><strong>项目信息 / Project information</strong></summary>
+<summary>CI、发布与签名 / CI, releases, and signing</summary>
+
+普通推送与 PR 执行质量检查；手动运行 CI 额外生成桌面安装包。推送 `v*` Tag 或运行 Release 工作流可发布 GitHub Release。
+
+Pushes and PRs run quality checks; manual CI runs also build desktop installers. A `v*` tag or the Release workflow publishes a GitHub Release.
+
+| 集成 / Integration | 配置 / Configuration |
+| --- | --- |
+| Windows SignPath | Secret: `SIGNPATH_API_TOKEN`；Variable: `SIGNPATH_ORGANIZATION_ID` |
+| Tauri updater | Secrets: `TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
+| Edge Add-ons | Secret: `EDGE_ADDONS_API_KEY`；Variables: `EDGE_ADDONS_CLIENT_ID`、`EDGE_ADDONS_PRODUCT_ID` |
+
+SignPath 签名仅用于 Release，需完成配置与审批；Edge 首次发布需在 Microsoft Partner Center 创建产品。macOS Developer ID 签名与公证尚未配置。
+
+SignPath signing applies to releases after configuration and approval. Create the initial Edge product in Microsoft Partner Center. macOS Developer ID signing and notarization are not yet configured.
+
+</details>
+
+## 项目信息 / Project
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
 | 当前版本 | 3.4.0 |
 | Version | 3.4.0 |
-| 平台 / Platforms | Windows · macOS · Microsoft Edge extension |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
-| 许可证 / License | [GPL-3.0](LICENSE)（项目自有代码 / Project code；第三方依赖遵循各自原许可证 / third-party dependencies retain their original licenses） |
+| 许可证 / License | [GPL-3.0](LICENSE) |
 
-</details>
-
----
-
-<p align="center">
-  Built for Markdown readers who value clarity.<br />
-  为重视清晰阅读体验的人而设计。
-</p>
+第三方依赖保留原许可证。 / Third-party dependencies retain their original licenses.
