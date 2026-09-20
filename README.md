@@ -1,7 +1,7 @@
 <div align="center">
   <img src="src/assets/app-icon.png" alt="MDView logo" width="96" height="96" />
   <h1>MDView</h1>
-  <p><strong>面向 AI 时代的轻量 Markdown 阅读器。</strong><br />A lightweight Markdown reader for the AI era.</p>
+  <p><strong>面向 AI 场景的轻量 Markdown 阅读器。</strong><br />A lightweight Markdown reader for AI workflows.</p>
   <p>美观易读 · 打开轻快 · 免费无广告<br />Beautifully readable · Quick to open · Free and ad-free</p>
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
