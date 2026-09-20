@@ -14,7 +14,7 @@
     · <a href="#english">English</a>
     · <a href="#ai-build">AI 辅助编译 / Build with AI</a>
   </p>
-  <p><strong>Version / 版本：</strong>3.4.0 · <a href="https://www.sunky.net">Sunky</a></p>
+  <p><strong>Version / 版本：</strong>3.4.1 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
 
 ## 界面预览 / Preview
@@ -315,8 +315,8 @@ SignPath signing applies to releases after configuration and approval. Create th
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 3.4.0 |
-| Version | 3.4.0 |
+| 当前版本 | 3.4.1 |
+| Version | 3.4.1 |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [GPL-3.0](LICENSE) |
 
