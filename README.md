@@ -42,7 +42,7 @@ MDView 是一款轻量、美观、免费无广告的 Markdown 阅读器。将 AI
 
 **舒适阅读，自由排版**
 
-明暗主题与细致的文字排版，让内容清晰呈现。字体、字号、行距和正文宽度均可调整，找到适合自己的阅读方式。
+明暗主题与细致的文字排版，让内容清晰呈现。字体、字号、行距和正文宽度均可调整；Windows 和 macOS 还可直接选择电脑中已安装的字体，找到适合自己的阅读方式。
 
 **长篇文档，定位自如**
 
@@ -70,7 +70,7 @@ Reading comes first. Editing and conversion are close at hand when you need to r
 
 **A polished reading experience**
 
-Light and dark themes pair with carefully styled text. Adjust the font, size, line spacing, and page width to make reading comfortable.
+Light and dark themes pair with carefully styled text. Adjust the font, size, line spacing, and page width; on Windows and macOS, you can also choose any installed font for comfortable reading.
 
 **Pick up where you left off**
 

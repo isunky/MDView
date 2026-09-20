@@ -31,4 +31,15 @@ describe('readingTheme', () => {
     expect(getSystemReadingTheme()).toBe('dark')
     expect(document.documentElement.dataset.mdviewColorTheme).toBe('dark')
   })
+
+  it('quotes a custom font family and keeps a content fallback', () => {
+    applyReadingTheme({
+      ...DEFAULT_READING_PREFERENCES,
+      fontFamily: 'custom',
+      customFontFamily: 'Aptos "Display"',
+    }, 'light')
+
+    expect(document.documentElement.dataset.mdviewFontFamily).toBe('custom')
+    expect(document.documentElement.style.getPropertyValue('--reader-custom-font-family')).toBe('"Aptos \\"Display\\""')
+  })
 })

@@ -36,6 +36,7 @@ type UseOutlineNavigationOptions = {
   documentSessionId?: string
   content: string
   isPreview: boolean
+  readingFontKey: string
   previewZoom: number
   previewPanelRef: RefObject<HTMLElement | null>
   previewRef: RefObject<HTMLElement | null>
@@ -45,6 +46,7 @@ export function useOutlineNavigation({
   documentSessionId,
   content,
   isPreview,
+  readingFontKey,
   previewZoom,
   previewPanelRef,
   previewRef,
@@ -282,6 +284,7 @@ export function useOutlineNavigation({
     outlineWidth,
     previewPanelRef,
     previewRef,
+    readingFontKey,
     previewZoom,
     updateActiveOutlineFromPreview,
   ])

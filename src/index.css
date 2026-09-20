@@ -46,6 +46,7 @@
     radial-gradient(circle at 20% 0, rgba(15, 118, 110, 0.06), transparent 34%),
     linear-gradient(180deg, #fbfcfd 0, var(--preview-bg) 220px);
   --reader-font-family: var(--content-font);
+  --reader-custom-font-family: initial;
   --reader-font-size: 16px;
   --reader-line-height: 1.8;
   --reader-content-width: 940px;
@@ -131,6 +132,10 @@
 
 :root[data-mdview-font-family='monospace'] {
   --reader-font-family: var(--mono-font);
+}
+
+:root[data-mdview-font-family='custom'] {
+  --reader-font-family: var(--reader-custom-font-family), var(--content-font);
 }
 
 * {

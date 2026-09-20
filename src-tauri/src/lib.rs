@@ -4,6 +4,7 @@ mod file_watcher;
 mod fs_utils;
 mod image_utils;
 mod startup;
+mod system_fonts;
 
 use std::{
     collections::HashSet,
@@ -41,6 +42,7 @@ use image_utils::{
     create_image_asset_file, image_extension_for_mime_type, sanitize_image_filename_stem,
 };
 use startup::collect_opened_files_from_args;
+use system_fonts::list_system_font_families;
 
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
@@ -591,6 +593,7 @@ pub fn run() {
             read_remote_image_file,
             write_image_asset,
             reveal_file_in_folder,
+            list_system_font_families,
             get_app_distribution
         ])
         .setup(move |app| {

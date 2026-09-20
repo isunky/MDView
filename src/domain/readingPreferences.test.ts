@@ -25,9 +25,30 @@ describe('readingPreferences', () => {
     })).toEqual({
       themeMode: 'dark',
       fontFamily: 'serif',
+      customFontFamily: null,
       fontSize: 22,
       lineHeight: 1.65,
       contentWidth: 700,
+    })
+  })
+
+  it('restores a valid custom installed font and sanitizes its name', () => {
+    expect(normalizeReadingPreferences({
+      fontFamily: 'custom',
+      customFontFamily: '  Aptos "Display"\n  ',
+    })).toMatchObject({
+      fontFamily: 'custom',
+      customFontFamily: 'Aptos "Display"',
+    })
+  })
+
+  it('falls back to the default font when custom font data is incomplete', () => {
+    expect(normalizeReadingPreferences({
+      fontFamily: 'custom',
+      customFontFamily: '   ',
+    })).toMatchObject({
+      fontFamily: 'sans',
+      customFontFamily: null,
     })
   })
 

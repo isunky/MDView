@@ -18,6 +18,7 @@ type UseSplitScrollSyncOptions = {
   editorRef: RefObject<MarkdownEditorHandle | null>
   isSplit: boolean
   previewContent: string
+  readingFontKey: string
   previewPanelRef: RefObject<HTMLElement | null>
   previewRef: RefObject<HTMLElement | null>
   previewZoom: number
@@ -32,6 +33,7 @@ export function useSplitScrollSync({
   editorRef,
   isSplit,
   previewContent,
+  readingFontKey,
   previewPanelRef,
   previewRef,
   previewZoom,
@@ -197,7 +199,7 @@ export function useSplitScrollSync({
         window.cancelAnimationFrame(frameId)
       }
     }
-  }, [isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom])
+  }, [isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom, readingFontKey])
 
   useEffect(() => {
     if (isSplit && isEnabled) {

@@ -90,6 +90,7 @@ function App({
     resetPreferences: resetReadingPreferences,
     updatePreferences: updateReadingPreferences,
   } = useReadingPreferences()
+  const readingFontKey = `${readingPreferences.fontFamily}:${readingPreferences.customFontFamily ?? ''}`
   const {
     activeMenu,
     closeMenu,
@@ -266,6 +267,7 @@ function App({
     editorRef,
     isSplit: viewMode === 'split',
     previewContent,
+    readingFontKey,
     previewPanelRef,
     previewRef,
     previewZoom,
@@ -297,6 +299,7 @@ function App({
     documentSessionId,
     content: markdownDocument.content,
     isPreview: !isWelcomeVisible && viewMode === 'preview',
+    readingFontKey,
     previewZoom,
     previewPanelRef,
     previewRef,

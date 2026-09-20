@@ -24,9 +24,16 @@ export function applyReadingTheme(
   const root = document.documentElement
   root.dataset.mdviewColorTheme = effectiveTheme
   root.dataset.mdviewFontFamily = preferences.fontFamily
+  root.style.setProperty('--reader-custom-font-family', preferences.customFontFamily
+    ? quoteCssFontFamily(preferences.customFontFamily)
+    : 'initial')
   root.style.setProperty('--reader-font-size', `${preferences.fontSize}px`)
   root.style.setProperty('--reader-line-height', String(preferences.lineHeight))
   root.style.setProperty('--reader-content-width', `${preferences.contentWidth}px`)
+}
+
+function quoteCssFontFamily(fontFamily: string): string {
+  return `"${fontFamily.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]/g, ' ')}"`
 }
 
 export function bootstrapReadingTheme(loadPreferences: () => ReadingPreferences, resolveTheme: (preferences: ReadingPreferences, systemTheme: EffectiveReadingTheme) => EffectiveReadingTheme) {

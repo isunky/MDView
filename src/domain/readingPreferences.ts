@@ -1,10 +1,11 @@
 export type ReadingThemeMode = 'system' | 'light' | 'dark'
 export type EffectiveReadingTheme = 'light' | 'dark'
-export type ReadingFontFamily = 'sans' | 'serif' | 'monospace'
+export type ReadingFontFamily = 'sans' | 'serif' | 'monospace' | 'custom'
 
 export type ReadingPreferences = {
   themeMode: ReadingThemeMode
   fontFamily: ReadingFontFamily
+  customFontFamily: string | null
   fontSize: number
   lineHeight: number
   contentWidth: number
@@ -14,6 +15,7 @@ export const READING_PREFERENCES_STORAGE_KEY = 'mdview.readingPreferences.v1'
 export const DEFAULT_READING_PREFERENCES: ReadingPreferences = {
   themeMode: 'system',
   fontFamily: 'sans',
+  customFontFamily: null,
   fontSize: 16,
   lineHeight: 1.8,
   contentWidth: 940,
@@ -58,13 +60,19 @@ export function normalizeReadingPreferences(value: unknown): ReadingPreferences 
   }
 
   const preferences = value as Record<string, unknown>
+  const customFontFamily = normalizeCustomFontFamily(preferences.customFontFamily)
+  const requestedFontFamily = isReadingFontFamily(preferences.fontFamily)
+    ? preferences.fontFamily
+    : DEFAULT_READING_PREFERENCES.fontFamily
+
   return {
     themeMode: isReadingThemeMode(preferences.themeMode)
       ? preferences.themeMode
       : DEFAULT_READING_PREFERENCES.themeMode,
-    fontFamily: isReadingFontFamily(preferences.fontFamily)
-      ? preferences.fontFamily
-      : DEFAULT_READING_PREFERENCES.fontFamily,
+    fontFamily: requestedFontFamily === 'custom' && !customFontFamily
+      ? DEFAULT_READING_PREFERENCES.fontFamily
+      : requestedFontFamily,
+    customFontFamily,
     fontSize: clampPreferenceNumber(
       preferences.fontSize,
       READING_FONT_SIZE_RANGE,
@@ -95,7 +103,19 @@ function isReadingThemeMode(value: unknown): value is ReadingThemeMode {
 }
 
 function isReadingFontFamily(value: unknown): value is ReadingFontFamily {
-  return value === 'sans' || value === 'serif' || value === 'monospace'
+  return value === 'sans' || value === 'serif' || value === 'monospace' || value === 'custom'
+}
+
+function normalizeCustomFontFamily(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = Array.from(value, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0
+    return codePoint < 32 || codePoint === 127 ? ' ' : character
+  }).join('').trim()
+  return normalized.length > 0 && normalized.length <= 200 ? normalized : null
 }
 
 function clampPreferenceNumber(

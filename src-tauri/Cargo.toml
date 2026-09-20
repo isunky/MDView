@@ -34,3 +34,6 @@ notify = "8.2"
 
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-updater = "2"
+
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
+font-kit = "0.14.3"

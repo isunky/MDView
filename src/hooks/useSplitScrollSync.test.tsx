@@ -52,6 +52,7 @@ describe('useSplitScrollSync', () => {
       editorRef,
       isSplit: true,
       previewContent: Array.from({ length: 40 }, (_, index) => `Line ${index + 1}`).join('\n'),
+      readingFontKey: 'sans:',
       previewPanelRef,
       previewRef,
       previewZoom: 1,
