@@ -43,6 +43,7 @@ import { unified } from 'unified'
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
 import remarkMath from 'remark-math'
+import { remarkCjkStrong } from './remarkCjkStrong'
 import type { InlineMath, Math as MarkdownMath } from 'mdast-util-math'
 import { resolveLocalMarkdownResource } from './localMarkdownResources'
 import { createExportDisplayTitle } from './exportDisplayTitle'
@@ -114,7 +115,8 @@ export async function buildExportDocx({
   sourcePath,
   readLocalImageFile,
 }: BuildExportDocxOptions): Promise<DocxExportResult> {
-  const tree = unified().use(remarkParse).use(remarkGfm).use(remarkMath).parse(content) as Root
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkCjkStrong)
+  const tree = processor.runSync(processor.parse(content), { value: content }) as Root
   const context: ConversionContext = {
     sourceContent: content,
     sourcePath,
