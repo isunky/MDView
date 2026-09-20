@@ -57,6 +57,7 @@ export function mapEditorScrollToPreview(
   lineHeight: number,
   paddingTop: number,
   anchors: SplitScrollAnchor[],
+  editorLineTops: number[] = [],
 ): number {
   const previewMaximum = getScrollMaximum(preview)
   const editorMaximum = getScrollMaximum(editor)
@@ -71,8 +72,9 @@ export function mapEditorScrollToPreview(
     return previewMaximum
   }
 
-  const sourceLine = 1 + Math.max(0, editor.scrollTop + SOURCE_VIEWPORT_OFFSET - paddingTop) /
-    Math.max(1, lineHeight)
+  const sourceLine = editorLineTops.length > 1
+    ? sourceLineAtTop(editorLineTops, editor.scrollTop)
+    : 1 + Math.max(0, editor.scrollTop + SOURCE_VIEWPORT_OFFSET - paddingTop) / Math.max(1, lineHeight)
   return mapSourceLineToPreview(sourceLine, lineCount, previewMaximum, anchors)
 }
 
@@ -83,6 +85,7 @@ export function mapPreviewScrollToEditor(
   lineHeight: number,
   paddingTop: number,
   anchors: SplitScrollAnchor[],
+  editorLineTops: number[] = [],
 ): number {
   const previewMaximum = getScrollMaximum(preview)
   const editorMaximum = getScrollMaximum(editor)
@@ -98,11 +101,29 @@ export function mapPreviewScrollToEditor(
   }
 
   const sourceLine = mapPreviewTopToSourceLine(preview.scrollTop, lineCount, previewMaximum, anchors)
+  if (editorLineTops.length > 1) {
+    const index = Math.min(editorLineTops.length - 1, Math.max(0, Math.floor(sourceLine - 1)))
+    const top = editorLineTops[index]
+    const next = editorLineTops[index + 1] ?? top
+    return clamp(top + (sourceLine - 1 - index) * (next - top), 0, editorMaximum)
+  }
   return clamp(
     paddingTop + (sourceLine - 1) * Math.max(1, lineHeight) - SOURCE_VIEWPORT_OFFSET,
     0,
     editorMaximum,
   )
+}
+
+function sourceLineAtTop(tops: number[], top: number): number {
+  let low = 0
+  let high = tops.length - 1
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (tops[mid] <= top) low = mid
+    else high = mid - 1
+  }
+  const next = tops[low + 1]
+  return low + 1 + (next === undefined ? 0 : clamp((top - tops[low]) / Math.max(1, next - tops[low]), 0, 1))
 }
 
 function mapSourceLineToPreview(

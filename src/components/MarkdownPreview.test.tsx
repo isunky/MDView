@@ -17,6 +17,21 @@ vi.mock('mermaid', () => ({
 }))
 
 describe('MarkdownPreview', () => {
+  it('renders Chinese bold punctuation followed immediately by prose', () => {
+    const { container } = render(<MarkdownPreview content={'1. **数据库资源保障方式仍存在明显前后矛盾。**预算表已明确。\n2. **服务器来源口径。**当前正文。\n\n**第一处。**正文，**第二处！**后续。'} />)
+    expect(Array.from(container.querySelectorAll('strong'), node => node.textContent)).toEqual([
+      '数据库资源保障方式仍存在明显前后矛盾。', '服务器来源口径。', '第一处。', '第二处！',
+    ])
+    expect(container.textContent).not.toContain('**')
+  })
+
+  it('preserves literal bold markers in code and escaped text', () => {
+    const { container } = render(<MarkdownPreview content={'`**示例。**正文`\n\n```md\n**示例。**正文\n```\n\n\\*\\*示例。\\*\\*正文\n\n** 空格。**正文\n\n**正常加粗**'} />)
+    expect(container.querySelectorAll('strong')).toHaveLength(1)
+    expect(container.querySelector('strong')).toHaveTextContent('正常加粗')
+    expect(container.querySelector('code')).toHaveTextContent('**示例。**正文')
+  })
+
   it('renders inline and display LaTeX formulas with KaTeX', async () => {
     render(<MarkdownPreview content={'Inline $E=mc^2$.\n\n$$\n\\frac{a}{b}\n$$'} />)
 

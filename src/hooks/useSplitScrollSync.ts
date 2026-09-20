@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { MarkdownEditorHandle } from '../components/MarkdownEditor'
+import { measureEditorLinePositions } from '../domain/editorLinePositions'
 import {
   getScrollMaximum,
   mapEditorScrollToPreview,
@@ -40,11 +41,11 @@ export function useSplitScrollSync({
 }: UseSplitScrollSyncOptions) {
   const [isEnabled, setIsEnabled] = useState(() => loadSplitScrollPreferences().enabled)
   const anchorsRef = useRef<SplitScrollAnchor[]>([])
+  const editorLineTopsRef = useRef<number[]>([])
   const lastSourceRef = useRef<ScrollSource>('editor')
   const pendingProgrammaticScrollRef = useRef<PendingProgrammaticScroll>(null)
   const pendingSyncSourceRef = useRef<ScrollSource | null>(null)
   const syncFrameRef = useRef<number | null>(null)
-  const programmaticClearFrameRef = useRef<number | null>(null)
   const lineCount = useMemo(() => Math.max(1, previewContent.split(/\r?\n/).length), [previewContent])
 
   useEffect(() => {
@@ -52,6 +53,8 @@ export function useSplitScrollSync({
   }, [isEnabled])
 
   const measureAnchors = useCallback(() => {
+    const editor = editorRef.current?.getScrollElement()
+    editorLineTopsRef.current = editor ? measureEditorLinePositions(editor) : []
     const previewPanel = previewPanelRef.current
     const preview = previewRef.current
     if (!previewPanel || !preview) {
@@ -76,7 +79,7 @@ export function useSplitScrollSync({
     })
 
     anchorsRef.current = normalizeSplitScrollAnchors(rawAnchors, lineCount, previewMaximum)
-  }, [lineCount, previewPanelRef, previewRef])
+  }, [editorRef, lineCount, previewPanelRef, previewRef])
 
   const scheduleSync = useCallback((source: ScrollSource) => {
     if (!isSplit || !isEnabled) {
@@ -105,8 +108,8 @@ export function useSplitScrollSync({
       const lineHeight = Number.parseFloat(editorStyle.lineHeight) || 23
       const paddingTop = Number.parseFloat(editorStyle.paddingTop) || 0
       const nextTop = activeSource === 'editor'
-        ? mapEditorScrollToPreview(editor, previewPanel, lineCount, lineHeight, paddingTop, anchorsRef.current)
-        : mapPreviewScrollToEditor(previewPanel, editor, lineCount, lineHeight, paddingTop, anchorsRef.current)
+        ? mapEditorScrollToPreview(editor, previewPanel, lineCount, lineHeight, paddingTop, anchorsRef.current, editorLineTopsRef.current)
+        : mapPreviewScrollToEditor(previewPanel, editor, lineCount, lineHeight, paddingTop, anchorsRef.current, editorLineTopsRef.current)
       const target = activeSource === 'editor' ? previewPanel : editor
       const targetSource: ScrollSource = activeSource === 'editor' ? 'preview' : 'editor'
 
@@ -116,13 +119,7 @@ export function useSplitScrollSync({
 
       pendingProgrammaticScrollRef.current = { source: targetSource, top: nextTop }
       target.scrollTop = nextTop
-      if (programmaticClearFrameRef.current !== null) {
-        window.cancelAnimationFrame(programmaticClearFrameRef.current)
-      }
-      programmaticClearFrameRef.current = window.requestAnimationFrame(() => {
-        pendingProgrammaticScrollRef.current = null
-        programmaticClearFrameRef.current = null
-      })
+      pendingProgrammaticScrollRef.current = { source: targetSource, top: target.scrollTop }
     })
   }, [editorRef, isEnabled, isSplit, lineCount, measureAnchors, previewPanelRef])
 
@@ -140,7 +137,6 @@ export function useSplitScrollSync({
     function handleScroll(source: ScrollSource, element: HTMLElement) {
       const pending = pendingProgrammaticScrollRef.current
       if (pending?.source === source && Math.abs(element.scrollTop - pending.top) < 2) {
-        pendingProgrammaticScrollRef.current = null
         return
       }
 
@@ -188,6 +184,9 @@ export function useSplitScrollSync({
       ? null
       : new ResizeObserver(scheduleMeasurement)
     resizeObserver?.observe(previewPanel)
+    const editor = editorRef.current?.getScrollElement()
+    if (editor) resizeObserver?.observe(editor)
+    document.fonts?.addEventListener('loadingdone', scheduleMeasurement)
     if (preview) {
       resizeObserver?.observe(preview)
     }
@@ -195,11 +194,12 @@ export function useSplitScrollSync({
     return () => {
       window.removeEventListener('resize', scheduleMeasurement)
       resizeObserver?.disconnect()
+      document.fonts?.removeEventListener('loadingdone', scheduleMeasurement)
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId)
       }
     }
-  }, [isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom, readingFontKey])
+  }, [editorRef, isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom, readingFontKey])
 
   useEffect(() => {
     if (isSplit && isEnabled) {
@@ -211,9 +211,6 @@ export function useSplitScrollSync({
     return () => {
       if (syncFrameRef.current !== null) {
         window.cancelAnimationFrame(syncFrameRef.current)
-      }
-      if (programmaticClearFrameRef.current !== null) {
-        window.cancelAnimationFrame(programmaticClearFrameRef.current)
       }
     }
   }, [])

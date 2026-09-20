@@ -4,6 +4,7 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
+import { remarkCjkStrong } from '../domain/remarkCjkStrong'
 import './highlightThemes.css'
 import { resolveLocalMarkdownResource, resolveSameDocumentHeading } from '../domain/localMarkdownResources'
 import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions } from '../domain/markdownSanitize'
@@ -83,7 +84,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
     return () => { active = false }
   }, [hasMath, mathPlugins])
 
-  const remarkPlugins = useMemo<PluggableList>(() => mathPlugins ? [remarkGfm, mathPlugins.remarkMath] : [remarkGfm], [mathPlugins])
+  const remarkPlugins = useMemo<PluggableList>(() => mathPlugins ? [remarkGfm, mathPlugins.remarkMath, remarkCjkStrong] : [remarkGfm, remarkCjkStrong], [mathPlugins])
   const rehypePlugins = useMemo<PluggableList>(() => {
     const plugins: PluggableList = [
       rehypeRaw,

@@ -167,6 +167,35 @@ test('synchronizes split editor and preview scrolling in both directions', async
   await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBe(previewTopBeforeDisable)
 })
 
+test('aligns wrapped Chinese paragraphs with the same preview heading', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill(Array.from({ length: 40 }, (_, i) => `## Section ${i + 1}\n\n${'这是一段用于验证自动换行后的同步滚动位置的长正文。'.repeat(18)}\n`).join('\n'))
+  await page.getByRole('button', { name: 'Split preview and source' }).click()
+  const preview = page.getByLabel('Preview panel')
+  const heading = preview.getByRole('heading', { name: 'Section 20', exact: true })
+  await expect(heading).toBeAttached()
+  const editorTop = await editor.evaluate(async element => {
+    const modulePath = '/src/domain/editorLinePositions.ts'
+    const { measureEditorLinePositions } = await import(modulePath)
+    const textarea = element as HTMLTextAreaElement
+    const line = textarea.value.split('\n').findIndex(value => value === '## Section 20')
+    return measureEditorLinePositions(textarea)[line]
+  })
+  await editor.evaluate((element, top) => { element.scrollTop = top }, editorTop)
+  await expect.poll(() => heading.evaluate(element => {
+    const panel = element.closest('[aria-label="Preview panel"]')!
+    return Math.abs(element.getBoundingClientRect().top - panel.getBoundingClientRect().top)
+  })).toBeLessThan(4)
+  await preview.evaluate(element => { element.scrollTop = 0 })
+  await expect.poll(() => editor.evaluate(element => element.scrollTop)).toBe(0)
+  await heading.evaluate(element => {
+    const panel = element.closest('[aria-label="Preview panel"]')!
+    panel.scrollTop += element.getBoundingClientRect().top - panel.getBoundingClientRect().top
+  })
+  await expect.poll(() => editor.evaluate((element, top) => Math.abs(element.scrollTop - top), editorTop)).toBeLessThan(4)
+})
+
 test('restores a pending unsaved draft', async ({ page }) => {
   await page.goto('/?e2eDraft=recover')
 

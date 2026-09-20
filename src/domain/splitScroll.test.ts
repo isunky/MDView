@@ -13,6 +13,15 @@ const anchors = [
 ]
 
 describe('splitScroll', () => {
+  it('maps wrapped source lines by measured height in both directions', () => {
+    const tops = Array.from({ length: 40 }, (_, index) => index * 20 + (index >= 9 ? 160 : 0))
+    expect(mapEditorScrollToPreview({ ...editor, scrollTop: tops[9] }, preview, 40, 20, 0, anchors, tops)).toBeCloseTo(240)
+    expect(mapPreviewScrollToEditor({ ...preview, scrollTop: 240 }, editor, 40, 20, 0, anchors, tops)).toBeCloseTo(tops[9])
+    const midway = tops[9] + 10
+    const mapped = mapEditorScrollToPreview({ ...editor, scrollTop: midway }, preview, 40, 20, 0, anchors, tops)
+    expect(mapPreviewScrollToEditor({ ...preview, scrollTop: mapped }, editor, 40, 20, 0, anchors, tops)).toBeCloseTo(midway)
+  })
+
   it('adds stable endpoints around semantic anchors', () => {
     expect(normalizeSplitScrollAnchors(anchors, 40, 1_600)).toEqual([
       { sourceLine: 1, previewTop: 0 },
