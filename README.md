@@ -1,8 +1,8 @@
 <div align="center">
   <img src="src/assets/app-icon.png" alt="MDView logo" width="104" height="104" />
   <h1>MDView</h1>
-  <p><strong>Read Markdown. Stay focused.</strong></p>
-  <p>轻量、清晰、跨平台的 Markdown 阅读与编辑工具</p>
+  <p><strong>打开 Markdown，专注阅读，随手编辑。</strong></p>
+  <p>Read Markdown comfortably. Make quick edits. Keep your files local.</p>
 
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
@@ -15,7 +15,7 @@
     <a href="https://github.com/isunky/MDView/releases/latest"><strong>下载 / Download</strong></a>
     · <a href="#中文">中文</a>
     · <a href="#english">English</a>
-    · <a href="#开发--development">Development</a>
+    · <a href="#macos-build">Mac 源码编译 / Build for Mac</a>
   </p>
 
   <p>
@@ -57,28 +57,27 @@
 
 ## 中文
 
-MDView 是一款面向本地 Markdown 文档的轻量桌面应用。它把阅读体验放在首位，同时提供编辑、目录导航、导出和文件关联等常用能力。
+MDView 让本地 Markdown 文件像普通文档一样方便阅读。打开笔记、项目说明或长篇资料，用目录快速找到内容；需要修改时，切到编辑或分屏视图，边写边看效果。文档保存在自己的电脑上，不需要注册账号。
 
-- **清晰预览**：支持 GFM 表格、任务列表、代码高亮、Mermaid、LaTeX 数学公式、内嵌 HTML 和颜色预览。
-- **三种视图**：在预览、编辑和分屏模式之间快速切换。
-- **长文档导航**：自动提取 `H1` 至 `H4` 生成目录，可切换展示层级、跟随当前阅读位置，并按文件恢复阅读现场。
-- **阅读主题与排版**：支持浅色、深色和跟随系统；可调整正文的字体、字号、行高和内容宽度，代码高亮会随主题自动切换。
-- **本地文件体验**：支持最近文件、相对路径图片和本地 Markdown 链接；可从工具栏批量选择、粘贴或拖入图片，自动保存到同级 `assets` 目录，并显示导入进度和失败重试入口。
-- **实用编辑能力**：提供撤销重做、公式编辑面板、快速表格、H1-H4 标题、代码块、查找替换、语法速查、列表续写和实时编辑状态栏。
-- **灵活导出**：可导出独立 HTML、Word `.docx`，也可通过系统打印生成 PDF；公式会保留在 HTML/PDF 中，常用公式在 Word 中保持原生可编辑。
+- **长文档也好读**：可折叠目录支持一至五级标题、点击跳转与当前章节高亮。调整目录宽度、阅读缩放和视图后，再次打开同一文件可以继续上次的阅读现场。
+- **按自己的习惯阅读**：浅色、深色或跟随系统，自由调整字体、字号、行距和正文宽度。表格、任务列表、代码、Mermaid 图表与 LaTeX 公式都能直接预览。
+- **修改几处，也很顺手**：在源码编辑器中快速插入标题、列表、表格和公式，使用查找替换、撤销重做与语法参考；分屏时可同步滚动正文和预览。未保存内容提供本地草稿备份与恢复。
+- **图片和文档连得起来**：批量选择、粘贴或拖入图片，自动保存到文档旁的 `assets` 文件夹并插入引用；支持相对路径图片、本地 Markdown 链接和最近文件列表。
+- **方便交换和分享**：导出 Word、独立 HTML，或通过系统打印生成 PDF。也可将 Word `.docx` 导入为 Markdown 草稿，转换在本机完成；首次使用需要准备 Python 和转换组件，下载这些组件需要联网。
+
+第一次使用：从下方选择适合你的版本，打开一个 `.md` 文件即可开始阅读。Windows 安装版可关联 Markdown 文件，之后双击文件就能打开 MDView。
 
 ## English
 
-MDView is a lightweight desktop app for local Markdown documents. It prioritizes a calm reading experience while keeping practical editing, navigation, export, and file-association tools close at hand.
+MDView makes local Markdown files comfortable to read. Open notes, project documentation, or a long reference, then use the outline to find what you need. Switch to Edit or Split view to make changes and see the result. Your documents stay on your computer, with no account required.
 
-- **Clean preview**: GFM tables, task lists, syntax highlighting, Mermaid, LaTeX math, inline HTML, and color swatches.
-- **Three views**: switch quickly between Preview, Edit, and Split modes.
-- **Long-document navigation**: generate an outline from `H1` to `H4`, choose the visible depth, follow the current reading position, and restore each file's reading state.
-- **Reading theme and typography**: choose light, dark, or system appearance; tune body font, size, line height, and content width, with code highlighting following the active theme.
-- **Local-first workflow**: recent files, relative images, local Markdown links, and `.md` / `.markdown` associations; select multiple images from the toolbar, paste, or drag them into a sibling `assets` folder with progress and retry support.
-- **Practical editing**: undo and redo, a live formula editor, quick GFM tables, H1-H4 headings, code blocks, find and replace, syntax reference, list continuation, and a live document status bar.
-- **Flexible export**: export standalone HTML or Word `.docx`, and create PDF files through system printing; formulas remain visible in HTML/PDF and common formulas stay editable in Word.
-- **Offline Word import**: import local `.docx` files into an unsaved Markdown draft. MDView detects Python and can install a pinned MarkItDown converter into app data without a virtual environment or changing the original Word file.
+- **Navigate long documents**: a collapsible outline supports heading levels one through five, section jumps, and current-section highlighting. Reopen a file to restore its reading position, zoom, view, and outline preferences.
+- **Read your way**: choose light, dark, or system appearance and adjust the font, size, line spacing, and page width. Preview tables, task lists, code, Mermaid diagrams, and LaTeX formulas.
+- **Make quick edits**: insert headings, lists, tables, and formulas in the source editor, with find and replace, undo and redo, and a syntax reference. Split view can scroll the editor and preview together. Local draft backups help recover unsaved work.
+- **Keep images and files connected**: select, paste, or drop images to save them in an `assets` folder beside your document and insert their references. Relative image paths, local Markdown links, and recent files are supported.
+- **Share in familiar formats**: export Word or standalone HTML, or create a PDF through system printing. Import Word `.docx` files as Markdown drafts using a local converter; initial setup requires Python and conversion components, which need internet access to download.
+
+To get started, choose a version below and open a `.md` file. The Windows installer can associate Markdown files with MDView so you can open them with a double-click.
 
 ### 数学公式 / Math formulas
 
@@ -93,10 +92,11 @@ Get the latest build from [GitHub Releases](https://github.com/isunky/MDView/rel
 
 | 平台 / Platform | 包 / Package | 说明 / Notes |
 | --- | --- | --- |
-| Windows | MSI | 英文安装界面，支持文件关联和应用内更新 / English installer UI with file associations and in-app updates |
+| Windows | MSI | 日常使用推荐；可关联文件并检查更新，安装界面为英文 / Recommended for everyday use; file associations and update checks, with an English installer |
 | Windows | Portable ZIP | 解压即用，不写入文件关联 / Extract and run; no file associations |
-| macOS | Universal DMG | macOS 10.15 或更高版本；ad-hoc 签名 / macOS 10.15 or later; ad-hoc signed |
-| Microsoft Edge | Extension ZIP | 在 `edge://extensions` 打开开发人员模式后选择“加载解压缩的扩展”，或使用 CI 产物 ZIP 提交 Edge Add-ons / Load unpacked from `dist-edge`, or submit the CI ZIP to Edge Add-ons |
+| macOS | 源码编译 / Build from source（推荐 / Recommended） | 因签名与公证尚未完善，建议在自己的 Mac 上编译；[查看步骤 / Instructions](#macos-build) |
+| macOS | Universal DMG | 供尝试，支持 Intel 与 Apple Silicon，macOS 10.15+；首次打开可能被系统拦截 / Optional prebuilt package for Intel and Apple Silicon, macOS 10.15+; macOS may block first launch |
+| Microsoft Edge | Extension ZIP | 解压后在 `edge://extensions` 开启开发人员模式，选择“加载解压缩的扩展”并选中含 `manifest.json` 的文件夹 / Extract, enable Developer mode at `edge://extensions`, then load the folder containing `manifest.json` |
 
 Windows MSI 安装时可选择是否关联 `.md` 和 `.markdown`，默认开启。静默部署可传入 `ASSOCIATE_MARKDOWN_FILES=0` 禁用关联：
 
@@ -113,8 +113,9 @@ The Windows MSI and Portable ZIP do not bundle, download, or install WebView2. B
 > 从首个 SignPath 审批后的发布版本开始，Windows MSI 与 Portable ZIP 中的 `MDView.exe` 会进行 Authenticode 签名。历史版本、本地构建和未完成审批的构建仍可能未签名；新签名版本也需要逐步建立 SmartScreen 声誉。
 > Starting with the first SignPath-approved release, the Windows MSI and `MDView.exe` in the Portable ZIP are Authenticode-signed. Historical, local, and not-yet-approved builds may remain unsigned; newly signed versions also need time to establish SmartScreen reputation.
 
-> macOS Universal DMG 使用 ad-hoc 签名，避免 GitHub 下载后被 macOS 判定为“已损坏”。由于尚未完成 Apple 公证，首次启动仍可能需要右键点击应用并选择“打开”，或前往“隐私与安全性”允许。请始终直接从 GitHub Release 下载 DMG，不要转发解压后的 `.app`。
-> The macOS Universal DMG is ad-hoc signed so macOS does not treat a GitHub download as damaged. It is not yet Apple-notarized, so first launch may require right-clicking the app and choosing Open, or approving it in Privacy & Security. Always download the DMG directly from GitHub Releases and do not redistribute an extracted `.app`.
+> **Mac 用户建议优先下载源码，在自己的 Mac 上编译。** 当前发布包仅使用 ad-hoc 签名，尚未配置 Apple Developer ID 签名与公证，下载的 DMG 仍可能被系统拦截。已有构建环境的用户可按[源码编译步骤](#macos-build)生成自用版本；本地编译不等于通过 Apple 公证，也不能保证消除所有安全提示。
+>
+> **For Mac users, we recommend downloading the source and building on your own Mac.** Release packages use ad-hoc signing without Apple Developer ID signing or notarization, so macOS may still block the downloaded DMG. Follow the [build instructions](#macos-build) for a personal build. Building locally does not notarize the app or guarantee that every security prompt disappears.
 
 签名政策与发布审批流程见 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and release approval process.
@@ -135,10 +136,51 @@ See [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) for the signing policy and 
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |
 | 缩进 / 反向缩进 | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
 
-## 开发 / Development
+## 源码编译与开发 / Build from source and development
 
-需要 Node.js、Rust/Cargo，以及对应平台的桌面构建工具链。
-Requires Node.js, Rust/Cargo, and the desktop build toolchain for your platform.
+以下内容适合希望自行编译或参与开发的用户。Windows 用户通常直接下载 MSI 即可；macOS 用户建议先阅读下面的本机编译说明。
+This section is for building or contributing to MDView. Windows users can usually use the MSI directly; Mac users should read the local build instructions below.
+
+<a id="macos-build"></a>
+
+### 在 Mac 上自行编译 / Build on your Mac
+
+由于官方发布包尚未完成 Developer ID 签名与 Apple 公证，**目前更推荐 Mac 用户自行下载源码编译**。需要一台 Mac、[Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo（stable）](https://rustup.rs/) 和 Xcode Command Line Tools。环境准备可参考 [Tauri 官方说明](https://v2.tauri.app/start/prerequisites/)。首次安装依赖和构建需要联网。
+
+Until release packages have Developer ID signing and Apple notarization, **building from source on your own Mac is the recommended option**. Install Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools using the links above. Initial dependency installation and compilation require internet access.
+
+1. 在终端运行以下命令安装 Apple 编译工具；已安装则跳过。Install Apple's command-line tools, if needed:
+
+   ```bash
+   xcode-select --install
+   ```
+
+2. 下载源码。在 [Releases](https://github.com/isunky/MDView/releases/latest) 选择所需版本的 **Source code (zip)** 并解压，在终端进入该目录；也可用以下命令获取最新开发代码。Download and extract a release's **Source code (zip)** and open its directory in Terminal, or clone the latest development code:
+
+   ```bash
+   git clone https://github.com/isunky/MDView.git
+   cd MDView
+   ```
+
+3. 安装依赖并生成 DMG。Install dependencies and build:
+
+   ```bash
+   npm ci
+   npm run desktop:build -- --bundles dmg
+   ```
+
+构建完成后，在 `src-tauri/target/release/bundle/dmg/` 打开生成的 `.dmg`，将 MDView 拖入“应用程序”。默认生成适合当前 Mac 架构的版本；自用不需要构建 Universal 包。
+
+Open the generated `.dmg` in `src-tauri/target/release/bundle/dmg/` and drag MDView into Applications. The default build targets your Mac's architecture; a Universal build is unnecessary for personal use.
+
+本地构建使用项目配置中的 ad-hoc 签名，无需提供付费 Apple Developer 证书。若向其他人分发，仍需另行处理签名和公证；详见 [Tauri macOS 签名说明](https://v2.tauri.app/distribute/sign/macos/)。
+
+Local builds use the project's ad-hoc signing configuration without a paid Apple Developer certificate. Distribution to other users still requires considering signing and notarization; see the Tauri macOS signing guide above.
+
+### 开发与验证 / Develop and verify
+
+需要 Node.js 24、Rust/Cargo，以及对应平台的[桌面构建工具链](https://v2.tauri.app/start/prerequisites/)。在源码目录运行：
+Requires Node.js 24, Rust/Cargo, and your platform's desktop build tools. From the source directory:
 
 ```bash
 npm ci
@@ -196,9 +238,9 @@ Tauri 自动更新签名 Secrets / Tauri updater signing secrets:
 
 macOS 签名状态 / macOS signing status:
 
-- 当前构建使用 ad-hoc 签名，避免下载后的应用被 macOS 视为损坏。
+- 当前构建仅使用 ad-hoc 签名，不能保证下载的应用通过 macOS 安全检查；建议自用时按上面的步骤在本机编译。
 - Apple Developer ID 签名、公证和 stapling 尚未配置；取得付费 Apple Developer Program 凭据后，再将其接入 Release 工作流。
-- Current builds use ad-hoc signing so macOS does not treat downloaded apps as damaged.
+- Current builds use ad-hoc signing, which does not guarantee downloaded apps pass macOS security checks; local builds are recommended for personal use.
 - Developer ID signing, notarization, and stapling will be added after paid Apple Developer Program credentials are available.
 
 </details>
