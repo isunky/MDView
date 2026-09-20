@@ -1,8 +1,8 @@
 <div align="center">
   <img src="src/assets/app-icon.png" alt="MDView logo" width="96" height="96" />
   <h1>MDView</h1>
-  <p><strong>轻快打开，从容阅读。</strong><br />Markdown reading and editing, without the clutter.</p>
-  <p>免费无广告 · 本地文件 · 阅读与编辑<br />Free and ad-free · Local files · Read and edit</p>
+  <p><strong>面向 AI 时代的轻量 Markdown 阅读器。</strong><br />A lightweight Markdown reader for the AI era.</p>
+  <p>美观易读 · 打开轻快 · 免费无广告<br />Beautifully readable · Quick to open · Free and ad-free</p>
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
     <a href="LICENSE"><img alt="GPL-3.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
@@ -12,7 +12,7 @@
     <a href="https://github.com/isunky/MDView/releases/latest"><strong>下载 / Download</strong></a>
     · <a href="#中文">中文</a>
     · <a href="#english">English</a>
-    · <a href="#macos-build">Mac 编译 / Build for Mac</a>
+    · <a href="#ai-build">AI 辅助编译 / Build with AI</a>
   </p>
   <p><strong>Version / 版本：</strong>3.4.0 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
@@ -34,7 +34,11 @@
 
 ## 中文
 
-MDView 是一款免费、无广告的 Markdown 阅读与编辑工具。打开轻快，界面简洁美观，从日常笔记到长篇技术文档，都能舒适阅读、随时修改，并以排版整洁的文档分享给他人。无需注册，文件由你自己管理。
+**让 AI 生成的内容，也有舒适的阅读体验。**
+
+MDView 是一款轻量、美观、免费无广告的 Markdown 阅读器。将 AI 生成的方案、笔记或技术说明保存为 Markdown 文件，即可在清晰的排版中阅读，用目录浏览长文，查看其中的图表与公式。打开轻快，无需注册，也适合你已有的本地文档。
+
+阅读是核心，编辑与转换随手可用：需要时修改几处内容，或导出一份排版整洁的文档，与他人分享。
 
 **舒适阅读，自由排版**
 
@@ -48,7 +52,7 @@ MDView 是一款免费、无广告的 Markdown 阅读与编辑工具。打开轻
 
 直接预览 Mermaid 图表、LaTeX 公式、表格和高亮代码。支持的颜色值旁会显示对应色块，查看设计规范与配色方案更直观。
 
-**边读边改，操作顺手**
+**阅读为主，随手可改**
 
 切换源码编辑，或在同步分屏中边写边看。图片可粘贴、拖入或批量插入，表格与公式也有快捷入口；查找替换、撤销重做和草稿恢复，让日常修改更省心。
 
@@ -58,7 +62,11 @@ MDView 是一款免费、无广告的 Markdown 阅读与编辑工具。打开轻
 
 ## English
 
-MDView is a free, ad-free Markdown reader and editor that opens quickly and keeps your workspace clean. Read anything from a short note to detailed technical documentation, make changes, and share neatly formatted documents. No account required; you manage your own files.
+**Give AI-generated content a better place to be read.**
+
+MDView is a lightweight, thoughtfully designed Markdown reader, free and ad-free. Save AI-generated plans, notes, or technical explanations as Markdown files, then read them with clear typography, section navigation, diagrams, and formulas. It opens quickly, needs no account, and works just as well with your existing local documents.
+
+Reading comes first. Editing and conversion are close at hand when you need to revise a passage or share a neatly formatted document.
 
 **A polished reading experience**
 
@@ -72,7 +80,7 @@ A collapsible outline lets you jump between sections and highlights your current
 
 Preview Mermaid diagrams, LaTeX formulas, tables, and highlighted code. Color swatches appear beside supported color values, making palettes and design specifications easier to read.
 
-**Edit without losing your place**
+**Built for reading, ready for quick edits**
 
 Switch to source editing or write alongside a synchronized preview. Paste, drop, or batch-insert images, with quick tools for tables and formulas. Find and replace, undo and redo, and draft recovery support everyday revisions.
 
@@ -93,7 +101,7 @@ Import Word as a Markdown draft, then edit and save it as a `.md` file. Export n
 
 **Windows：**需要预先安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)，MDView 不附带或下载运行时。MSI 安装界面为英文，应用支持中英文。
 
-**macOS：**预编译 Universal DMG 支持 Intel 与 Apple Silicon（macOS 10.15+），但仅有 ad-hoc 签名，尚未完成 Developer ID 签名与 Apple 公证，可能被系统拦截。建议下载源码，在自己的 Mac 上编译。
+**macOS：**因发布包尚未完成 Apple 签名与公证，建议在自己的 Mac 上[通过 AI 辅助编译](#ai-build)。本地构建仍可能出现系统安全提示。
 
 <details>
 <summary>English installation notes</summary>
@@ -124,23 +132,78 @@ msiexec /i MDView_x64.msi ASSOCIATE_MARKDOWN_FILES=0 /qn
 </details>
 
 <a id="macos-build"></a>
+<a id="ai-build"></a>
 
-## Mac 源码编译 / Build for Mac
+## 用 AI 帮你编译 / Build with AI
 
-**推荐使用 AI 编程工具辅助编译。** 从 [Releases](https://github.com/isunky/MDView/releases/latest) 下载所需版本的 **Source code (zip)** 并解压，在 Mac 上用支持本地终端的 AI 编程工具打开项目目录，然后发送：
+无需先熟悉编译命令，让能操作本地终端的 AI 编程工具协助完成：
 
-> 请在这台 Mac 上编译 MDView。先检查 Node.js 24、Rust/Cargo stable 和 Xcode Command Line Tools，说明缺失依赖并协助安装；按照项目配置执行 npm ci 和 npm run desktop:build -- --bundles dmg。遇到构建错误请定位原因，修复后重试。完成后确认 DMG 已生成，提供完整路径和安装步骤。沿用项目的 ad-hoc 签名配置，不关闭系统安全机制。
+1. 从 [Releases](https://github.com/isunky/MDView/releases/latest) 下载 **Source code (zip)** 并解压。
+2. 用 AI 编程工具打开解压后的项目文件夹。Mac 版本需在 Mac 上编译，Windows 版本需在 Windows 上编译。
+3. 发送下方对应的提示词，按提示完成必要的环境安装，等待 AI 给出安装包位置。
 
-**AI-assisted builds are recommended.** Download and extract a release's **Source code (zip)**, open the project in an AI coding tool with local terminal access on your Mac, and use this prompt:
+首次准备环境与下载依赖需要联网。
 
-> Build MDView on this Mac. Check Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools; explain missing dependencies and help install them. Follow the project configuration to run npm ci and npm run desktop:build -- --bundles dmg. Diagnose build failures, fix them, and retry. Confirm the DMG exists and provide its full path and installation steps. Keep the project's ad-hoc signing configuration and leave system security protections enabled.
+**Mac 提示词**
 
-首次准备依赖需要联网。默认产物位于 `src-tauri/target/release/bundle/dmg/`，打开 DMG 后将 MDView 拖入“应用程序”。本地编译不等于 Apple 公证，也不保证消除所有安全提示。
+```text
+请帮我将当前文件夹中的 MDView 源码编译为这台 Mac 可安装的版本。
 
-Initial dependency setup requires internet access. Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView into Applications. A local build is not Apple-notarized and may still show security prompts.
+先阅读项目构建说明，检查本机环境，说明缺失的依赖并协助安装。
+使用项目现有构建配置生成适合这台 Mac 的 DMG 安装包。
+遇到错误请定位原因、做必要修复并重试，保留我的已有修改。
+沿用本地签名配置，不关闭系统安全机制，不上传或发布产物。
+完成后确认安装包已生成，告诉我完整路径和安装方法；如未成功，请说明具体阻塞原因。
+```
+
+**Windows 提示词**
+
+```text
+请帮我将当前文件夹中的 MDView 源码编译为 Windows 安装版和绿色版。
+
+先阅读项目构建说明，检查本机环境，说明缺失的依赖并协助安装。
+优先使用项目现有的一键打包入口，生成 MSI、Portable ZIP 和校验文件。
+遇到错误请定位原因、做必要修复并重试，保留我的已有修改。
+使用本地打包配置，不要求发布签名密钥，不上传或发布产物。
+完成后确认文件已生成，告诉我完整路径和使用方法，并检查运行所需的 WebView2 是否可用。
+如未成功，请说明具体阻塞原因。
+```
 
 <details>
-<summary>手动编译 / Manual build</summary>
+<summary>English instructions and ready-to-use prompts</summary>
+
+Download a release's **Source code (zip)** and extract it. Open the project folder in an AI coding tool with local terminal access, then send the appropriate prompt below. Build on the target platform: macOS on a Mac, Windows on Windows. Initial setup requires internet access; follow any dependency installation steps the tool presents.
+
+**macOS**
+
+```text
+Build the MDView source in this folder into an installable app for this Mac.
+
+Read the project's build instructions, check the environment, and help install missing prerequisites.
+Use the existing build configuration to create a DMG for this Mac's architecture.
+Diagnose failures, make necessary fixes, and retry while preserving my existing changes.
+Keep local signing settings and system security protections. Do not upload or publish artifacts.
+Verify the DMG exists, then provide its full path and installation steps.
+If the build cannot finish, explain the specific blocker.
+```
+
+**Windows**
+
+```text
+Build the MDView source in this folder into Windows installer and portable packages.
+
+Read the project's build instructions, check the environment, and help install missing prerequisites.
+Use the existing one-step packaging entry point to create an MSI, Portable ZIP, and checksums.
+Diagnose failures, make necessary fixes, and retry while preserving my existing changes.
+Use local build settings without release signing keys. Do not upload or publish artifacts.
+Verify the files exist, provide their full paths and usage steps, and check WebView2 availability.
+If the build cannot finish, explain the specific blocker.
+```
+
+</details>
+
+<details>
+<summary>Mac 环境、手动命令与签名 / Mac prerequisites, commands, and signing</summary>
 
 准备 [Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo stable](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
 
@@ -158,6 +221,10 @@ npm run desktop:build -- --bundles dmg
 默认构建当前 Mac 架构的版本。签名机制参见 [Tauri macOS 签名说明](https://v2.tauri.app/distribute/sign/macos/)。
 
 The default build targets your Mac's architecture. See the Tauri macOS signing guide above for signing details.
+
+默认产物位于 `src-tauri/target/release/bundle/dmg/`，打开 DMG 后将 MDView 拖入“应用程序”。本地构建使用 ad-hoc 签名，不等于 Apple 公证，也不保证消除所有安全提示。
+
+Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView into Applications. Local builds use ad-hoc signing, are not Apple-notarized, and may still show security prompts.
 
 </details>
 
