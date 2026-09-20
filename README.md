@@ -1,7 +1,8 @@
 <div align="center">
   <img src="src/assets/app-icon.png" alt="MDView logo" width="96" height="96" />
   <h1>MDView</h1>
-  <p><strong>为阅读而设计的 Markdown 工具。</strong><br />A Markdown app built for reading.</p>
+  <p><strong>轻快打开，从容阅读。</strong><br />Markdown reading and editing, without the clutter.</p>
+  <p>免费无广告 · 本地文件 · 阅读与编辑<br />Free and ad-free · Local files · Read and edit</p>
   <p>
     <a href="https://github.com/isunky/MDView/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/isunky/MDView?style=flat-square&color=0f8f83" /></a>
     <a href="LICENSE"><img alt="GPL-3.0 license" src="https://img.shields.io/github/license/isunky/MDView?style=flat-square" /></a>
@@ -33,43 +34,51 @@
 
 ## 中文
 
-从一份 README 到一篇长文档，MDView 让你打开就能读，需要时也能直接修改。它以阅读为中心，将目录导航、清晰排版和实用编辑放在同一个窗口。无需账号，文件始终由你自己管理。
+MDView 是一款免费、无广告的 Markdown 阅读与编辑工具。打开轻快，界面简洁美观，从日常笔记到长篇技术文档，都能舒适阅读、随时修改，并以排版整洁的文档分享给他人。无需注册，文件由你自己管理。
 
-**长文档，读得有条理**
+**舒适阅读，自由排版**
 
-用可折叠目录浏览结构，点击标题直达正文。章节高亮跟随阅读位置，再次打开时接着上次读。明暗主题、字体与页面宽度都可以按习惯调整。
+明暗主题与细致的文字排版，让内容清晰呈现。字体、字号、行距和正文宽度均可调整，找到适合自己的阅读方式。
 
-**图表与公式，随正文一起呈现**
+**长篇文档，定位自如**
 
-从代码片段、表格到 Mermaid 流程图、LaTeX 公式，在同一篇文档中直接查看。阅读技术说明或项目方案时，文字和图示连贯呈现。
+可折叠的多级目录支持章节跳转与当前位置高亮。再次打开文件，恢复阅读进度、缩放和视图设置，接着上次往下读。
 
-**看到哪里，改到哪里**
+**图表、公式与配色，一目了然**
 
-随时切换源码编辑，或在分屏中对照预览修改，两侧同步滚动。粘贴图片即可插入，表格和公式也有快捷入口；查找替换与草稿恢复照顾日常编辑。
+直接预览 Mermaid 图表、LaTeX 公式、表格和高亮代码。支持的颜色值旁会显示对应色块，查看设计规范与配色方案更直观。
 
-**用 Markdown 写，用需要的格式交付**
+**边读边改，操作顺手**
 
-将 Word 导入为 Markdown 继续整理，再导出为 Word、独立 HTML，或通过系统打印生成 PDF。保留便于维护的文本，也方便与使用不同工具的人协作。
+切换源码编辑，或在同步分屏中边写边看。图片可粘贴、拖入或批量插入，表格与公式也有快捷入口；查找替换、撤销重做和草稿恢复，让日常修改更省心。
+
+**Word 转入，精致导出**
+
+导入 Word 即可转换为 Markdown 草稿，编辑后保存为 `.md` 文件。也可导出排版美观的 Word、独立 HTML，或通过系统打印生成 PDF，让整理好的内容便于分享与交付。
 
 ## English
 
-From a README to a lengthy technical document, MDView opens your Markdown for reading and keeps editing close at hand. Navigation, typography, and practical editing tools share one window. No account required; you manage your own files.
+MDView is a free, ad-free Markdown reader and editor that opens quickly and keeps your workspace clean. Read anything from a short note to detailed technical documentation, make changes, and share neatly formatted documents. No account required; you manage your own files.
 
-**Find your place in long documents**
+**A polished reading experience**
 
-Explore a collapsible outline and jump straight to a section. The current heading stays highlighted as you scroll, and reopening a file brings you back to where you left off. Adjust the theme, font, and page width to suit your reading habits.
+Light and dark themes pair with carefully styled text. Adjust the font, size, line spacing, and page width to make reading comfortable.
 
-**Read diagrams and formulas in context**
+**Pick up where you left off**
 
-View code, tables, Mermaid diagrams, and LaTeX formulas alongside the text they explain. Technical notes and project documentation stay readable in a single view.
+A collapsible outline lets you jump between sections and highlights your current heading. Reopen a file to restore its reading position, zoom, and view settings.
 
-**Edit as you read**
+**Diagrams, formulas, and colors in context**
 
-Switch to source editing or compare your changes with a synchronized split preview. Paste images directly and insert tables or formulas from the toolbar. Find and replace and draft recovery support everyday revisions.
+Preview Mermaid diagrams, LaTeX formulas, tables, and highlighted code. Color swatches appear beside supported color values, making palettes and design specifications easier to read.
 
-**Write in Markdown. Share in the format you need.**
+**Edit without losing your place**
 
-Import a Word document to continue working in Markdown, then export to Word or standalone HTML, or print to PDF. Keep an editable text source while sharing documents with people who use different tools.
+Switch to source editing or write alongside a synchronized preview. Paste, drop, or batch-insert images, with quick tools for tables and formulas. Find and replace, undo and redo, and draft recovery support everyday revisions.
+
+**From Word to Markdown, and back to polished documents**
+
+Import Word as a Markdown draft, then edit and save it as a `.md` file. Export neatly formatted Word documents or standalone HTML, or print to PDF for sharing and delivery.
 
 ## 下载与安装 / Installation
 
