@@ -17,7 +17,7 @@
     "bundle:check": "node scripts/check-startup-bundle.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "node scripts/run-tests.mjs",
     "test:e2e": "playwright test",
     "version:check": "node scripts/check-version.mjs",
     "version:sync": "node scripts/sync-version.mjs",

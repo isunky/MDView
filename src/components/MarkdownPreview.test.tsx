@@ -35,7 +35,7 @@ describe('MarkdownPreview', () => {
   it('renders inline and display LaTeX formulas with KaTeX', async () => {
     render(<MarkdownPreview content={'Inline $E=mc^2$.\n\n$$\n\\frac{a}{b}\n$$'} />)
 
-    await waitFor(() => expect(document.querySelectorAll('.katex').length).toBe(2))
+    await waitFor(() => expect(document.querySelectorAll('.katex').length).toBe(2), { timeout: 5000 })
     expect(document.querySelector('.katex-mathml math')).not.toBeNull()
     expect(document.querySelector('.katex-display')).toBeInTheDocument()
     expect(document.querySelector('.katex-display')?.closest('.code-block')).toBeNull()

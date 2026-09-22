@@ -33,6 +33,21 @@ type MathPlugins = {
   rehypeKatex: typeof import('rehype-katex').default
 }
 
+let mathPluginsPromise: Promise<MathPlugins> | null = null
+
+function loadMathPlugins() {
+  if (!mathPluginsPromise) {
+    mathPluginsPromise = Promise.all([
+      import('remark-math'),
+      import('rehype-katex'),
+    ]).then(([remarkModule, rehypeModule]) => {
+      void import('katex/dist/katex.min.css').catch(() => undefined)
+      return { remarkMath: remarkModule.default, rehypeKatex: rehypeModule.default }
+    })
+  }
+  return mathPluginsPromise
+}
+
 type MarkdownPreviewProps = {
   content: string
   previewRef?: Ref<HTMLElement>
@@ -74,13 +89,9 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   useEffect(() => {
     if (!hasMath || mathPlugins) return
     let active = true
-    void Promise.all([
-      import('remark-math'),
-      import('rehype-katex'),
-      import('katex/dist/katex.min.css'),
-    ]).then(([remarkModule, rehypeModule]) => {
-      if (active) setMathPlugins({ remarkMath: remarkModule.default, rehypeKatex: rehypeModule.default })
-    })
+    void loadMathPlugins().then((plugins) => {
+      if (active) setMathPlugins(plugins)
+    }).catch(() => undefined)
     return () => { active = false }
   }, [hasMath, mathPlugins])
 
