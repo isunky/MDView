@@ -2,6 +2,6 @@ export const appInfo = {
   name: 'MDView',
   version: '3.4.2',
   author: 'Sunky',
-  website: 'www.sunky.net',
-  websiteUrl: 'https://www.sunky.net',
+  website: 'github.com/isunky/MDView',
+  websiteUrl: 'https://github.com/isunky/MDView',
 } as const

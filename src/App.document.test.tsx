@@ -191,9 +191,9 @@ describe('App', () => {
     expect(screen.getByText(`Version ${appInfo.version}`)).toBeInTheDocument()
     expect(screen.getByText('Sunky')).toBeInTheDocument()
     expect(screen.queryByText('Author Sunky')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'www.sunky.net' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'github.com/isunky/MDView' })).toHaveAttribute(
       'href',
-      'https://www.sunky.net',
+      'https://github.com/isunky/MDView',
     )
 
     await user.click(screen.getByRole('button', { name: 'Close about dialog' }))
