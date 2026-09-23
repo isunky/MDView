@@ -9,6 +9,14 @@ export type CursorPosition = {
   column: number
 }
 
+export function getLineStartOffsets(content: string): number[] {
+  const offsets = [0]
+  for (let index = 0; index < content.length; index += 1) {
+    if (content[index] === '\n') offsets.push(index + 1)
+  }
+  return offsets
+}
+
 const FALLBACK_WORD_PATTERN = /[\p{Script=Han}]|[\p{L}\p{N}]+/gu
 
 export function getDocumentStatistics(content: string): DocumentStatistics {
@@ -22,15 +30,25 @@ export function getDocumentStatistics(content: string): DocumentStatistics {
   }
 }
 
-export function getCursorPosition(content: string, offset: number): CursorPosition {
+export function getCursorPosition(
+  content: string,
+  offset: number,
+  lineStartOffsets: number[] = getLineStartOffsets(content),
+): CursorPosition {
   const safeOffset = Math.min(Math.max(offset, 0), content.length)
-  const beforeCursor = content.slice(0, safeOffset)
-  const line = beforeCursor.split('\n').length
-  const lineStart = beforeCursor.lastIndexOf('\n') + 1
+  let low = 0
+  let high = lineStartOffsets.length
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2)
+    if (lineStartOffsets[middle] <= safeOffset) low = middle + 1
+    else high = middle
+  }
+  const lineIndex = Math.max(0, low - 1)
+  const lineStart = lineStartOffsets[lineIndex] ?? 0
 
   return {
-    line,
-    column: Array.from(beforeCursor.slice(lineStart)).length + 1,
+    line: lineIndex + 1,
+    column: Array.from(content.slice(lineStart, safeOffset)).length + 1,
   }
 }
 

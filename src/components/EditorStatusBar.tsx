@@ -1,4 +1,6 @@
-import type { CursorPosition, DocumentStatistics } from '../domain/documentStatistics'
+import { useMemo, useSyncExternalStore } from 'react'
+import { getCursorPosition, type DocumentStatistics } from '../domain/documentStatistics'
+import type { EditorSelectionStore } from '../domain/editorSelectionStore'
 
 export type EditorStatusBarLabels = {
   characterCount: (count: number) => string
@@ -11,20 +13,33 @@ export type EditorStatusBarLabels = {
 }
 
 type EditorStatusBarProps = {
-  cursorPosition: CursorPosition
+  content: string
   isDirty: boolean
   isSaving: boolean
   labels: EditorStatusBarLabels
+  lineStartOffsets: number[]
+  selectionStore: EditorSelectionStore
   statistics: DocumentStatistics
 }
 
 export function EditorStatusBar({
-  cursorPosition,
+  content,
   isDirty,
   isSaving,
   labels,
+  lineStartOffsets,
+  selectionStore,
   statistics,
 }: EditorStatusBarProps) {
+  const selection = useSyncExternalStore(
+    selectionStore.subscribe,
+    selectionStore.getSnapshot,
+    selectionStore.getSnapshot,
+  )
+  const cursorPosition = useMemo(
+    () => getCursorPosition(content, selection.end, lineStartOffsets),
+    [content, lineStartOffsets, selection.end],
+  )
   const saveState = isSaving ? labels.saving : isDirty ? labels.unsaved : labels.saved
 
   return (

@@ -19,7 +19,7 @@ import { ExternalFileBanner } from './components/ExternalFileBanner'
 import { ImageImportNotice } from './components/ImageImportNotice'
 import { EditorStatusBar } from './components/EditorStatusBar'
 import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/lazyMarkdownPreview'
-import { MarkdownEditor, type MarkdownEditorHandle, type SelectionRange } from './components/MarkdownEditor'
+import { MarkdownEditor, type MarkdownEditorHandle } from './components/MarkdownEditor'
 import { WelcomeWorkspace } from './components/WelcomeWorkspace'
 import {
   detectSystemLanguage,
@@ -51,7 +51,8 @@ import {
   withShortcutTitle,
 } from './platform/keyboardShortcuts'
 import { useFileShortcuts } from './hooks/useFileShortcuts'
-import { getCursorPosition, getDocumentStatistics } from './domain/documentStatistics'
+import { getDocumentStatistics, getLineStartOffsets } from './domain/documentStatistics'
+import { createEditorSelectionStore } from './domain/editorSelectionStore'
 import type { ReadingViewMode } from './domain/readingSessions'
 import { nativeWindowFrame, type AppWindowFrame } from './platform/windowFrame'
 
@@ -79,7 +80,7 @@ function App({
   const [isDocxImportOpen, setIsDocxImportOpen] = useState(false)
   const [docxImportPhase, setDocxImportPhase] = useState<'checking' | 'idle' | 'installing' | 'converting'>('idle')
   const [docxImportStatus, setDocxImportStatus] = useState<DocxImportStatus | null>(null)
-  const [editorSelection, setEditorSelection] = useState<SelectionRange>({ start: 0, end: 0 })
+  const [editorSelectionStore] = useState(() => createEditorSelectionStore())
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const editorRef = useRef<MarkdownEditorHandle | null>(null)
@@ -426,13 +427,13 @@ function App({
   const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
   const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
   const deferredContent = useDeferredValue(markdownDocument.content)
+  const lineStartOffsets = useMemo(
+    () => getLineStartOffsets(markdownDocument.content),
+    [markdownDocument.content],
+  )
   const documentStatistics = useMemo(
     () => getDocumentStatistics(deferredContent),
     [deferredContent],
-  )
-  const cursorPosition = useMemo(
-    () => getCursorPosition(markdownDocument.content, editorSelection.end),
-    [editorSelection.end, markdownDocument.content],
   )
 
   const welcomeStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
@@ -606,7 +607,7 @@ function App({
               ? t.imageImportProgress(imageImportProgress.completed, imageImportProgress.total)
               : t.imageImportPreparing}
             imageDropLabel={t.imageDropLabel}
-            onSelectionChange={setEditorSelection}
+            onSelectionChange={editorSelectionStore.setSelection}
             label={t.markdownSource}
             t={t}
             showToolbar={viewMode !== 'preview'}
@@ -624,11 +625,11 @@ function App({
             dismissLabel={t.imageImportDismiss}
             message={t.imageImportRetryNotice}
             onDismiss={dismissFailedImages}
-            onRetry={() => void retryFailedImages(editorSelection)}
+            onRetry={() => void retryFailedImages(editorSelectionStore.getSnapshot())}
             retryLabel={t.imageImportRetry}
           />
           {viewMode !== 'preview' ? <EditorStatusBar
-            cursorPosition={cursorPosition}
+            content={markdownDocument.content}
             isDirty={markdownDocument.isDirty}
             isSaving={isSaving}
             labels={{
@@ -640,6 +641,8 @@ function App({
               unsaved: t.unsaved,
               wordCount: t.wordCount,
             }}
+            lineStartOffsets={lineStartOffsets}
+            selectionStore={editorSelectionStore}
             statistics={documentStatistics}
           /> : null}
         </section>
