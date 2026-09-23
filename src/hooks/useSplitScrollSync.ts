@@ -6,7 +6,8 @@ import {
   mapEditorScrollToPreview,
   mapPreviewScrollToEditor,
   normalizeSplitScrollAnchors,
-  type SplitScrollAnchor,
+  EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS,
+  type NormalizedSplitScrollAnchors,
 } from '../domain/splitScroll'
 import {
   loadSplitScrollPreferences,
@@ -40,7 +41,7 @@ export function useSplitScrollSync({
   previewZoom,
 }: UseSplitScrollSyncOptions) {
   const [isEnabled, setIsEnabled] = useState(() => loadSplitScrollPreferences().enabled)
-  const anchorsRef = useRef<SplitScrollAnchor[]>([])
+  const anchorsRef = useRef<NormalizedSplitScrollAnchors>(EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS)
   const editorLineTopsRef = useRef<number[]>([])
   const lastSourceRef = useRef<ScrollSource>('editor')
   const pendingProgrammaticScrollRef = useRef<PendingProgrammaticScroll>(null)
@@ -58,7 +59,7 @@ export function useSplitScrollSync({
     const previewPanel = previewPanelRef.current
     const preview = previewRef.current
     if (!previewPanel || !preview) {
-      anchorsRef.current = []
+      anchorsRef.current = EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS
       return
     }
 
@@ -168,6 +169,7 @@ export function useSplitScrollSync({
 
     let frameId: number | null = null
     function scheduleMeasurement() {
+      anchorsRef.current = EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS
       if (frameId !== null) {
         return
       }

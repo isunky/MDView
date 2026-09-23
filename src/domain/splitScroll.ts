@@ -9,6 +9,13 @@ export type SplitScrollAnchor = {
   previewTop: number
 }
 
+declare const normalizedSplitScrollAnchorsBrand: unique symbol
+export type NormalizedSplitScrollAnchors = readonly SplitScrollAnchor[] & {
+  readonly [normalizedSplitScrollAnchorsBrand]: true
+}
+export const EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS =
+  Object.freeze([]) as unknown as NormalizedSplitScrollAnchors
+
 const SOURCE_VIEWPORT_OFFSET = 32
 
 export function getScrollMaximum(metrics: ScrollMetrics): number {
@@ -19,7 +26,7 @@ export function normalizeSplitScrollAnchors(
   anchors: SplitScrollAnchor[],
   lineCount: number,
   previewMaximum: number,
-): SplitScrollAnchor[] {
+): NormalizedSplitScrollAnchors {
   const maximumLine = Math.max(1, lineCount)
   const normalized = anchors
     .filter((anchor) => Number.isFinite(anchor.sourceLine) && Number.isFinite(anchor.previewTop))
@@ -47,7 +54,7 @@ export function normalizeSplitScrollAnchors(
     mergeEndpoint(unique, { sourceLine: 1, previewTop: 0 }, true),
     { sourceLine: maximumLine, previewTop: previewMaximum },
     false,
-  ).sort((left, right) => left.sourceLine - right.sourceLine)
+  ).sort((left, right) => left.sourceLine - right.sourceLine) as unknown as NormalizedSplitScrollAnchors
 }
 
 export function mapEditorScrollToPreview(
@@ -56,7 +63,7 @@ export function mapEditorScrollToPreview(
   lineCount: number,
   lineHeight: number,
   paddingTop: number,
-  anchors: SplitScrollAnchor[],
+  anchors: NormalizedSplitScrollAnchors,
   editorLineTops: number[] = [],
 ): number {
   const previewMaximum = getScrollMaximum(preview)
@@ -75,7 +82,7 @@ export function mapEditorScrollToPreview(
   const sourceLine = editorLineTops.length > 1
     ? sourceLineAtTop(editorLineTops, editor.scrollTop)
     : 1 + Math.max(0, editor.scrollTop + SOURCE_VIEWPORT_OFFSET - paddingTop) / Math.max(1, lineHeight)
-  return mapSourceLineToPreview(sourceLine, lineCount, previewMaximum, anchors)
+  return mapSourceLineToPreview(clamp(sourceLine, 1, Math.max(1, lineCount)), anchors)
 }
 
 export function mapPreviewScrollToEditor(
@@ -84,7 +91,7 @@ export function mapPreviewScrollToEditor(
   lineCount: number,
   lineHeight: number,
   paddingTop: number,
-  anchors: SplitScrollAnchor[],
+  anchors: NormalizedSplitScrollAnchors,
   editorLineTops: number[] = [],
 ): number {
   const previewMaximum = getScrollMaximum(preview)
@@ -100,7 +107,11 @@ export function mapPreviewScrollToEditor(
     return editorMaximum
   }
 
-  const sourceLine = mapPreviewTopToSourceLine(preview.scrollTop, lineCount, previewMaximum, anchors)
+  const sourceLine = clamp(
+    mapPreviewTopToSourceLine(clamp(preview.scrollTop, 0, previewMaximum), anchors),
+    1,
+    Math.max(1, lineCount),
+  )
   if (editorLineTops.length > 1) {
     const index = Math.min(editorLineTops.length - 1, Math.max(0, Math.floor(sourceLine - 1)))
     const top = editorLineTops[index]
@@ -128,46 +139,46 @@ function sourceLineAtTop(tops: number[], top: number): number {
 
 function mapSourceLineToPreview(
   sourceLine: number,
-  lineCount: number,
-  previewMaximum: number,
-  anchors: SplitScrollAnchor[],
+  anchors: NormalizedSplitScrollAnchors,
 ): number {
-  const normalized = normalizeSplitScrollAnchors(anchors, lineCount, previewMaximum)
-  const [before, after] = findSourceRange(normalized, sourceLine)
+  const [before, after] = findSourceRange(anchors, sourceLine)
   return interpolate(sourceLine, before.sourceLine, after.sourceLine, before.previewTop, after.previewTop)
 }
 
 function mapPreviewTopToSourceLine(
   previewTop: number,
-  lineCount: number,
-  previewMaximum: number,
-  anchors: SplitScrollAnchor[],
+  anchors: NormalizedSplitScrollAnchors,
 ): number {
-  const normalized = normalizeSplitScrollAnchors(anchors, lineCount, previewMaximum)
-  const [before, after] = findPreviewRange(normalized, previewTop)
+  const [before, after] = findPreviewRange(anchors, previewTop)
   return interpolate(previewTop, before.previewTop, after.previewTop, before.sourceLine, after.sourceLine)
 }
 
-function findSourceRange(anchors: SplitScrollAnchor[], sourceLine: number): [SplitScrollAnchor, SplitScrollAnchor] {
-  for (let index = 1; index < anchors.length; index += 1) {
-    if (sourceLine <= anchors[index].sourceLine) {
-      return [anchors[index - 1], anchors[index]]
-    }
+function findSourceRange(anchors: readonly SplitScrollAnchor[], sourceLine: number): [SplitScrollAnchor, SplitScrollAnchor] {
+  let low = 1
+  let high = anchors.length
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2)
+    if (sourceLine <= anchors[middle].sourceLine) high = middle
+    else low = middle + 1
   }
 
   const last = anchors.at(-1) ?? { sourceLine: 1, previewTop: 0 }
-  return [last, last]
+  if (low >= anchors.length) return [last, last]
+  return [anchors[low - 1] ?? last, anchors[low] ?? last]
 }
 
-function findPreviewRange(anchors: SplitScrollAnchor[], previewTop: number): [SplitScrollAnchor, SplitScrollAnchor] {
-  for (let index = 1; index < anchors.length; index += 1) {
-    if (previewTop <= anchors[index].previewTop) {
-      return [anchors[index - 1], anchors[index]]
-    }
+function findPreviewRange(anchors: readonly SplitScrollAnchor[], previewTop: number): [SplitScrollAnchor, SplitScrollAnchor] {
+  let low = 1
+  let high = anchors.length
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2)
+    if (previewTop <= anchors[middle].previewTop) high = middle
+    else low = middle + 1
   }
 
   const last = anchors.at(-1) ?? { sourceLine: 1, previewTop: 0 }
-  return [last, last]
+  if (low >= anchors.length) return [last, last]
+  return [anchors[low - 1] ?? last, anchors[low] ?? last]
 }
 
 function mergeEndpoint(

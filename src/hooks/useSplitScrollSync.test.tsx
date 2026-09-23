@@ -1,7 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useSplitScrollSync } from './useSplitScrollSync'
-import { getScrollMaximum, mapEditorScrollToPreview } from '../domain/splitScroll'
+import {
+  getScrollMaximum,
+  mapEditorScrollToPreview,
+  normalizeSplitScrollAnchors,
+} from '../domain/splitScroll'
 
 describe('useSplitScrollSync', () => {
   afterEach(() => {
@@ -66,7 +70,8 @@ describe('useSplitScrollSync', () => {
 
     act(() => {
       editor.scrollTop = 348
-      expect(mapEditorScrollToPreview(editor, previewPanel, 40, 20, 0, [{ sourceLine: 20, previewTop: 400 }])).toBeCloseTo(400)
+      const anchors = normalizeSplitScrollAnchors([{ sourceLine: 20, previewTop: 400 }], 40, 1_600)
+      expect(mapEditorScrollToPreview(editor, previewPanel, 40, 20, 0, anchors)).toBeCloseTo(400)
       editor.dispatchEvent(new Event('scroll'))
       expect(window.requestAnimationFrame).toHaveBeenCalledTimes(initialAnimationFrameCalls + 1)
       flushAnimationFrames(animationFrames)
