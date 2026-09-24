@@ -65,18 +65,32 @@ export function useSplitScrollSync({
 
     const panelTop = previewPanel.getBoundingClientRect().top
     const previewMaximum = getScrollMaximum(previewPanel)
-    const rawAnchors = Array.from(
+    const elements = Array.from(
       preview.querySelectorAll<HTMLElement>('[data-mdview-source-start]'),
-    ).flatMap((element) => {
+    )
+    const startLines = new Set(elements.map(element => Number(element.dataset.mdviewSourceStart)))
+    const rawAnchors = elements.flatMap((element) => {
       const sourceLine = Number(element.dataset.mdviewSourceStart)
       if (!Number.isFinite(sourceLine) || sourceLine < 1) {
         return []
       }
 
-      return [{
+      const rect = element.getBoundingClientRect()
+      const anchors = [{
         sourceLine,
-        previewTop: previewPanel.scrollTop + element.getBoundingClientRect().top - panelTop,
+        previewTop: previewPanel.scrollTop + rect.top - panelTop,
       }]
+      const endLine = Number(element.dataset.mdviewSourceEnd)
+      // Keep wrapped block height separate from the following blank source lines.
+      if (Number.isFinite(endLine) && endLine >= sourceLine
+        && !startLines.has(endLine + 1)
+        && !element.querySelector('[data-mdview-source-start]')) {
+        anchors.push({
+          sourceLine: endLine + 1,
+          previewTop: previewPanel.scrollTop + rect.bottom - panelTop,
+        })
+      }
+      return anchors
     })
 
     anchorsRef.current = normalizeSplitScrollAnchors(rawAnchors, lineCount, previewMaximum)
@@ -177,6 +191,7 @@ export function useSplitScrollSync({
       frameId = window.requestAnimationFrame(() => {
         frameId = null
         measureAnchors()
+        scheduleSync(lastSourceRef.current)
       })
     }
 
@@ -201,7 +216,7 @@ export function useSplitScrollSync({
         window.cancelAnimationFrame(frameId)
       }
     }
-  }, [editorRef, isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom, readingFontKey])
+  }, [editorRef, isEnabled, isSplit, measureAnchors, previewContent, previewPanelRef, previewRef, previewZoom, readingFontKey, scheduleSync])
 
   useEffect(() => {
     if (isSplit && isEnabled) {

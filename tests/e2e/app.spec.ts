@@ -196,6 +196,57 @@ test('aligns wrapped Chinese paragraphs with the same preview heading', async ({
   await expect.poll(() => editor.evaluate((element, top) => Math.abs(element.scrollTop - top), editorTop)).toBeLessThan(4)
 })
 
+test('recalibrates split scrolling inside wrapped paragraphs when content width changes', async ({ page }) => {
+  await page.setViewportSize({ width: 2800, height: 1000 })
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill(Array.from({ length: 40 }, (_, i) => (
+    `## Section ${i + 1}\n\n${'A long paragraph with enough words to wrap differently at each reading width. '.repeat(24)}\n`
+  )).join('\n'))
+  await page.getByRole('button', { name: 'Split preview and source' }).click()
+  const preview = page.getByLabel('Preview panel')
+  const paragraph = preview.locator('p[data-mdview-source-start="39"]')
+  await expect(paragraph).toBeAttached()
+
+  const [start, end] = await editor.evaluate(async element => {
+    const modulePath = '/src/domain/editorLinePositions.ts'
+    const { measureEditorLinePositions } = await import(modulePath)
+    const tops = measureEditorLinePositions(element as HTMLTextAreaElement)
+    return [tops[38], tops[39]]
+  })
+  const editorMidpoint = (start + end) / 2
+  await editor.evaluate((element, top) => { element.scrollTop = top }, editorMidpoint)
+
+  for (const width of [940, 680, 1180]) {
+    await page.evaluate(value => {
+      document.documentElement.style.setProperty('--reader-content-width', `${value}px`)
+    }, width)
+    await expect.poll(() => preview.locator('.markdown-preview').evaluate(element => (
+      element.getBoundingClientRect().width
+    ))).toBe(width)
+    await expect.poll(() => paragraph.evaluate(element => {
+      const panel = element.closest('[aria-label="Preview panel"]')!
+      const rect = element.getBoundingClientRect()
+      return Math.abs(rect.top + rect.height / 2 - panel.getBoundingClientRect().top)
+    })).toBeLessThan(4)
+
+    await paragraph.evaluate(element => {
+      const panel = element.closest('[aria-label="Preview panel"]')!
+      const rect = element.getBoundingClientRect()
+      panel.scrollTop += rect.top + rect.height / 4 - panel.getBoundingClientRect().top
+    })
+    await expect.poll(() => editor.evaluate((element, top) => Math.abs(element.scrollTop - top),
+      start + (end - start) / 4)).toBeLessThan(4)
+
+    await editor.evaluate((element, top) => { element.scrollTop = top }, editorMidpoint)
+    await expect.poll(() => paragraph.evaluate(element => {
+      const panel = element.closest('[aria-label="Preview panel"]')!
+      const rect = element.getBoundingClientRect()
+      return Math.abs(rect.top + rect.height / 2 - panel.getBoundingClientRect().top)
+    })).toBeLessThan(4)
+  }
+})
+
 test('restores a pending unsaved draft', async ({ page }) => {
   await page.goto('/?e2eDraft=recover')
 
