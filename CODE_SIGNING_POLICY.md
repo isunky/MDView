@@ -21,8 +21,8 @@ This policy applies to official Windows MSI installers, the `MDView.exe` executa
 
 - MDView does not include telemetry and does not automatically upload local Markdown content.
 - MDView 不包含遥测功能，也不会自动上传本地 Markdown 内容。
-- Network access occurs only when a user checks or downloads an update, opens an external link, or opens a document that explicitly references a remote resource.
-- 仅当用户检查或下载更新、打开外部链接，或打开明确引用远程资源的文档时，应用才会访问网络。
+- Network access occurs when a user checks or downloads an update, opens an external link or remote document resource, or chooses to install the conversion components required for first-time Word import.
+- 应用仅在用户检查或下载更新、打开外部链接或远程文档资源，或主动安装首次导入 Word 所需的转换组件时访问网络。
 - Security concerns should be reported through the repository's GitHub security reporting channel when available, or by opening an issue without disclosing exploit details.
 - 安全问题请优先通过仓库的 GitHub 安全报告渠道提交；若该渠道不可用，请创建不包含利用细节的 Issue。
 

@@ -290,6 +290,8 @@ npm run desktop:dev
 
 版本管理 / Versioning：`npm run version:sync -- <major.minor.patch>`，然后 / then `npm run version:check`。
 
+维护者路线图 / Maintainer roadmap: [`ROADMAP.md`](ROADMAP.md)。
+
 </details>
 
 <details>
