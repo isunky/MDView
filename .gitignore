@@ -13,7 +13,6 @@ dist-edge
 dist-ssr
 playwright-report
 src-tauri/target
-.superpowers
 test-results
 *.local
 
