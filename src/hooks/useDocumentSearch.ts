@@ -4,7 +4,7 @@ import {
   replaceTextMatch,
   replaceTextMatches,
 } from '../domain/documentSearch'
-import type { MarkdownEditorHandle } from '../components/MarkdownEditor'
+import type { MarkdownEditorHandle } from '../components/editor/MarkdownEditor'
 import {
   detectShortcutPlatform,
   matchesShortcut,

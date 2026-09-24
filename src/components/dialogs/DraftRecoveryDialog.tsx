@@ -1,5 +1,5 @@
-import type { RecoverableDraft } from '../domain/documentDraft'
-import type { Translation } from '../i18n'
+import type { RecoverableDraft } from '../../domain/documentDraft'
+import type { Translation } from '../../i18n'
 
 type DraftRecoveryDialogProps = {
   draft: RecoverableDraft | null

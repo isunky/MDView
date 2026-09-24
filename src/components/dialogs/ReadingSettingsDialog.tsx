@@ -6,9 +6,9 @@ import {
   READING_LINE_HEIGHT_RANGE,
   type ReadingPreferences,
   type ReadingThemeMode,
-} from '../domain/readingPreferences'
-import type { Translation } from '../i18n'
-import { systemFontAccess } from '../platform/systemFonts'
+} from '../../domain/readingPreferences'
+import type { Translation } from '../../i18n'
+import { systemFontAccess } from '../../platform/systemFonts'
 
 type ReadingSettingsDialogProps = {
   open: boolean

@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
-import type { MarkdownSyntaxSection } from '../domain/markdownSyntaxReference'
+import type { MarkdownSyntaxSection } from '../../domain/markdownSyntaxReference'
 import {
   applyCodeBlock,
   applyHeading,
@@ -18,21 +18,21 @@ import {
   applyTable,
   type EditorEdit,
   type SelectionRange,
-} from '../domain/editorCommands'
+} from '../../domain/editorCommands'
 import {
   detectShortcutPlatform,
   matchesShortcut,
-} from '../platform/keyboardShortcuts'
+} from '../../platform/keyboardShortcuts'
 import {
   MarkdownEditorToolbar,
   type MarkdownEditorToolbarLabels,
   type ToolbarFormatCommand,
 } from './MarkdownEditorToolbar'
-import { MarkdownSyntaxDialog } from './MarkdownSyntaxDialog'
-import { MathEditorDialog, type MathEditorDialogLabels } from './MathEditorDialog'
-import { applyMathExpression, findMathExpression, type MathDisplayMode, type MathExpression } from '../domain/markdownMath'
-import { getTextareaSelection, useEditorHistory } from '../hooks/useEditorHistory'
-import { useEditorImageInput } from '../hooks/useEditorImageInput'
+import { MarkdownSyntaxDialog } from '../dialogs/MarkdownSyntaxDialog'
+import { MathEditorDialog, type MathEditorDialogLabels } from '../dialogs/MathEditorDialog'
+import { applyMathExpression, findMathExpression, type MathDisplayMode, type MathExpression } from '../../domain/markdownMath'
+import { getTextareaSelection, useEditorHistory } from '../../hooks/useEditorHistory'
+import { useEditorImageInput } from '../../hooks/useEditorImageInput'
 
 export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
@@ -64,7 +64,7 @@ type MarkdownEditorProps = {
   imageDropLabel?: string
 }
 
-export type { SelectionRange } from '../domain/editorCommands'
+export type { SelectionRange } from '../../domain/editorCommands'
 
 export type MarkdownEditorHandle = {
   focus: () => void

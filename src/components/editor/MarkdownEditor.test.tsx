@@ -2,8 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markdownSyntaxReference } from '../domain/markdownSyntaxReference'
-import { translations } from '../i18n'
+import { markdownSyntaxReference } from '../../domain/markdownSyntaxReference'
+import { translations } from '../../i18n'
 import { MarkdownEditor } from './MarkdownEditor'
 
 const labels = {

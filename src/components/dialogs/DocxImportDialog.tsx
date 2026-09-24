@@ -1,6 +1,6 @@
 import { Check, ChevronDown, FileText, LoaderCircle, Wrench, X } from 'lucide-react'
-import type { Translation } from '../i18n'
-import type { DocxImportStatus } from '../platform/fileAccess'
+import type { Translation } from '../../i18n'
+import type { DocxImportStatus } from '../../platform/fileAccess'
 
 type DocxImportPhase = 'checking' | 'idle' | 'installing' | 'converting'
 

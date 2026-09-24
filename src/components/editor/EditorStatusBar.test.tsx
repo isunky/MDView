@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { createEditorSelectionStore } from '../domain/editorSelectionStore'
-import { getLineStartOffsets } from '../domain/documentStatistics'
+import { createEditorSelectionStore } from '../../domain/editorSelectionStore'
+import { getLineStartOffsets } from '../../domain/documentStatistics'
 import { EditorStatusBar } from './EditorStatusBar'
 
 describe('EditorStatusBar', () => {

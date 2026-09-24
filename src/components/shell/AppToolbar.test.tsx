@@ -1,8 +1,8 @@
 import { createRef } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { translations } from '../i18n'
-import type { AppWindowFrame } from '../platform/windowFrame'
+import { translations } from '../../i18n'
+import type { AppWindowFrame } from '../../platform/windowFrame'
 import { AppToolbar } from './AppToolbar'
 
 describe('AppToolbar window frame', () => {

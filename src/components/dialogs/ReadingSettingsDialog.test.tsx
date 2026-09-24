@@ -1,15 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_READING_PREFERENCES } from '../domain/readingPreferences'
-import { translations } from '../i18n'
+import { DEFAULT_READING_PREFERENCES } from '../../domain/readingPreferences'
+import { translations } from '../../i18n'
 import { ReadingSettingsDialog } from './ReadingSettingsDialog'
 
 const { listSystemFontFamilies } = vi.hoisted(() => ({
   listSystemFontFamilies: vi.fn(async () => ['Aptos', 'Microsoft YaHei', 'Segoe UI']),
 }))
 
-vi.mock('../platform/systemFonts', () => ({
+vi.mock('../../platform/systemFonts', () => ({
   systemFontAccess: {
     supportsSystemFonts: true,
     listSystemFontFamilies,

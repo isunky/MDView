@@ -1,6 +1,6 @@
 import { Check, Sigma, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import type { MathDisplayMode } from '../domain/markdownMath'
+import type { MathDisplayMode } from '../../domain/markdownMath'
 
 export type MathEditorDialogLabels = {
   mathDialogTitle: string

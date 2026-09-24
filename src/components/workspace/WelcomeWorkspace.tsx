@@ -6,9 +6,9 @@ import {
   FileInput,
   Trash2,
 } from 'lucide-react'
-import type { RecentFile } from '../domain/recentFiles'
-import type { Translation } from '../i18n'
-import { AppLogo } from './AppLogo'
+import type { RecentFile } from '../../domain/recentFiles'
+import type { Translation } from '../../i18n'
+import { AppLogo } from '../shell/AppLogo'
 
 type WelcomeWorkspaceProps = {
   recentFiles: RecentFile[]

@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DocumentOutline } from './DocumentOutline'
-import type { MarkdownOutlineItem } from '../domain/markdownOutline'
-import { translations } from '../i18n'
+import type { MarkdownOutlineItem } from '../../domain/markdownOutline'
+import { translations } from '../../i18n'
 
 describe('DocumentOutline', () => {
   afterEach(() => {

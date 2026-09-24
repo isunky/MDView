@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ToastPlacement } from '../hooks/useTransientToast'
+import type { ToastPlacement } from '../../hooks/useTransientToast'
 
 type ToastProps = {
   children: ReactNode

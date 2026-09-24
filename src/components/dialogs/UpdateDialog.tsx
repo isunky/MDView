@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { CircleCheck, Download, ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
-import { appInfo } from '../appInfo'
-import type { Translation } from '../i18n'
-import type { AppDistribution, AppUpdateCandidate, AppUpdateProgress } from '../platform/appUpdates'
-import type { AppUpdatePhase } from '../hooks/useAppUpdater'
+import { appInfo } from '../../appInfo'
+import type { Translation } from '../../i18n'
+import type { AppDistribution, AppUpdateCandidate, AppUpdateProgress } from '../../platform/appUpdates'
+import type { AppUpdatePhase } from '../../hooks/useAppUpdater'
 
 type UpdateDialogProps = {
   distribution: AppDistribution

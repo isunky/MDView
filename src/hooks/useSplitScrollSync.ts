@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import type { MarkdownEditorHandle } from '../components/MarkdownEditor'
+import type { MarkdownEditorHandle } from '../components/editor/MarkdownEditor'
 import { measureEditorLinePositions } from '../domain/editorLinePositions'
 import {
   getScrollMaximum,

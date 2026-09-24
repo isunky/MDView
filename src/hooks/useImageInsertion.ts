@@ -8,7 +8,7 @@ import {
   MAX_IMAGE_ASSETS_PER_IMPORT,
   MAX_IMAGE_ASSET_SIZE,
 } from '../domain/imageAssets'
-import type { SelectionRange } from '../components/MarkdownEditor'
+import type { SelectionRange } from '../components/editor/MarkdownEditor'
 import type { FileAccess } from '../platform/fileAccess'
 
 export type ImageImportProgress = {

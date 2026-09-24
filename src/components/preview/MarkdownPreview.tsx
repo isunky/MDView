@@ -4,17 +4,17 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
-import { remarkCjkStrong } from '../domain/remarkCjkStrong'
+import { remarkCjkStrong } from '../../domain/remarkCjkStrong'
 import './highlightThemes.css'
-import { resolveLocalMarkdownResource, resolveSameDocumentHeading } from '../domain/localMarkdownResources'
-import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions } from '../domain/markdownSanitize'
-import { createSearchHighlightPlugin } from '../domain/previewSearchHighlight'
-import type { EffectiveReadingTheme } from '../domain/readingPreferences'
-import { isExternalWebUrl, openExternalLink, type OpenExternalLink } from '../platform/externalLinks'
-import type { FileAccess } from '../platform/fileAccess'
-import { CodeBlock } from './preview/CodeBlock'
-import { LocalMarkdownImage } from './preview/LocalMarkdownImage'
-import { MermaidDiagram } from './preview/MermaidDiagram'
+import { resolveLocalMarkdownResource, resolveSameDocumentHeading } from '../../domain/localMarkdownResources'
+import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions } from '../../domain/markdownSanitize'
+import { createSearchHighlightPlugin } from '../../domain/previewSearchHighlight'
+import type { EffectiveReadingTheme } from '../../domain/readingPreferences'
+import { isExternalWebUrl, openExternalLink, type OpenExternalLink } from '../../platform/externalLinks'
+import type { FileAccess } from '../../platform/fileAccess'
+import { CodeBlock } from './CodeBlock'
+import { LocalMarkdownImage } from './LocalMarkdownImage'
+import { MermaidDiagram } from './MermaidDiagram'
 import {
   ColorValuePreview,
   getCodeBlockMetadata,
@@ -23,9 +23,9 @@ import {
   isHexColorValue,
   MarkdownTable,
   renderColorPreviews,
-} from './preview/previewRenderers'
-import type { MarkdownPreviewLabels } from './preview/previewTypes'
-import { containsMarkdownMath } from '../domain/markdownMath'
+} from './previewRenderers'
+import type { MarkdownPreviewLabels } from './previewTypes'
+import { containsMarkdownMath } from '../../domain/markdownMath'
 import type { PluggableList } from 'unified'
 
 type MathPlugins = {
@@ -89,7 +89,7 @@ type MarkdownPreviewProps = {
   theme?: EffectiveReadingTheme
 }
 
-export type { MarkdownPreviewLabels } from './preview/previewTypes'
+export type { MarkdownPreviewLabels } from './previewTypes'
 
 export const MarkdownPreview = memo(function MarkdownPreview({
   content,

@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { getCursorPosition } from '../domain/documentStatistics'
-import type { EditorSelectionStore } from '../domain/editorSelectionStore'
-import { useDocumentStatistics } from '../hooks/useDocumentStatistics'
+import { getCursorPosition } from '../../domain/documentStatistics'
+import type { EditorSelectionStore } from '../../domain/editorSelectionStore'
+import { useDocumentStatistics } from '../../hooks/useDocumentStatistics'
 
 export type EditorStatusBarLabels = {
   characterCount: (count: number) => string

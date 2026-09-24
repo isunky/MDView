@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ListTree, PanelLeftClose } from 'lucide-react'
-import type { MarkdownOutlineItem } from '../domain/markdownOutline'
-import type { OutlineDepth } from '../domain/outlinePreferences'
-import type { Translation } from '../i18n'
+import type { MarkdownOutlineItem } from '../../domain/markdownOutline'
+import type { OutlineDepth } from '../../domain/outlinePreferences'
+import type { Translation } from '../../i18n'
 
 const OUTLINE_DEPTH_OPTIONS: OutlineDepth[] = [1, 2, 3, 4, 5]
 

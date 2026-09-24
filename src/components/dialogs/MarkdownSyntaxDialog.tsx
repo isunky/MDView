@@ -1,6 +1,6 @@
 import { Check, Copy, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { MarkdownSyntaxSection } from '../domain/markdownSyntaxReference'
+import type { MarkdownSyntaxSection } from '../../domain/markdownSyntaxReference'
 
 export type MarkdownSyntaxDialogProps = {
   open: boolean

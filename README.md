@@ -22,11 +22,11 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <a href="main2.png"><img src="main2.png" alt="MDView 阅读工作区与目录导航 / Reading workspace and outline" width="100%" /></a>
+      <a href="docs/assets/screenshots/main2.png"><img src="docs/assets/screenshots/main2.png" alt="MDView 阅读工作区与目录导航 / Reading workspace and outline" width="100%" /></a>
       <br /><sub>阅读工作区 / Reading workspace</sub>
     </td>
     <td width="50%" align="center">
-      <a href="main.png"><img src="main.png" alt="MDView 欢迎页与最近文件 / Welcome screen and recent files" width="100%" /></a>
+      <a href="docs/assets/screenshots/main.png"><img src="docs/assets/screenshots/main.png" alt="MDView 欢迎页与最近文件 / Welcome screen and recent files" width="100%" /></a>
       <br /><sub>欢迎页 / Welcome screen</sub>
     </td>
   </tr>
@@ -290,7 +290,7 @@ npm run desktop:dev
 
 版本管理 / Versioning：`npm run version:sync -- <major.minor.patch>`，然后 / then `npm run version:check`。
 
-维护者路线图 / Maintainer roadmap: [`ROADMAP.md`](ROADMAP.md)。
+维护者资料 / Maintainer docs: [`ROADMAP.md`](ROADMAP.md) · [`工程目录说明 / Project structure`](docs/PROJECT_STRUCTURE.md)。
 
 </details>
 

@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { ExternalLink, X } from 'lucide-react'
-import { appInfo } from '../appInfo'
-import type { Translation } from '../i18n'
-import { AppLogo } from './AppLogo'
+import { appInfo } from '../../appInfo'
+import type { Translation } from '../../i18n'
+import { AppLogo } from '../shell/AppLogo'
 
 type AboutDialogProps = {
   open: boolean

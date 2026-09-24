@@ -1,6 +1,6 @@
 import { Copy, Minus, Square, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { AppWindowFrame } from '../platform/windowFrame'
+import type { AppWindowFrame } from '../../platform/windowFrame'
 
 export function WindowControls({
   frame,
