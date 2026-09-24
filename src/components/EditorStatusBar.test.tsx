@@ -24,7 +24,6 @@ describe('EditorStatusBar', () => {
         }}
         lineStartOffsets={getLineStartOffsets(content)}
         selectionStore={selectionStore}
-        statistics={{ characterCount: 8, wordCount: 2, readingMinutes: 1 }}
       />,
     )
 

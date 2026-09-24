@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type MouseEvent, type Ref } from 'react'
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
@@ -33,7 +33,34 @@ type MathPlugins = {
   rehypeKatex: typeof import('rehype-katex').default
 }
 
+type MarkdownRendererComponents = NonNullable<ComponentProps<typeof ReactMarkdown>['components']>
+
+type MarkdownBodyProps = {
+  components: MarkdownRendererComponents
+  content: string
+  rehypePlugins: PluggableList
+  remarkPlugins: PluggableList
+}
+
 let mathPluginsPromise: Promise<MathPlugins> | null = null
+
+const MarkdownBody = memo(function MarkdownBody({
+  components,
+  content,
+  rehypePlugins,
+  remarkPlugins,
+}: MarkdownBodyProps) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
+      urlTransform={transformMarkdownUrl}
+      components={components}
+    >
+      {content}
+    </ReactMarkdown>
+  )
+})
 
 function loadMathPlugins() {
   if (!mathPluginsPromise) {
@@ -78,6 +105,8 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   theme = 'light',
 }: MarkdownPreviewProps) {
   const articleRef = useRef<HTMLElement | null>(null)
+  const searchMatchesRef = useRef<HTMLElement[]>([])
+  const activeSearchMatchRef = useRef<HTMLElement | null>(null)
   const [mathPlugins, setMathPlugins] = useState<MathPlugins | null>(null)
   const hasMath = useMemo(() => containsMarkdownMath(content), [content])
   const searchHighlightPlugin = useMemo(() => createSearchHighlightPlugin(searchQuery), [searchQuery])
@@ -108,80 +137,90 @@ export const MarkdownPreview = memo(function MarkdownPreview({
     return plugins
   }, [mathPlugins, searchHighlightPlugin])
 
+  const components = useMemo<MarkdownRendererComponents>(() => ({
+    pre({ children, node, ...props }) {
+      const mermaidChart = getMermaidChart(children)
+      if (mermaidChart) {
+        return <MermaidDiagram chart={mermaidChart} labels={labels} sourceLine={node?.position?.start.line} theme={theme} />
+      }
+      const metadata = getCodeBlockMetadata(children)
+      return <CodeBlock code={metadata.code} language={metadata.language} labels={labels} {...props}>{children}</CodeBlock>
+    },
+    table({ children, node, ...props }) {
+      void node
+      return <MarkdownTable {...props}>{children}</MarkdownTable>
+    },
+    p({ children, node, ...props }) { void node; return <p {...props}>{renderColorPreviews(children)}</p> },
+    li({ children, node, ...props }) { void node; return <li {...props}>{renderColorPreviews(children)}</li> },
+    td({ children, node, ...props }) { void node; return <td {...props}>{renderColorPreviews(children)}</td> },
+    th({ children, node, ...props }) { void node; return <th {...props}>{renderColorPreviews(children)}</th> },
+    code({ children, className, node, ...props }) {
+      void node
+      const codeText = getReactNodeText(children)
+      return <code className={className} {...props}>{!className && isHexColorValue(codeText) ? <ColorValuePreview value={codeText} /> : children}</code>
+    },
+    a({ href, children, node, ...props }) {
+      void node
+      function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+        const heading = resolveSameDocumentHeading(href)
+        if (heading) {
+          event.preventDefault()
+          window.document.getElementById(heading)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          return
+        }
+        const resource = resolveLocalMarkdownResource(href, sourcePath)
+        if (resource?.kind === 'markdown') {
+          event.preventDefault()
+          onOpenMarkdownLink?.(resource.path, resource.headingId)
+          return
+        }
+        if (isExternalWebUrl(href)) {
+          event.preventDefault()
+          void Promise.resolve(onOpenExternalLink(href)).catch((error) => console.error('Failed to open external link', error))
+        }
+      }
+      const external = isExternalWebUrl(href)
+      return <a href={href} onClick={handleClick} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} {...props}>{children}</a>
+    },
+    img({ src, alt, node, ...props }) {
+      void node
+      return <LocalMarkdownImage src={src} alt={alt} sourcePath={sourcePath} readLocalImageFile={readLocalImageFile} labels={labels} {...props} />
+    },
+  }), [labels, onOpenExternalLink, onOpenMarkdownLink, readLocalImageFile, sourcePath, theme])
+
   useEffect(() => {
     const article = articleRef.current
     if (!article) {
       onSearchMatchCountChange?.(0)
       return
     }
+    if (!searchQuery) {
+      searchMatchesRef.current = []
+      onSearchMatchCountChange?.(0)
+      return
+    }
     const matches = Array.from(article.querySelectorAll<HTMLElement>('[data-mdview-search-match]'))
+    searchMatchesRef.current = matches
     onSearchMatchCountChange?.(matches.length)
-    matches.forEach((match, index) => {
-      const isActive = index === activeSearchIndex
-      match.classList.toggle('search-match-active', isActive)
-      if (isActive && matches.length > 0) match.scrollIntoView?.({ block: 'center', behavior: 'auto' })
-    })
-  }, [activeSearchIndex, content, onSearchMatchCountChange, searchQuery])
+  }, [content, onSearchMatchCountChange, searchQuery])
+
+  useEffect(() => {
+    activeSearchMatchRef.current?.classList.remove('search-match-active')
+    const current = searchMatchesRef.current[activeSearchIndex]
+    activeSearchMatchRef.current = current ?? null
+    if (!current) return
+    current.classList.add('search-match-active')
+    current.scrollIntoView?.({ block: 'center', behavior: 'auto' })
+  }, [activeSearchIndex, content, searchQuery])
 
   return (
     <article className="markdown-preview" aria-label="Markdown preview" ref={setPreviewRef}>
-      <ReactMarkdown
-        remarkPlugins={remarkPlugins}
+      <MarkdownBody
+        components={components}
+        content={content}
         rehypePlugins={rehypePlugins}
-        urlTransform={transformMarkdownUrl}
-        components={{
-          pre({ children, node, ...props }) {
-            const mermaidChart = getMermaidChart(children)
-            if (mermaidChart) {
-              return <MermaidDiagram chart={mermaidChart} labels={labels} sourceLine={node?.position?.start.line} theme={theme} />
-            }
-            const metadata = getCodeBlockMetadata(children)
-            return <CodeBlock code={metadata.code} language={metadata.language} labels={labels} {...props}>{children}</CodeBlock>
-          },
-          table({ children, node, ...props }) {
-            void node
-            return <MarkdownTable {...props}>{children}</MarkdownTable>
-          },
-          p({ children, node, ...props }) { void node; return <p {...props}>{renderColorPreviews(children)}</p> },
-          li({ children, node, ...props }) { void node; return <li {...props}>{renderColorPreviews(children)}</li> },
-          td({ children, node, ...props }) { void node; return <td {...props}>{renderColorPreviews(children)}</td> },
-          th({ children, node, ...props }) { void node; return <th {...props}>{renderColorPreviews(children)}</th> },
-          code({ children, className, node, ...props }) {
-            void node
-            const codeText = getReactNodeText(children)
-            return <code className={className} {...props}>{!className && isHexColorValue(codeText) ? <ColorValuePreview value={codeText} /> : children}</code>
-          },
-          a({ href, children, node, ...props }) {
-            void node
-            function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-              const heading = resolveSameDocumentHeading(href)
-              if (heading) {
-                event.preventDefault()
-                window.document.getElementById(heading)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                return
-              }
-              const resource = resolveLocalMarkdownResource(href, sourcePath)
-              if (resource?.kind === 'markdown') {
-                event.preventDefault()
-                onOpenMarkdownLink?.(resource.path, resource.headingId)
-                return
-              }
-              if (isExternalWebUrl(href)) {
-                event.preventDefault()
-                void Promise.resolve(onOpenExternalLink(href)).catch((error) => console.error('Failed to open external link', error))
-              }
-            }
-            const external = isExternalWebUrl(href)
-            return <a href={href} onClick={handleClick} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} {...props}>{children}</a>
-          },
-          img({ src, alt, node, ...props }) {
-            void node
-            return <LocalMarkdownImage src={src} alt={alt} sourcePath={sourcePath} readLocalImageFile={readLocalImageFile} labels={labels} {...props} />
-          },
-        }}
-      >
-        {content}
-      </ReactMarkdown>
+        remarkPlugins={remarkPlugins}
+      />
     </article>
   )
 })

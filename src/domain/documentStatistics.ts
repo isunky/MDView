@@ -18,9 +18,18 @@ export function getLineStartOffsets(content: string): number[] {
 }
 
 const FALLBACK_WORD_PATTERN = /[\p{Script=Han}]|[\p{L}\p{N}]+/gu
+let wordSegmenter: Intl.Segmenter | undefined
 
 export function getDocumentStatistics(content: string): DocumentStatistics {
-  const characterCount = Array.from(content).length
+  let characterCount = 0
+  for (let index = 0; index < content.length; index += 1) {
+    const codeUnit = content.charCodeAt(index)
+    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff && index + 1 < content.length) {
+      const nextCodeUnit = content.charCodeAt(index + 1)
+      if (nextCodeUnit >= 0xdc00 && nextCodeUnit <= 0xdfff) index += 1
+    }
+    characterCount += 1
+  }
   const wordCount = countWords(content)
 
   return {
@@ -54,9 +63,9 @@ export function getCursorPosition(
 
 function countWords(content: string): number {
   if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
-    const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
+    wordSegmenter ??= new Intl.Segmenter(undefined, { granularity: 'word' })
     let count = 0
-    for (const segment of segmenter.segment(content)) {
+    for (const segment of wordSegmenter.segment(content)) {
       if (segment.isWordLike) {
         count += 1
       }

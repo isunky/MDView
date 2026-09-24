@@ -8,6 +8,7 @@ describe('document statistics', () => {
       wordCount: expect.any(Number),
       readingMinutes: 1,
     })
+    expect(getDocumentStatistics('a😀b').characterCount).toBe(3)
   })
 
   it('reports the cursor line and one-based Unicode column', () => {

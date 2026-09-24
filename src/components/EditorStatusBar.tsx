@@ -1,6 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { getCursorPosition, type DocumentStatistics } from '../domain/documentStatistics'
+import { getCursorPosition } from '../domain/documentStatistics'
 import type { EditorSelectionStore } from '../domain/editorSelectionStore'
+import { useDocumentStatistics } from '../hooks/useDocumentStatistics'
 
 export type EditorStatusBarLabels = {
   characterCount: (count: number) => string
@@ -19,7 +20,6 @@ type EditorStatusBarProps = {
   labels: EditorStatusBarLabels
   lineStartOffsets: number[]
   selectionStore: EditorSelectionStore
-  statistics: DocumentStatistics
 }
 
 export function EditorStatusBar({
@@ -29,8 +29,8 @@ export function EditorStatusBar({
   labels,
   lineStartOffsets,
   selectionStore,
-  statistics,
 }: EditorStatusBarProps) {
+  const statistics = useDocumentStatistics(content)
   const selection = useSyncExternalStore(
     selectionStore.subscribe,
     selectionStore.getSnapshot,

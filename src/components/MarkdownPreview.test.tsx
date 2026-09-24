@@ -334,6 +334,24 @@ describe('MarkdownPreview', () => {
     expect(onSearchMatchCountChange).toHaveBeenLastCalledWith(2)
   })
 
+  it('does not rescan preview matches when moving between results', async () => {
+    const onSearchMatchCountChange = vi.fn()
+    const props = {
+      content: 'Read this. Read it again.',
+      searchQuery: 'read',
+      activeSearchIndex: 0,
+      onSearchMatchCountChange,
+    }
+    const { rerender } = render(<MarkdownPreview {...props} />)
+
+    await screen.findAllByText('Read')
+    expect(onSearchMatchCountChange).toHaveBeenCalledTimes(1)
+
+    rerender(<MarkdownPreview {...props} activeSearchIndex={1} />)
+    expect(screen.getAllByText('Read')[1]).toHaveClass('search-match-active')
+    expect(onSearchMatchCountChange).toHaveBeenCalledTimes(1)
+  })
+
   it('does not show color swatches inside fenced code blocks', () => {
     render(
       <MarkdownPreview

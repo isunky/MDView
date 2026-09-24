@@ -28,7 +28,10 @@ export function replaceTextMatch(
 }
 
 export function replaceAllTextMatches(content: string, query: string, replacement: string): string {
-  const matches = findTextMatches(content, query)
+  return replaceTextMatches(content, findTextMatches(content, query), replacement)
+}
+
+export function replaceTextMatches(content: string, matches: TextMatch[], replacement: string): string {
   if (matches.length === 0) {
     return content
   }

@@ -1,7 +1,6 @@
 import {
   Suspense,
   useCallback,
-  useDeferredValue,
   useMemo,
   useRef,
   useState,
@@ -51,7 +50,7 @@ import {
   withShortcutTitle,
 } from './platform/keyboardShortcuts'
 import { useFileShortcuts } from './hooks/useFileShortcuts'
-import { getDocumentStatistics, getLineStartOffsets } from './domain/documentStatistics'
+import { getLineStartOffsets } from './domain/documentStatistics'
 import { createEditorSelectionStore } from './domain/editorSelectionStore'
 import type { ReadingViewMode } from './domain/readingSessions'
 import { nativeWindowFrame, type AppWindowFrame } from './platform/windowFrame'
@@ -426,14 +425,9 @@ function App({
   const saveTitle = withShortcutTitle(t.saveLabel, { key: 's' }, shortcutPlatform)
   const saveAsTitle = withShortcutTitle(t.saveAsLabel, { key: 's', shiftKey: true }, shortcutPlatform)
   const previewPanelStyle = { '--preview-zoom': previewZoom } as CSSProperties
-  const deferredContent = useDeferredValue(markdownDocument.content)
   const lineStartOffsets = useMemo(
     () => getLineStartOffsets(markdownDocument.content),
     [markdownDocument.content],
-  )
-  const documentStatistics = useMemo(
-    () => getDocumentStatistics(deferredContent),
-    [deferredContent],
   )
 
   const welcomeStatus = !['saved', 'opened', 'unsaved'].includes(statusMessage)
@@ -643,7 +637,6 @@ function App({
             }}
             lineStartOffsets={lineStartOffsets}
             selectionStore={editorSelectionStore}
-            statistics={documentStatistics}
           /> : null}
         </section>
         <section
@@ -661,7 +654,7 @@ function App({
               readLocalImageFile={fileAccess.readLocalImageFile}
               onOpenMarkdownLink={handleOpenMarkdownLink}
               labels={t.previewLabels}
-              searchQuery={viewMode === 'preview' ? documentSearch.query : ''}
+              searchQuery={viewMode === 'preview' ? documentSearch.appliedQuery : ''}
               activeSearchIndex={documentSearch.activeIndex}
               onSearchMatchCountChange={documentSearch.setPreviewMatchCount}
             />
