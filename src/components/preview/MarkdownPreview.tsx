@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm'
 import { remarkCjkStrong } from '../../domain/remarkCjkStrong'
 import './highlightThemes.css'
 import { resolveLocalMarkdownResource, resolveSameDocumentHeading } from '../../domain/localMarkdownResources'
-import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions } from '../../domain/markdownSanitize'
+import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions, rehypeWindowsFileUrls } from '../../domain/markdownSanitize'
 import { createSearchHighlightPlugin } from '../../domain/previewSearchHighlight'
 import type { EffectiveReadingTheme } from '../../domain/readingPreferences'
 import { isExternalWebUrl, openExternalLink, type OpenExternalLink } from '../../platform/externalLinks'
@@ -128,6 +128,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   const rehypePlugins = useMemo<PluggableList>(() => {
     const plugins: PluggableList = [
       rehypeRaw,
+      rehypeWindowsFileUrls,
       [rehypeSanitize, markdownSanitizeSchema],
       rehypeSourcePositions,
       rehypeSafeHeadingIds,

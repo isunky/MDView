@@ -229,6 +229,40 @@ describe('MarkdownPreview', () => {
     expect(screen.queryByRole('dialog', { name: 'Image preview' })).not.toBeInTheDocument()
   })
 
+  it.each([
+    '/D:/AICode/body/output/ui-audit/01-overview.png',
+    'D:/AICode/body/output/ui-audit/01-overview.png',
+    'file:///D:/AICode/body/output/ui-audit/01-overview.png',
+  ])('loads Windows absolute image paths from Markdown: %s', async (href) => {
+    const dataUrl = 'data:image/png;base64,overview'
+    const readLocalImageFile = vi.fn(async (path: string) => ({ path, dataUrl }))
+
+    render(<MarkdownPreview
+      content={`![Overview](${href})`}
+      sourcePath="D:\\AICode\\body\\output\\report.md"
+      readLocalImageFile={readLocalImageFile}
+    />)
+
+    await waitFor(() => expect(screen.getByRole('img', { name: 'Overview' })).toHaveAttribute('src', dataUrl))
+    expect(readLocalImageFile).toHaveBeenCalledWith('D:\\AICode\\body\\output\\ui-audit\\01-overview.png')
+  })
+
+  it('loads Windows drive paths inside HTML while removing unsafe image URLs', async () => {
+    const dataUrl = 'data:image/png;base64,overview'
+    const readLocalImageFile = vi.fn(async (path: string) => ({ path, dataUrl }))
+    render(<MarkdownPreview
+      content={'<img src="D:\\Docs\\overview.png" alt="Overview" />\n<img src="javascript:alert(1)" alt="Unsafe" />\n<img src="d:javascript:alert(1)" alt="Invalid drive" />'}
+      sourcePath="D:\\Docs\\report.md"
+      readLocalImageFile={readLocalImageFile}
+    />)
+
+    await waitFor(() => expect(screen.getByRole('img', { name: 'Overview' })).toHaveAttribute('src', dataUrl))
+    expect(readLocalImageFile).toHaveBeenCalledWith('D:\\Docs\\overview.png')
+    expect(readLocalImageFile).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('img', { name: 'Unsafe' })).not.toHaveAttribute('src')
+    expect(screen.getByRole('img', { name: 'Invalid drive' })).not.toHaveAttribute('src')
+  })
+
   it('renders inline HTML and loads local images inside HTML blocks', async () => {
     const readLocalImageFile = vi.fn(async (path: string) => ({
       path,
@@ -276,6 +310,19 @@ describe('MarkdownPreview', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Current' }))
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+  })
+
+  it.each(['/D:/Docs/guide.md#intro', 'D:/Docs/guide.md#intro'])('opens Windows Markdown paths: %s', (href) => {
+    const onOpenMarkdownLink = vi.fn()
+    render(<MarkdownPreview
+      content={`[Guide](${href})`}
+      sourcePath="D:\\Docs\\readme.md"
+      onOpenMarkdownLink={onOpenMarkdownLink}
+    />)
+
+    fireEvent.click(screen.getByRole('link', { name: 'Guide' }))
+
+    expect(onOpenMarkdownLink).toHaveBeenCalledWith('D:\\Docs\\guide.md', 'intro')
   })
 
   it('opens web links with the system browser handler', () => {

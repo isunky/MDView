@@ -70,6 +70,26 @@ describe('exportDocx', () => {
     expect(result.bytes[1]).toBe(0x4b)
   })
 
+  it('embeds images with slash-prefixed Windows paths into Word', async () => {
+    const readLocalImageFile = vi.fn(async (path: string) => ({
+      path,
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l8sAAAAASUVORK5CYII=',
+    }))
+    const result = await buildExportDocx({
+      title: 'Overview',
+      content: '![Overview](/D:/Docs/images/overview.png)',
+      sourcePath: 'D:\\Docs\\report.md',
+      readLocalImageFile,
+    })
+    const zip = await JSZip.loadAsync(result.bytes)
+    const xml = await zip.file('word/document.xml')!.async('string')
+
+    expect(readLocalImageFile).toHaveBeenCalledWith('D:\\Docs\\images\\overview.png')
+    expect(zip.file(/^word\/media\/.*\.png$/)).toHaveLength(1)
+    expect(xml).toContain('<w:drawing>')
+    expect(xml).not.toContain('Image: Overview')
+  })
+
   it('exports common formulas as editable Office Math', async () => {
     const result = await buildExportDocx({
       title: 'Math',

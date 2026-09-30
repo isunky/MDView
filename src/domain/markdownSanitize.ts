@@ -101,6 +101,21 @@ export const markdownSanitizeSchema: Schema = {
   ],
 }
 
+export function rehypeWindowsFileUrls() {
+  return function transform(tree: Root) {
+    visitHastNode(tree, (element) => {
+      const property = element.tagName === 'img' ? 'src' : element.tagName === 'a' ? 'href' : null
+      if (!property) return
+
+      const value = element.properties[property]
+      if (typeof value !== 'string' || !/^[a-zA-Z]:[\\/]/.test(value)) return
+
+      // Convert drive paths before sanitization treats the drive letter as a URL scheme.
+      element.properties[property] = `file:///${value.replace(/\\/g, '/')}`
+    })
+  }
+}
+
 export function rehypeSafeHeadingIds() {
   return function transform(tree: Root) {
     const idCounts = createHeadingIdCounts()

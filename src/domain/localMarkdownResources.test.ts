@@ -24,6 +24,30 @@ describe('localMarkdownResources', () => {
     })
   })
 
+  it.each([
+    '/D:/AICode/body/output/ui-audit/01-overview.png',
+    '/D%3A/AICode/body/output/ui-audit/01-overview.png',
+  ])('resolves slash-prefixed Windows image paths: %s', (href) => {
+    expect(resolveLocalMarkdownResource(href, 'D:\\AICode\\body\\output\\report.md')).toEqual({
+      kind: 'image',
+      path: 'D:\\AICode\\body\\output\\ui-audit\\01-overview.png',
+    })
+  })
+
+  it('resolves slash-prefixed Windows paths without a saved document', () => {
+    expect(resolveLocalMarkdownResource('/D:/Images/cover%20one.png', null)).toEqual({
+      kind: 'image',
+      path: 'D:/Images/cover one.png',
+    })
+  })
+
+  it('preserves macOS absolute image paths', () => {
+    expect(resolveLocalMarkdownResource('/Users/sunky/Images/cover.png', '/Users/sunky/report.md')).toEqual({
+      kind: 'image',
+      path: '/Users/sunky/Images/cover.png',
+    })
+  })
+
   it('resolves file URL image paths', () => {
     expect(resolveLocalMarkdownResource('file:///C:/Images/cover%20one.png', 'C:\\Docs\\Guide\\readme.md')).toEqual({
       kind: 'image',

@@ -47,6 +47,22 @@ describe('createLightExportContent', () => {
     expect(readRemoteImageFile).toHaveBeenCalledTimes(1)
   })
 
+  it('embeds images with slash-prefixed Windows paths', async () => {
+    const { createLightExportContent } = await import('./exportPreview')
+    const preview = document.createElement('article')
+    preview.innerHTML = '<img src="/D:/Docs/images/overview.png">'
+    const readLocalImageFile = vi.fn(async () => ({ dataUrl: 'data:image/png;base64,overview' }))
+
+    await expect(createLightExportContent(preview, {
+      sourcePath: 'D:\\Docs\\report.md',
+      readLocalImageFile,
+    })).resolves.toEqual({
+      html: '<img src="data:image/png;base64,overview">',
+      unresolvedResources: [],
+    })
+    expect(readLocalImageFile).toHaveBeenCalledWith('D:\\Docs\\images\\overview.png')
+  })
+
   it('removes internal split-scroll source attributes from export output', async () => {
     const { createLightExportContent } = await import('./exportPreview')
     const preview = document.createElement('article')

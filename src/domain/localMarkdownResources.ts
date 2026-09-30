@@ -142,7 +142,7 @@ function decodePath(value: string): string {
 
 function toLocalPath(path: string): string {
   if (!path.startsWith('file:')) {
-    return decodePath(path)
+    return decodePath(path).replace(/^\/([a-zA-Z]:[\\/])/, '$1')
   }
 
   try {
