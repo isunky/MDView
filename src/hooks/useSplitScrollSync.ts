@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { MarkdownEditorHandle } from '../components/editor/MarkdownEditor'
 import { measureEditorLinePositions } from '../domain/editorLinePositions'
 import {
   getScrollMaximum,
   mapEditorScrollToPreview,
   mapPreviewScrollToEditor,
+  mapPreviewTopToSourceLine,
+  mapSourceLineToPreview,
   normalizeSplitScrollAnchors,
   EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS,
   type NormalizedSplitScrollAnchors,
@@ -24,6 +26,8 @@ type UseSplitScrollSyncOptions = {
   previewPanelRef: RefObject<HTMLElement | null>
   previewRef: RefObject<HTMLElement | null>
   previewZoom: number
+  viewMode?: 'preview' | 'edit' | 'split'
+  documentSessionId?: string
 }
 
 type PendingProgrammaticScroll = {
@@ -39,6 +43,8 @@ export function useSplitScrollSync({
   previewPanelRef,
   previewRef,
   previewZoom,
+  viewMode = isSplit ? 'split' : 'preview',
+  documentSessionId,
 }: UseSplitScrollSyncOptions) {
   const [isEnabled, setIsEnabled] = useState(() => loadSplitScrollPreferences().enabled)
   const anchorsRef = useRef<NormalizedSplitScrollAnchors>(EMPTY_NORMALIZED_SPLIT_SCROLL_ANCHORS)
@@ -48,6 +54,8 @@ export function useSplitScrollSync({
   const pendingSyncSourceRef = useRef<ScrollSource | null>(null)
   const syncFrameRef = useRef<number | null>(null)
   const lineCount = useMemo(() => Math.max(1, previewContent.split(/\r?\n/).length), [previewContent])
+  const pendingViewLineRef = useRef<{ line: number; select: boolean } | null>(null)
+  const viewContextRef = useRef(documentSessionId)
 
   useEffect(() => {
     saveSplitScrollPreferences({ enabled: isEnabled })
@@ -95,6 +103,50 @@ export function useSplitScrollSync({
 
     anchorsRef.current = normalizeSplitScrollAnchors(rawAnchors, lineCount, previewMaximum)
   }, [editorRef, lineCount, previewPanelRef, previewRef])
+
+  const prepareViewChange = useCallback((from: 'preview' | 'edit' | 'split', to: 'preview' | 'edit' | 'split') => {
+    if (from === to) return
+    const editor = editorRef.current?.getScrollElement()
+    const panel = previewPanelRef.current
+    let line = 1
+    if (from === 'preview' && panel) {
+      measureAnchors()
+      line = anchorsRef.current.length ? mapPreviewTopToSourceLine(panel.scrollTop, anchorsRef.current) : 1
+      lastSourceRef.current = 'preview'
+    } else if (editor) {
+      line = editor.value.slice(0, editor.selectionEnd).split('\n').length
+      lastSourceRef.current = 'editor'
+    }
+    pendingViewLineRef.current = { line, select: from === 'preview' }
+  }, [editorRef, measureAnchors, previewPanelRef])
+
+  useLayoutEffect(() => {
+    if (viewContextRef.current !== documentSessionId) {
+      viewContextRef.current = documentSessionId
+      pendingViewLineRef.current = null
+    }
+    const pending = pendingViewLineRef.current
+    if (!pending) return
+    const frame = requestAnimationFrame(() => {
+      pendingViewLineRef.current = null
+      measureAnchors()
+      const editor = editorRef.current?.getScrollElement()
+      const panel = previewPanelRef.current
+      if (editor && viewMode !== 'preview') {
+        if (pending.select) {
+          const lines = editor.value.split('\n')
+          const offset = lines.slice(0, Math.max(0, Math.floor(pending.line) - 1)).reduce((sum, line) => sum + line.length + 1, 0)
+          editorRef.current?.setSelection({ start: offset, end: offset })
+        }
+        const tops = editorLineTopsRef.current
+        const index = Math.min(tops.length - 1, Math.max(0, Math.floor(pending.line) - 1))
+        const top = tops[index] ?? 0
+        editor.scrollTop = top + (pending.line - Math.floor(pending.line)) * ((tops[index + 1] ?? top) - top)
+      }
+      if (panel && viewMode !== 'edit' && anchorsRef.current.length) panel.scrollTop = mapSourceLineToPreview(pending.line, anchorsRef.current)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [documentSessionId, editorRef, measureAnchors, previewPanelRef, viewMode])
 
   const scheduleSync = useCallback((source: ScrollSource) => {
     if (!isSplit || !isEnabled) {
@@ -233,6 +285,7 @@ export function useSplitScrollSync({
   }, [])
 
   return {
+    prepareViewChange,
     isSplitScrollSyncEnabled: isEnabled,
     toggleSplitScrollSync: () => setIsEnabled((current) => !current),
   }

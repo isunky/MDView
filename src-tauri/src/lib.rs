@@ -47,6 +47,9 @@ use system_fonts::list_system_font_families;
 struct OpenedFiles(Mutex<Vec<PathBuf>>);
 
 #[derive(Default)]
+struct ExportedFiles(Mutex<HashSet<PathBuf>>);
+
+#[derive(Default)]
 struct FileAccessPolicy {
     approved_markdown_files: Mutex<HashSet<PathBuf>>,
     active_document_roots: Mutex<HashSet<PathBuf>>,
@@ -349,6 +352,7 @@ async fn save_markdown_file_dialog(
 #[tauri::command]
 async fn export_html_file_dialog(
     app: AppHandle,
+    exported: State<'_, ExportedFiles>,
     content: String,
     default_path: String,
 ) -> Result<Option<String>, String> {
@@ -366,12 +370,15 @@ async fn export_html_file_dialog(
 
     ensure_html_path(&path)?;
     fs::write(&path, content).map_err(|error| format!("Failed to write file: {error}"))?;
+    exported.0.lock().map_err(|_| "Export registry unavailable".to_string())?
+        .insert(fs::canonicalize(&path).map_err(|error| error.to_string())?);
     Ok(Some(path.to_string_lossy().to_string()))
 }
 
 #[tauri::command]
 async fn export_docx_file_dialog(
     app: AppHandle,
+    exported: State<'_, ExportedFiles>,
     bytes: Vec<u8>,
     default_path: String,
 ) -> Result<Option<String>, String> {
@@ -389,6 +396,8 @@ async fn export_docx_file_dialog(
 
     ensure_docx_path(&path)?;
     fs::write(&path, bytes).map_err(|error| format!("Failed to write file: {error}"))?;
+    exported.0.lock().map_err(|_| "Export registry unavailable".to_string())?
+        .insert(fs::canonicalize(&path).map_err(|error| error.to_string())?);
     Ok(Some(path.to_string_lossy().to_string()))
 }
 
@@ -586,12 +595,26 @@ fn reveal_file_in_folder(
         .map_err(|error| format!("Failed to reveal file: {error}"))
 }
 
+#[tauri::command]
+fn open_export_result(app: AppHandle, exported: State<'_, ExportedFiles>, path: String, reveal: bool) -> Result<(), String> {
+    let path = fs::canonicalize(path).map_err(|error| error.to_string())?;
+    if !exported.0.lock().map_err(|_| "Export registry unavailable".to_string())?.contains(&path) {
+        return Err("Only files exported in this session may be opened.".to_string());
+    }
+    if reveal {
+        app.opener().reveal_item_in_dir(&path).map_err(|error| error.to_string())
+    } else {
+        app.opener().open_path(path.to_string_lossy().to_string(), None::<&str>).map_err(|error| error.to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let startup_files = collect_opened_files_from_args();
     let startup_files_for_policy = startup_files.clone();
     let builder = tauri::Builder::default()
         .manage(OpenedFiles(Mutex::new(startup_files)))
+        .manage(ExportedFiles::default())
         .manage(DocxImportRegistry::default())
         .manage(FileWatcherRegistry::default())
         .plugin(tauri_plugin_dialog::init())
@@ -612,6 +635,7 @@ pub fn run() {
             stop_markdown_file_watch,
             save_markdown_file_dialog,
             export_html_file_dialog,
+            open_export_result,
             export_docx_file_dialog,
             export_preview_image_dialog,
             get_docx_import_status,

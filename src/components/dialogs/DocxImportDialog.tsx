@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { Check, ChevronDown, FileText, LoaderCircle, Wrench, X } from 'lucide-react'
 import type { Translation } from '../../i18n'
 import type { DocxImportStatus } from '../../platform/fileAccess'
@@ -18,6 +19,7 @@ export function DocxImportDialog({
   onSelectPython: () => void
   onOpenPythonDownload: () => void
 }) {
+  const dialogRef = useDialogFocus(open, onClose)
   if (!open) return null
 
   const busy = phase === 'checking' || phase === 'installing' || phase === 'converting'
@@ -40,7 +42,7 @@ export function DocxImportDialog({
                 ? t.docxImportComponentsBroken
                 : t.docxImportComponentsMissing
 
-  return <div className="dialog-backdrop docx-import-backdrop" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
+  return <div ref={dialogRef} className="dialog-backdrop docx-import-backdrop" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
     <section className="docx-import-dialog" role="dialog" aria-modal="true" aria-labelledby="docx-import-title">
       <button type="button" className="about-close" onClick={onClose} aria-label={t.docxImportClose}>
         <X aria-hidden="true" />

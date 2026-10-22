@@ -118,8 +118,10 @@ describe('App', () => {
       'Open Markdown File',
       'Save',
       'Save As',
+      'Hide recent files',
       'recent.md',
       'Reveal recent.md in folder',
+      'Remove recent.md from recent files',
       'Clear recent files',
     ])
   })
@@ -249,7 +251,7 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: '预览 Markdown' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '编辑 Markdown 源码' }))
-    expect(screen.getByText('已保存')).toBeInTheDocument()
+    expect(screen.getByText('尚未保存到文件')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '文件' }))
     expect(screen.getByRole('menuitem', { name: '新建' })).toBeInTheDocument()
@@ -262,7 +264,7 @@ describe('App', () => {
     await user.click(screen.getByRole('menuitem', { name: 'English' }))
 
     expect(screen.getByRole('button', { name: 'File' })).toBeInTheDocument()
-    expect(screen.getByText('Saved')).toBeInTheDocument()
+    expect(screen.getByText('Not saved to a file')).toBeInTheDocument()
   })
 
   it('closes open menus with Escape and outside clicks', async () => {
@@ -330,7 +332,7 @@ describe('App', () => {
     ])
   })
 
-  it('removes a recent file when reopening it fails', async () => {
+  it('keeps a recent file available for retry when reopening it fails', async () => {
     const user = userEvent.setup()
     seedRecentFiles([recent('/tmp/missing.md', '2026-01-01T00:00:00.000Z')])
     renderApp({
@@ -344,8 +346,55 @@ describe('App', () => {
     await openFileMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'missing.md' }))
 
-    expect(screen.getByText('Recent file could not be opened and was removed.')).toBeInTheDocument()
+    expect(screen.getByText('Recent file could not be opened. Its entry is kept so you can retry.')).toBeInTheDocument()
+    expect(getStoredRecentFiles().map(file => file.path)).toEqual(['/tmp/missing.md'])
+  })
+
+  it('hides names and paths without deleting recent files, then allows removing one entry', async () => {
+    const user = userEvent.setup()
+    seedRecentFiles([recent('/tmp/private-note.md', '2026-01-01T00:00:00.000Z')])
+    renderWelcomeApp({ fileAccess: createFileAccess() })
+    await user.click(screen.getByRole('button', { name: 'Hide recent files' }))
+    expect(screen.queryByText('private-note.md')).toBeNull()
+    expect(screen.queryByTitle('/tmp/private-note.md')).toBeNull()
+    expect(getStoredRecentFiles()).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Show recent files' }))
+    await user.click(screen.getByRole('button', { name: 'Remove private-note.md from recent files' }))
     expect(getStoredRecentFiles()).toEqual([])
+  })
+
+  it('returns focus to Word import after canceling a nested unsaved-changes prompt', async () => {
+    const user = userEvent.setup()
+    renderWelcomeApp({ fileAccess: createFileAccess({ docxImport: {
+      getStatus: vi.fn(async () => ({ state: 'ready' as const, canInstallPython: true })),
+      selectPython: vi.fn(), install: vi.fn(), importFile: vi.fn(), cancel: vi.fn(),
+    } }) })
+    await user.click(screen.getByRole('button', { name: 'Create new markdown file' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Markdown source' }), { target: { value: '# Unsaved' } })
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Import Word (.docx)' }))
+    const convert = await screen.findByRole('button', { name: 'Choose and convert .docx' })
+    await user.click(convert)
+    expect(await screen.findByRole('dialog', { name: 'Save your changes?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog', { name: 'Save your changes?' })).toBeNull()
+    expect(convert).toHaveFocus()
+    expect(convert.closest('[inert]')).toBeNull()
+  })
+
+  it('relinks a missing recent file only after a replacement is selected', async () => {
+    const user = userEvent.setup()
+    seedRecentFiles([recent('/tmp/missing.md', '2026-01-01T00:00:00.000Z')])
+    renderApp({ fileAccess: createFileAccess({
+      openMarkdownFileAtPath: vi.fn(async () => { throw new Error('Moved') }),
+      openFile: file('/tmp/moved.md', '# Moved document'),
+    }) })
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'missing.md' }))
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Locate missing.md' }))
+    expect(await screen.findByRole('heading', { name: 'Moved document' })).toBeInTheDocument()
+    expect(getStoredRecentFiles().map(file => file.path)).toEqual(['/tmp/moved.md'])
   })
 
   it('clears recent files from the menu and storage', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   clearDocumentDraft,
   createDocumentDraftId,
@@ -32,7 +32,6 @@ type DocumentViewMode = 'preview' | 'edit'
 
 type UseDocumentControllerOptions = {
   fileAccess: FileAccess
-  discardUnsavedMessage: string
   recentFileOpenFailedMessage: string
   fileOperationFailedMessage: string
   draftBackupFailedMessage: string
@@ -48,7 +47,6 @@ const DRAFT_SAVE_DELAY_MS = 750
 
 export function useDocumentController({
   fileAccess,
-  discardUnsavedMessage,
   recentFileOpenFailedMessage,
   fileOperationFailedMessage,
   draftBackupFailedMessage,
@@ -67,19 +65,28 @@ export function useDocumentController({
   const [pendingDraft, setPendingDraft] = useState<RecoverableDraft | null>(loadDocumentDraft)
   const [isStartupResolved, setIsStartupResolved] = useState(false)
   const [externalFileState, setExternalFileState] = useState<ExternalFileState | null>(null)
+  const [failedRecentPaths, setFailedRecentPaths] = useState<string[]>([])
+  const [pendingUnsavedTitle, setPendingUnsavedTitle] = useState<string | null>(null)
+  const unsavedResolverRef = useRef<((result: boolean) => void) | null>(null)
   const saveOperationRef = useRef<Promise<string | null> | null>(null)
   const documentRef = useRef(markdownDocument)
   const [documentSessionId, setDocumentSessionId] = useState(createDocumentDraftId)
   const sessionIdRef = useRef(documentSessionId)
   const backupFailureNotifiedRef = useRef(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     documentRef.current = markdownDocument
   }, [markdownDocument])
 
-  const canDiscardUnsavedChanges = useCallback((): boolean => {
-    return !markdownDocument.isDirty || window.confirm(discardUnsavedMessage)
-  }, [discardUnsavedMessage, markdownDocument.isDirty])
+  const canDiscardUnsavedChanges = useCallback(async (): Promise<boolean> => {
+    if (!documentRef.current.isDirty) return true
+    if (unsavedResolverRef.current) return false
+    onCloseMenu()
+    setPendingUnsavedTitle(documentRef.current.title)
+    return new Promise<boolean>((resolve) => { unsavedResolverRef.current = resolve })
+  }, [onCloseMenu])
+
+  useEffect(() => () => { unsavedResolverRef.current?.(false) }, [])
 
   const rememberRecentFile = useCallback((path: string) => {
     setRecentFiles((currentFiles) => {
@@ -90,6 +97,7 @@ export function useDocumentController({
   }, [])
 
   const forgetRecentFile = useCallback((path: string) => {
+    setFailedRecentPaths((paths) => paths.filter((item) => item !== path))
     setRecentFiles((currentFiles) => {
       const nextFiles = removeRecentFile(currentFiles, path)
       saveRecentFiles(nextFiles)
@@ -119,6 +127,7 @@ export function useDocumentController({
     onViewModeChange('preview')
     setStatusMessage('opened')
     rememberRecentFile(file.path)
+    setFailedRecentPaths((paths) => paths.filter((path) => path !== file.path))
   }, [clearCurrentDraft, onViewModeChange, rememberRecentFile, startDraftSession])
 
   const persistCurrentDraft = useCallback(() => {
@@ -159,7 +168,9 @@ export function useDocumentController({
         }
       }
 
-      const dispose = await fileAccess.listenForOpenedFiles((file) => loadFile(file, true))
+      const dispose = await fileAccess.listenForOpenedFiles(async (file) => {
+        if (await canDiscardUnsavedChanges()) loadFile(file, true)
+      })
       if (disposed) {
         dispose?.()
         return
@@ -174,7 +185,7 @@ export function useDocumentController({
       disposed = true
       unlisten?.()
     }
-  }, [fileAccess, loadFile])
+  }, [canDiscardUnsavedChanges, fileAccess, loadFile])
 
   const checkCurrentFile = useCallback(async () => {
     const current = documentRef.current
@@ -255,8 +266,8 @@ export function useDocumentController({
     }
   }, [persistCurrentDraft])
 
-  const handleNewDocument = useCallback(() => {
-    if (!canDiscardUnsavedChanges()) {
+  const handleNewDocument = useCallback(async () => {
+    if (documentRef.current.isDirty && !await canDiscardUnsavedChanges()) {
       return
     }
 
@@ -270,7 +281,7 @@ export function useDocumentController({
   }, [canDiscardUnsavedChanges, clearCurrentDraft, onCloseMenu, onViewModeChange, startDraftSession])
 
   const handleOpenFile = useCallback(async () => {
-    if (!canDiscardUnsavedChanges()) {
+    if (documentRef.current.isDirty && !await canDiscardUnsavedChanges()) {
       return
     }
 
@@ -297,7 +308,7 @@ export function useDocumentController({
   }, [clearCurrentDraft, onViewModeChange, startDraftSession])
 
   const handleOpenRecentFile = useCallback(async (path: string) => {
-    if (!canDiscardUnsavedChanges()) {
+    if (documentRef.current.isDirty && !await canDiscardUnsavedChanges()) {
       return
     }
 
@@ -306,13 +317,13 @@ export function useDocumentController({
     try {
       loadFile(await fileAccess.openMarkdownFileAtPath(path), true)
     } catch {
-      forgetRecentFile(path)
+      setFailedRecentPaths((paths) => paths.includes(path) ? paths : [...paths, path])
       setStatusMessage(recentFileOpenFailedMessage)
     }
-  }, [canDiscardUnsavedChanges, fileAccess, forgetRecentFile, loadFile, onCloseMenu, recentFileOpenFailedMessage])
+  }, [canDiscardUnsavedChanges, fileAccess, loadFile, onCloseMenu, recentFileOpenFailedMessage])
 
   const openMarkdownLinkFile = useCallback(async (path: string): Promise<boolean> => {
-    if (!canDiscardUnsavedChanges()) {
+    if (documentRef.current.isDirty && !await canDiscardUnsavedChanges()) {
       return false
     }
 
@@ -324,6 +335,17 @@ export function useDocumentController({
       return false
     }
   }, [canDiscardUnsavedChanges, fileAccess, fileOperationFailedMessage, loadFile])
+
+  const handleLocateRecentFile = useCallback(async (previousPath: string) => {
+    if (documentRef.current.isDirty && !await canDiscardUnsavedChanges()) return
+    onCloseMenu()
+    try {
+      const file = await fileAccess.openMarkdownFile()
+      if (!file) return
+      loadFile(file, true)
+      if (file.path !== previousPath) forgetRecentFile(previousPath)
+    } catch { setStatusMessage(recentFileOpenFailedMessage) }
+  }, [canDiscardUnsavedChanges, fileAccess, forgetRecentFile, loadFile, onCloseMenu, recentFileOpenFailedMessage])
 
   const saveDocument = useCallback((forceSaveAs = false): Promise<string | null> => {
     const existingOperation = saveOperationRef.current
@@ -406,6 +428,15 @@ export function useDocumentController({
     }
     return Boolean(await saveDocument())
   }, [externalFileSaveBlockedMessage, externalFileState, onCloseMenu, saveDocument])
+
+  const resolveUnsavedChanges = useCallback(async (choice: 'save' | 'discard' | 'cancel') => {
+    const resolver = unsavedResolverRef.current
+    if (!resolver || isSaving) return
+    const proceed = choice === 'save' ? await handleSaveFile() : choice === 'discard'
+    unsavedResolverRef.current = null
+    setPendingUnsavedTitle(null)
+    resolver(proceed)
+  }, [handleSaveFile, isSaving])
 
   const handleKeepLocalEdits = useCallback(() => {
     if (externalFileState?.kind !== 'conflict') return
@@ -498,10 +529,16 @@ export function useDocumentController({
   const handleClearRecentFiles = useCallback(() => {
     clearRecentFiles()
     setRecentFiles([])
+    setFailedRecentPaths([])
     onCloseMenu()
   }, [onCloseMenu])
 
   return {
+    pendingUnsavedTitle,
+    resolveUnsavedChanges,
+    failedRecentPaths,
+    forgetRecentFile,
+    handleLocateRecentFile,
     discardPendingDraft,
     documentSessionId,
     externalFileState,

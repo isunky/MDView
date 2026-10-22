@@ -1,5 +1,6 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { Monitor, Moon, RotateCcw, Sun, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
   READING_CONTENT_WIDTH_RANGE,
   READING_FONT_SIZE_RANGE,
@@ -29,6 +30,7 @@ export function ReadingSettingsDialog({
   onUpdate,
   t,
 }: ReadingSettingsDialogProps) {
+  const dialogRef = useDialogFocus(open, onClose)
   const [isFontPickerOpen, setIsFontPickerOpen] = useState(false)
   const [fontListState, setFontListState] = useState<FontListState>('idle')
   const [systemFonts, setSystemFonts] = useState<string[]>([])
@@ -69,27 +71,12 @@ export function ReadingSettingsDialog({
     return systemFonts.filter((font) => font.toLocaleLowerCase().includes(query))
   }, [fontQuery, systemFonts])
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, open])
-
   if (!open) {
     return null
   }
 
   return (
-    <div className="dialog-backdrop" onMouseDown={(event) => {
+    <div ref={dialogRef} className="dialog-backdrop" onMouseDown={(event) => {
       if (event.currentTarget === event.target) {
         onClose()
       }
@@ -179,6 +166,14 @@ export function ReadingSettingsDialog({
           <RangeSetting label={t.contentWidth(preferences.contentWidth)} value={preferences.contentWidth} range={READING_CONTENT_WIDTH_RANGE} onChange={(contentWidth) => onUpdate({ contentWidth })} />
         </section>
 
+        <section className="reading-sample-section" aria-label={t.readingSampleTitle}>
+          <h3>{t.readingSampleTitle}</h3>
+          <div className="reading-sample" style={{ width: `${preferences.contentWidth / READING_CONTENT_WIDTH_RANGE.max * 100}%` }}>
+            <p>{t.readingSampleText}</p>
+            <code>const theme = "MDView"</code>
+            <table><tbody><tr><th>Markdown</th><td>{t.readingSampleCode}</td></tr></tbody></table>
+          </div>
+        </section>
         <footer className="reading-settings-actions">
           <button type="button" className="reading-settings-reset" onClick={onReset}>
             <RotateCcw aria-hidden="true" />

@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { Check, Sigma, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { MathDisplayMode } from '../../domain/markdownMath'
@@ -46,16 +47,12 @@ export function MathEditorDialog({
   onClose: () => void
   onConfirm: (latex: string, mode: MathDisplayMode) => void
 }) {
+  const dialogRef = useDialogFocus(open, onClose)
   const [latex, setLatex] = useState(initialLatex)
   const [mode, setMode] = useState(initialMode)
   const [previewHtml, setPreviewHtml] = useState('')
   const [error, setError] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    setTimeout(() => textareaRef.current?.focus(), 0)
-  }, [open])
 
   useEffect(() => {
     if (!open || !latex.trim()) {
@@ -106,7 +103,7 @@ export function MathEditorDialog({
 
   if (!open) return null
   return (
-    <div className="dialog-backdrop" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
+    <div ref={dialogRef} className="dialog-backdrop" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
       <section className="math-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="math-editor-title">
         <button type="button" className="about-close" onClick={onClose} aria-label={labels.mathCancel}><X aria-hidden="true" /></button>
         <header className="math-editor-header"><span className="math-editor-mark"><Sigma aria-hidden="true" /></span><h2 id="math-editor-title">{labels.mathDialogTitle}</h2></header>
@@ -114,7 +111,7 @@ export function MathEditorDialog({
           <button type="button" role="radio" aria-checked={mode === 'inline'} className={mode === 'inline' ? 'active' : ''} onClick={() => setMode('inline')}>{labels.mathInlineMode}</button>
           <button type="button" role="radio" aria-checked={mode === 'block'} className={mode === 'block' ? 'active' : ''} onClick={() => setMode('block')}>{labels.mathBlockMode}</button>
         </div>
-        <label className="math-editor-field"><span>{labels.mathLatexLabel}</span><textarea ref={textareaRef} value={latex} spellCheck={false} onChange={(event) => setLatex(event.target.value)} onKeyDown={handleKeyDown} /></label>
+        <label className="math-editor-field"><span>{labels.mathLatexLabel}</span><textarea data-dialog-initial-focus ref={textareaRef} value={latex} spellCheck={false} onChange={(event) => setLatex(event.target.value)} onKeyDown={handleKeyDown} /></label>
         <div className="math-template-section"><span>{labels.mathTemplatesLabel}</span><div className="math-template-grid">{templates.map((template) => <button type="button" key={template.latex} title={template.latex} onClick={() => insertTemplate(template.latex)}>{template.label}</button>)}</div></div>
         <div className="math-preview-section"><span>{labels.mathPreviewLabel}</span><div className={`math-live-preview${visibleError ? ' invalid' : ''}`}>{visibleError || (visiblePreviewHtml ? <span dangerouslySetInnerHTML={{ __html: visiblePreviewHtml }} /> : null)}</div></div>
         <footer className="math-editor-actions"><button type="button" className="secondary" onClick={onClose}>{labels.mathCancel}</button><button type="button" className="primary" disabled={!canConfirm} onClick={() => onConfirm(latex, mode)}><Check aria-hidden="true" />{isEditing ? labels.mathUpdate : labels.mathInsert}</button></footer>

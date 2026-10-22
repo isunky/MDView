@@ -7,7 +7,7 @@ export type MarkdownDocument = {
   isDirty: boolean
 }
 
-const untitledContent = '# Untitled\n\nStart writing or open a Markdown file.'
+const untitledContent = ''
 
 export function createInitialDocument(): MarkdownDocument {
   return {

@@ -1,4 +1,5 @@
 import {
+  ChevronLeft, ChevronRight,
   Bold,
   BookOpen,
   ChevronDown,
@@ -44,6 +45,8 @@ export type ToolbarFormatCommand =
   | 'task-list'
 
 export type MarkdownEditorToolbarLabels = {
+  moreFormatting?: string
+  previousFormatting?: string
   toolbarLabel: string
   undoLabel: string
   redoLabel: string
@@ -107,6 +110,22 @@ export function MarkdownEditorToolbar({
   imageBusy?: boolean
   imageBusyLabel?: string
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [overflow, setOverflow] = useState<'none' | 'next' | 'previous'>('none')
+  const updateOverflow = useCallback(() => {
+    const element = scrollRef.current
+    if (!element) return
+    setOverflow(element.scrollWidth <= element.clientWidth + 1 ? 'none' : element.scrollLeft + element.clientWidth < element.scrollWidth - 1 ? 'next' : 'previous')
+  }, [])
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!element) return
+    updateOverflow()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateOverflow)
+    observer?.observe(element)
+    window.addEventListener('resize', updateOverflow)
+    return () => { observer?.disconnect(); window.removeEventListener('resize', updateOverflow) }
+  }, [updateOverflow])
   const headingButtonRef = useRef<HTMLButtonElement | null>(null)
   const blockButtonRef = useRef<HTMLButtonElement | null>(null)
   const tableButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -128,7 +147,7 @@ export function MarkdownEditorToolbar({
   return (
     <>
       <div className="editor-toolbar" role="toolbar" aria-label={labels.toolbarLabel}>
-        <div className="editor-toolbar-scroll">
+        <div className="editor-toolbar-scroll" ref={scrollRef} onScroll={updateOverflow}>
           <div className="editor-toolbar-group">
             <EditorButton
               label={labels.undoLabel}
@@ -252,6 +271,11 @@ export function MarkdownEditorToolbar({
             </EditorButton>
           </div>
         </div>
+        {overflow !== 'none' ? <EditorButton
+          label={overflow === 'next' ? labels.moreFormatting ?? 'More formatting tools' : labels.previousFormatting ?? 'Previous formatting tools'}
+          onClick={() => scrollRef.current?.scrollTo({ left: overflow === 'next' ? scrollRef.current.scrollWidth : 0, behavior: 'smooth' })}>
+          {overflow === 'next' ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
+        </EditorButton> : null}
         <span className="editor-toolbar-spacer" />
         {toolbarEnd}
       </div>

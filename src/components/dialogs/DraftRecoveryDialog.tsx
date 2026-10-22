@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import type { RecoverableDraft } from '../../domain/documentDraft'
 import type { Translation } from '../../i18n'
 
@@ -9,12 +10,13 @@ type DraftRecoveryDialogProps = {
 }
 
 export function DraftRecoveryDialog({ draft, onDiscard, onRestore, t }: DraftRecoveryDialogProps) {
+  const dialogRef = useDialogFocus(Boolean(draft))
   if (!draft) {
     return null
   }
 
   return (
-    <div className="dialog-backdrop">
+    <div ref={dialogRef} className="dialog-backdrop">
       <section className="draft-recovery-dialog" role="dialog" aria-modal="true" aria-labelledby="draft-recovery-title">
         <h2 id="draft-recovery-title">{t.draftRecoveryTitle}</h2>
         <p>{t.draftRecoveryDescription(draft.title, new Date(draft.updatedAt).toLocaleString())}</p>

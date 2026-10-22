@@ -1,4 +1,5 @@
 import {
+  Eye, EyeOff, X, FolderSearch,
   ChevronRight,
   FilePlus2,
   FileText,
@@ -11,6 +12,12 @@ import type { Translation } from '../../i18n'
 import { AppLogo } from '../shell/AppLogo'
 
 type WelcomeWorkspaceProps = {
+  failedRecentPaths?: string[]
+  recentFilesHidden?: boolean
+  onToggleRecentVisibility?: () => void
+  onRemoveRecent?: (path: string) => void
+  onLocateRecent?: (path: string) => void
+  onReveal?: (path: string) => void
   recentFiles: RecentFile[]
   canOpenFiles: boolean
   statusMessage: string | null
@@ -23,6 +30,7 @@ type WelcomeWorkspaceProps = {
 }
 
 export function WelcomeWorkspace({
+  failedRecentPaths = [], recentFilesHidden = false, onToggleRecentVisibility, onRemoveRecent, onReveal, onLocateRecent,
   recentFiles,
   canOpenFiles,
   statusMessage,
@@ -85,6 +93,10 @@ export function WelcomeWorkspace({
         <section className="welcome-recent" aria-labelledby="welcome-recent-title">
           <div className="welcome-recent-header">
             <h3 id="welcome-recent-title">{t.recentFiles}</h3>
+            {recentFiles.length > 0 && onToggleRecentVisibility ? <button type="button" className="welcome-clear" onClick={onToggleRecentVisibility}
+              aria-label={recentFilesHidden ? t.showRecentFiles : t.hideRecentFiles} title={recentFilesHidden ? t.showRecentFiles : t.hideRecentFiles}>
+              {recentFilesHidden ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
+            </button> : null}
             {recentFiles.length > 0 ? (
               <button
                 type="button"
@@ -98,10 +110,10 @@ export function WelcomeWorkspace({
             ) : null}
           </div>
 
-          {recentFiles.length > 0 ? (
+          {recentFilesHidden ? <p className="welcome-empty">{t.recentFilesHidden}</p> : recentFiles.length > 0 ? (
             <ol className="welcome-recent-list">
               {recentFiles.map((file) => (
-                <li key={file.path}>
+                <li key={file.path} className="welcome-recent-row">
                   <button
                     type="button"
                     className="welcome-recent-item"
@@ -114,9 +126,12 @@ export function WelcomeWorkspace({
                     <span className="welcome-recent-meta">
                       <strong>{file.title}</strong>
                       <span>{getParentPath(file.path)}</span>
+                      {failedRecentPaths.includes(file.path) ? <small className="recent-file-warning">{t.recentFileUnavailable}</small> : null}
                     </span>
                     <ChevronRight aria-hidden="true" />
                   </button>
+                  {onReveal ? <button type="button" className="welcome-clear" onClick={() => failedRecentPaths.includes(file.path) && onLocateRecent ? onLocateRecent(file.path) : onReveal(file.path)} aria-label={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.revealInFolder(file.title)} title={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.reveal}><FolderSearch aria-hidden="true" /></button> : null}
+                  {onRemoveRecent ? <button type="button" className="welcome-clear" onClick={() => onRemoveRecent(file.path)} aria-label={t.removeRecentFile(file.title)} title={t.removeRecentFile(file.title)}><X aria-hidden="true" /></button> : null}
                 </li>
               ))}
             </ol>

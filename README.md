@@ -64,9 +64,13 @@ MDView 是一款轻量、美观、免费无广告的 Markdown 阅读器。将 AI
 
 切换源码编辑，或在同步分屏中边写边看。图片可粘贴、拖入或批量插入，表格与公式也有快捷入口；查找替换、撤销重做和草稿恢复，让日常修改更省心。
 
+切换视图时跟随当前段落，分屏宽度可拖动调整并记住选择。保存状态在阅读与编辑时持续可见；离开未保存的文档时，可以选择保存并继续。最近文件暂时打不开时可重试或重新选择位置，也可临时隐藏名称与路径。
+
 **Word 转入，精致导出**
 
 导入 Word 即可转换为 Markdown 草稿，编辑后保存为 `.md` 文件。也可导出排版美观的 Word、独立 HTML，或通过系统打印生成 PDF，让整理好的内容便于分享与交付。
+
+导出前会说明格式差异，含 Mermaid 时选择 Word 会提示图表将保留为代码；导出期间防止重复操作，HTML 和 Word 导出完成后可直接打开文件或所在文件夹。
 
 ## English
 
@@ -98,9 +102,13 @@ Save the current image from the preview: regular images keep their original form
 
 Switch to source editing or write alongside a synchronized preview. Paste, drop, or batch-insert images, with quick tools for tables and formulas. Find and replace, undo and redo, and draft recovery support everyday revisions.
 
+View changes follow the current paragraph. Resize the split panes and keep your preferred width. Save status stays visible, and you can save before continuing to another document. Unavailable recent files can be retried or relocated, and their names and paths can be temporarily hidden.
+
 **From Word to Markdown, and back to polished documents**
 
 Import Word as a Markdown draft, then edit and save it as a `.md` file. Export neatly formatted Word documents or standalone HTML, or print to PDF for sharing and delivery.
+
+Format hints explain the differences before export, including Mermaid being kept as code in Word. Duplicate exports are blocked while processing. Open an exported HTML or Word file, or its containing folder, directly after saving.
 
 ## 下载与安装 / Installation
 

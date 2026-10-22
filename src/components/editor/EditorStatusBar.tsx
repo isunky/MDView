@@ -8,6 +8,7 @@ export type EditorStatusBarLabels = {
   cursorPosition: (line: number, column: number) => string
   readingTime: (minutes: number) => string
   saved: string
+  notSavedToFile?: string
   saving: string
   unsaved: string
   wordCount: (count: number) => string
@@ -15,6 +16,7 @@ export type EditorStatusBarLabels = {
 
 type EditorStatusBarProps = {
   content: string
+  hasFile?: boolean
   isDirty: boolean
   isSaving: boolean
   labels: EditorStatusBarLabels
@@ -25,6 +27,7 @@ type EditorStatusBarProps = {
 export function EditorStatusBar({
   content,
   isDirty,
+  hasFile = true,
   isSaving,
   labels,
   lineStartOffsets,
@@ -40,11 +43,11 @@ export function EditorStatusBar({
     () => getCursorPosition(content, selection.end, lineStartOffsets),
     [content, lineStartOffsets, selection.end],
   )
-  const saveState = isSaving ? labels.saving : isDirty ? labels.unsaved : labels.saved
+  const saveState = isSaving ? labels.saving : isDirty ? labels.unsaved : !hasFile ? labels.notSavedToFile ?? labels.unsaved : labels.saved
 
   return (
     <footer className="editor-status-bar" aria-label="Document status">
-      <span className={`editor-save-state ${isSaving ? 'saving' : isDirty ? 'dirty' : 'saved'}`}>
+      <span className={`editor-save-state ${isSaving ? 'saving' : isDirty || !hasFile ? 'dirty' : 'saved'}`}>
         {saveState}
       </span>
       <span>{labels.wordCount(statistics.wordCount)}</span>

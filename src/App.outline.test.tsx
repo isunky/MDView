@@ -478,7 +478,7 @@ function createFileAccess(
       relativePath: 'assets/image.png',
       filename: 'image.png',
     })),
-    readStartupMarkdownFile: vi.fn(async () => overrides.startupFile ?? null),
+    readStartupMarkdownFile: vi.fn(async () => overrides.startupFile ?? file('/tmp/Untitled.md', '# Untitled')),
     listenForOpenedFiles: overrides.listenForOpenedFiles ?? vi.fn(async () => null),
   }
 }

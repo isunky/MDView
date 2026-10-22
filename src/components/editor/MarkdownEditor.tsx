@@ -53,6 +53,7 @@ type MarkdownEditorProps = {
   historyKey?: string
   onChange: (value: string) => void
   label: string
+  placeholder?: string
   t: MarkdownEditorLabels
   showToolbar?: boolean
   toolbarEnd?: ReactNode
@@ -80,6 +81,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   historyKey = 'default',
   onChange,
   label,
+  placeholder,
   t,
   showToolbar = true,
   toolbarEnd,
@@ -294,6 +296,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         onChange={(event) => imageInput.handleInputChange(event.currentTarget)}
       />
       <textarea
+        placeholder={placeholder}
         ref={textareaRef}
         className="markdown-editor"
         aria-label={label}

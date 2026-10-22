@@ -70,6 +70,7 @@ export type FileAccess = {
   supportsNativeFiles: boolean
   supportsImageImport: boolean
   canRevealFile?: boolean
+  openExportResult?: (path: string, reveal: boolean) => Promise<void>
   openMarkdownFile: () => Promise<OpenedMarkdownFile | null>
   openMarkdownFileAtPath: (path: string) => Promise<OpenedMarkdownFile>
   revealFileInFolder: (path: string) => Promise<void>
@@ -95,6 +96,7 @@ export const tauriFileAccess: FileAccess = {
   supportsNativeFiles: isTauriRuntime(),
   supportsImageImport: isTauriRuntime(),
   canRevealFile: isTauriRuntime(),
+  openExportResult: (path, reveal) => invoke('open_export_result', { path, reveal }),
   docxImport: isTauriRuntime() ? {
     getStatus: () => invoke<DocxImportStatus>('get_docx_import_status'),
     selectPython: () => invoke<DocxImportStatus>('select_docx_import_python'),

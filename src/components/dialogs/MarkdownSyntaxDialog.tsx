@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { Check, Copy, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { MarkdownSyntaxSection } from '../../domain/markdownSyntaxReference'
@@ -29,13 +30,7 @@ export function MarkdownSyntaxDialog({ open, title, intro, categoriesLabel, safe
     onClose()
   }, [onClose])
 
-  useEffect(() => {
-    if (!open) return
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => event.key === 'Escape' && handleClose()
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleClose, open])
-
+  const dialogRef = useDialogFocus(open, handleClose)
   useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }, [])
 
   function selectSection(sectionId: string) {
@@ -69,7 +64,7 @@ export function MarkdownSyntaxDialog({ open, title, intro, categoriesLabel, safe
   }
 
   if (!open) return null
-  return <div className="dialog-backdrop" onMouseDown={(event) => event.currentTarget === event.target && handleClose()}>
+  return <div ref={dialogRef} className="dialog-backdrop" onMouseDown={(event) => event.currentTarget === event.target && handleClose()}>
     <section className="syntax-dialog" role="dialog" aria-modal="true" aria-labelledby="syntax-reference-title">
       <button type="button" className="about-close" onClick={handleClose} aria-label={closeLabel}><X aria-hidden="true" /></button>
       <header className="syntax-dialog-header"><h2 id="syntax-reference-title">{title}</h2><p>{intro}</p><p className="syntax-copy-status" data-state={copyStatus?.state ?? 'idle'} role="status" aria-live="polite">{copyStatus?.message ?? ''}</p></header>

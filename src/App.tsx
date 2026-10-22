@@ -1,3 +1,7 @@
+import { flushSync } from 'react-dom'
+import { useSplitLayout } from './hooks/useSplitLayout'
+import { UnsavedChangesDialog } from './components/dialogs/UnsavedChangesDialog'
+import { ExportWarningDialog } from './components/dialogs/ExportWarningDialog'
 import {
   Suspense,
   useCallback,
@@ -74,6 +78,8 @@ function App({
 }: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
+  const splitLayout = useSplitLayout()
+  const [recentFilesHidden, setRecentFilesHidden] = useState(false)
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [isReadingSettingsOpen, setIsReadingSettingsOpen] = useState(false)
   const [isDocxImportOpen, setIsDocxImportOpen] = useState(false)
@@ -103,6 +109,11 @@ function App({
     toast,
   } = useTransientToast()
   const {
+    failedRecentPaths,
+    forgetRecentFile,
+    handleLocateRecentFile,
+    pendingUnsavedTitle,
+    resolveUnsavedChanges,
     handleClearRecentFiles,
     handleContentChange,
     canDiscardUnsavedChanges,
@@ -131,7 +142,6 @@ function App({
     transformDocumentContent,
   } = useDocumentController({
     fileAccess,
-    discardUnsavedMessage: t.discardUnsaved,
     draftBackupFailedMessage: t.draftBackupFailed,
     externalFileUpdatedMessage: t.externalFileUpdated,
     externalFileConflictMessage: t.externalFileConflict,
@@ -164,9 +174,10 @@ function App({
   const openDocxImport = useCallback(() => {
     if (!fileAccess.docxImport) return
     closeMenu()
+    menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="file"]')?.focus()
     setIsDocxImportOpen(true)
     if (!docxImportStatus) void checkDocxImport()
-  }, [checkDocxImport, closeMenu, docxImportStatus, fileAccess.docxImport])
+  }, [checkDocxImport, closeMenu, docxImportStatus, fileAccess.docxImport, menuBarRef])
   const installDocxImport = useCallback(async () => {
     const importer = fileAccess.docxImport
     if (!importer) return
@@ -193,7 +204,7 @@ function App({
   }, [fileAccess.docxImport])
   const convertDocx = useCallback(async () => {
     const importer = fileAccess.docxImport
-    if (!importer || !canDiscardUnsavedChanges()) return
+    if (!importer || !await canDiscardUnsavedChanges()) return
     setDocxImportPhase('converting')
     try {
       const imported = await importer.importFile()
@@ -210,7 +221,7 @@ function App({
   }, [canDiscardUnsavedChanges, fileAccess.docxImport, handleImportedDocument, setStatusMessage, t.docxImportSuccess])
   const handleNewDocumentWithPreviewPreload = useCallback(() => {
     preloadMarkdownPreview()
-    handleNewDocument()
+    return handleNewDocument()
   }, [handleNewDocument])
   const handleOpenFileWithPreviewPreload = useCallback(async () => {
     preloadMarkdownPreview()
@@ -263,10 +274,13 @@ function App({
   const {
     isSplitScrollSyncEnabled,
     toggleSplitScrollSync,
+    prepareViewChange,
   } = useSplitScrollSync({
     editorRef,
     isSplit: viewMode === 'split',
+    viewMode,
     previewContent,
+    documentSessionId,
     readingFontKey,
     previewPanelRef,
     previewRef,
@@ -359,8 +373,11 @@ function App({
     onNotify: showAppToast,
   })
 
-  const { exportDocx: handleExportDocx, exportHtml: handleExportHtml, exportPdf: handleExportPdf } = useDocumentExport({
+  const prepareExportPreview = useCallback(() => flushSync(() => freezePreview()), [freezePreview])
+  const { exportDocx: handleExportDocx, exportHtml: handleExportHtml, exportPdf: handleExportPdf,
+    isExporting, lastExportPath, isWordWarningOpen, dismissWordWarning, confirmWordExport, exportHtmlInstead } = useDocumentExport({
     closeMenu,
+    preparePreview: prepareExportPreview,
     document: markdownDocument,
     fileAccess,
     language,
@@ -379,6 +396,7 @@ function App({
 
   function handleOpenAboutFromAppMenu() {
     closeMenu()
+    menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="app"]')?.focus()
     setIsAboutOpen(true)
   }
 
@@ -389,6 +407,7 @@ function App({
 
   function handleOpenReadingSettings() {
     closeMenu()
+    menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="app"]')?.focus()
     setIsReadingSettingsOpen(true)
   }
 
@@ -448,6 +467,14 @@ function App({
     >
       <AppToolbar
         activeMenu={activeMenu}
+        isExporting={isExporting}
+        saveStateLabel={isSaving ? t.saving : !markdownDocument.path ? t.notSavedToFile : markdownDocument.isDirty ? t.unsaved : t.saved}
+        hasUnsavedChanges={!markdownDocument.path || markdownDocument.isDirty}
+        failedRecentPaths={failedRecentPaths}
+        recentFilesHidden={recentFilesHidden}
+        onToggleRecentVisibility={() => setRecentFilesHidden((hidden) => !hidden)}
+        onRemoveRecent={forgetRecentFile}
+        onLocateRecent={(path) => void handleLocateRecentFile(path)}
         canRevealFiles={canRevealFiles}
         documentPath={markdownDocument.path}
         documentTitle={markdownDocument.title}
@@ -484,6 +511,7 @@ function App({
         onSaveAs={() => void handleSaveFileAs()}
         onToggleMenu={toggleMenu}
         onViewMode={(mode) => {
+          prepareViewChange(viewMode, mode)
           if (mode === 'edit') freezePreview()
           if (mode === 'split') prepareSplitPreview()
           setViewMode(mode)
@@ -493,6 +521,12 @@ function App({
       {isWelcomeVisible ? (
         <WelcomeWorkspace
           recentFiles={recentFiles}
+          failedRecentPaths={failedRecentPaths}
+          recentFilesHidden={recentFilesHidden}
+          onToggleRecentVisibility={() => setRecentFilesHidden((hidden) => !hidden)}
+          onRemoveRecent={forgetRecentFile}
+          onLocateRecent={(path) => void handleLocateRecentFile(path)}
+          onReveal={canRevealFiles ? (path) => void handleRevealRecentFile(path) : undefined}
           canOpenFiles={fileAccess.supportsNativeFiles}
           statusMessage={welcomeStatus}
           onNew={handleNewDocumentWithPreviewPreload}
@@ -513,7 +547,7 @@ function App({
           onRetry={() => void retryExternalFile()}
           onSaveAs={() => void handleSaveFileAs()}
         /> : null}
-        <section className={workspaceClasses} aria-label={t.workspace}>
+        <section className={workspaceClasses} aria-label={t.workspace} style={{ '--split-editor-width': `${splitLayout.ratio}%` } as CSSProperties}>
         <DocumentSearchBar
           activeIndex={documentSearch.activeIndex}
           inputRef={documentSearch.inputRef}
@@ -603,6 +637,7 @@ function App({
             imageDropLabel={t.imageDropLabel}
             onSelectionChange={editorSelectionStore.setSelection}
             label={t.markdownSource}
+            placeholder={t.editorPlaceholder}
             t={t}
             showToolbar={viewMode !== 'preview'}
             toolbarEnd={viewMode === 'split' ? (
@@ -624,6 +659,7 @@ function App({
           />
           {viewMode !== 'preview' ? <EditorStatusBar
             content={markdownDocument.content}
+            hasFile={Boolean(markdownDocument.path)}
             isDirty={markdownDocument.isDirty}
             isSaving={isSaving}
             labels={{
@@ -631,6 +667,7 @@ function App({
               cursorPosition: t.cursorPosition,
               readingTime: t.readingTime,
               saved: t.saved,
+              notSavedToFile: t.notSavedToFile,
               saving: t.saving,
               unsaved: t.unsaved,
               wordCount: t.wordCount,
@@ -639,6 +676,11 @@ function App({
             selectionStore={editorSelectionStore}
           /> : null}
         </section>
+        {viewMode === 'split' ? <div className="split-resizer" role="separator" aria-label={t.resizeSplit}
+          aria-orientation="vertical" aria-valuemin={25} aria-valuemax={75} aria-valuenow={Math.round(splitLayout.ratio)} tabIndex={0}
+          onPointerDown={splitLayout.onPointerDown} onPointerMove={splitLayout.onPointerMove}
+          onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}
+          onDoubleClick={splitLayout.reset} onKeyDown={splitLayout.onKeyDown} /> : null}
         <section
           className="preview-panel"
           aria-label={t.previewPanel}
@@ -672,7 +714,12 @@ function App({
         </Toast>
       ) : null}
       {!isWelcomeVisible && visibleOperationStatus ? (
-        <div className="app-operation-status" role="status">{visibleOperationStatus}</div>
+        <div className="app-operation-status" role="status">{visibleOperationStatus}
+          {lastExportPath && fileAccess.openExportResult ? <span className="export-result-actions">
+            <button type="button" onClick={() => void fileAccess.openExportResult!(lastExportPath, false).catch((error) => setStatusMessage(getErrorMessage(error)))}>{t.openExportFile}</button>
+            <button type="button" onClick={() => void fileAccess.openExportResult!(lastExportPath, true).catch((error) => setStatusMessage(getErrorMessage(error)))}>{t.openExportFolder}</button>
+          </span> : null}
+        </div>
       ) : null}
       <AppDialogs
         availableUpdate={availableUpdate}
@@ -705,6 +752,10 @@ function App({
         onSelectDocxPython={() => void selectDocxPython()}
         onOpenPythonDownload={() => void openExternalLink('https://www.python.org/downloads/')}
       />
+      <UnsavedChangesDialog open={pendingUnsavedTitle !== null} title={pendingUnsavedTitle ?? markdownDocument.title}
+        saving={isSaving} canSave={fileAccess.supportsNativeFiles} onChoose={(choice) => void resolveUnsavedChanges(choice)} t={t} />
+      <ExportWarningDialog open={isWordWarningOpen} onClose={dismissWordWarning}
+        onContinue={() => void confirmWordExport()} onHtml={() => void exportHtmlInstead()} t={t} />
     </main>
   )
 }

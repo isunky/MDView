@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { ExternalLink, X } from 'lucide-react'
 import { appInfo } from '../../appInfo'
 import type { Translation } from '../../i18n'
@@ -11,28 +11,14 @@ type AboutDialogProps = {
 }
 
 export function AboutDialog({ open, onClose, t }: AboutDialogProps) {
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, open])
-
+  const dialogRef = useDialogFocus(open, onClose)
   if (!open) {
     return null
   }
 
   return (
     <div
-      className="dialog-backdrop"
+      ref={dialogRef} className="dialog-backdrop"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) {
           onClose()

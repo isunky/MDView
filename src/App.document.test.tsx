@@ -21,6 +21,32 @@ describe('App', () => {
     setNavigatorPlatform('Win32')
   })
 
+  it.each(['saved', 'canceled', 'failed'] as const)('continues opening only when Save and continue is %s', async (outcome) => {
+    const user = userEvent.setup()
+    const access = createFileAccess({
+      openFile: file('/tmp/next.md', '# Next document'),
+      saveMarkdownFileAs: vi.fn(async () => {
+        if (outcome === 'failed') throw new Error('Disk is full')
+        return outcome === 'canceled' ? null : '/tmp/saved.md'
+      }),
+    })
+    renderWelcomeApp({ fileAccess: access })
+    await user.click(screen.getByRole('button', { name: 'Create new markdown file' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Markdown source' }), { target: { value: '# Keep these changes' } })
+    await openFileMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Open Markdown File' }))
+    expect(await screen.findByRole('dialog', { name: 'Save your changes?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save and continue' }))
+    if (outcome === 'saved') {
+      expect(await screen.findByRole('heading', { name: 'Next document' })).toBeInTheDocument()
+      expect(access.saveMarkdownFileAs).toHaveBeenCalledWith('# Keep these changes', 'Keep these changes.md')
+    } else {
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(access.openMarkdownFile).not.toHaveBeenCalled()
+      expect(screen.getByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Keep these changes')
+    }
+  })
+
   it('loads a markdown file passed by the desktop shell at startup', async () => {
     renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/start.md', '# Startup') }) })
 

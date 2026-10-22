@@ -1,4 +1,4 @@
-import { ChevronDown, Download, Eye, FolderOpen, FolderSearch, PencilLine, Settings, SplitSquareHorizontal } from 'lucide-react'
+import { ChevronDown, Download, Eye, FolderOpen, FolderSearch, EyeOff, X, PencilLine, Settings, SplitSquareHorizontal } from 'lucide-react'
 import type { MouseEvent, RefObject } from 'react'
 import type { RecentFile } from '../../domain/recentFiles'
 import type { AppMenuId } from '../../hooks/useAppMenu'
@@ -11,6 +11,7 @@ import { WindowControls } from './WindowControls'
 type ViewMode = 'preview' | 'edit' | 'split'
 
 export function AppToolbar({
+  isExporting = false, saveStateLabel, hasUnsavedChanges, failedRecentPaths = [], recentFilesHidden = false, onToggleRecentVisibility, onRemoveRecent, onLocateRecent,
   activeMenu, canRevealFiles, documentPath, documentTitle, isSaving, isWelcomeVisible,
   language, menuBarRef, nativeFileTitle, recentFiles, supportsAppUpdates, t, updatePhase,
   updateActionTitle, viewMode, newTitle, openTitle, saveTitle, saveAsTitle,
@@ -19,6 +20,14 @@ export function AppToolbar({
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
   onSave, onSaveAs, onToggleMenu, onViewMode,
 }: {
+  isExporting?: boolean
+  saveStateLabel?: string
+  hasUnsavedChanges?: boolean
+  failedRecentPaths?: string[]
+  recentFilesHidden?: boolean
+  onToggleRecentVisibility?: () => void
+  onLocateRecent?: (path: string) => void
+  onRemoveRecent?: (path: string) => void
   activeMenu: AppMenuId | null
   canRevealFiles: boolean
   documentPath: string | null
@@ -76,11 +85,11 @@ export function AppToolbar({
   >
     <div className="brand-block">
       <div className="app-mark" aria-hidden="true"><AppLogo /></div>
-      <div className="brand-text"><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</p></div>
+      <div className="brand-text"><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}><span>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</span>{!isWelcomeVisible && saveStateLabel ? <span className={`document-save-badge${hasUnsavedChanges ? ' dirty' : ''}`} role="status" aria-label={saveStateLabel}>{viewMode === 'preview' ? saveStateLabel : hasUnsavedChanges ? '●' : null}</span> : null}</p></div>
     </div>
     <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
       <div className="action-menu">
-        <button type="button" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-expanded={activeMenu === 'file'}>
+        <button type="button" data-menu-trigger="file" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-expanded={activeMenu === 'file'}>
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />
         </button>
         {activeMenu === 'file' ? <div className="action-menu-panel" role="menu">
@@ -90,23 +99,25 @@ export function AppToolbar({
           <button type="button" className="action-menu-item" onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveTitle} role="menuitem">{t.save}</button>
           <button type="button" className="action-menu-item" onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveAsTitle} role="menuitem">{t.saveAs}</button>
           <div className="action-menu-divider" /><div className="action-menu-section-label">{t.recentFiles}</div>
-          {recentFiles.length > 0 ? recentFiles.map((file) => <div className="recent-file-menu-row" key={file.path}>
-            <button type="button" className="action-menu-item recent-file-item" onClick={() => onOpenRecent(file.path)} disabled={!nativeFilesEnabled} title={file.path} role="menuitem"><span className="recent-file-title">{file.title}</span></button>
-            {canRevealFiles ? <button type="button" className="recent-file-reveal" onClick={() => onReveal(file.path)} title={t.reveal} aria-label={t.revealInFolder(file.title)} role="menuitem"><FolderSearch aria-hidden="true" /></button> : null}
+          {recentFiles.length > 0 && onToggleRecentVisibility ? <button type="button" className="action-menu-item" role="menuitem" onClick={onToggleRecentVisibility}>{recentFilesHidden ? <Eye /> : <EyeOff />}{recentFilesHidden ? t.showRecentFiles : t.hideRecentFiles}</button> : null}
+          {recentFilesHidden ? <div className="action-menu-empty">{t.recentFilesHidden}</div> : recentFiles.length > 0 ? recentFiles.map((file) => <div className="recent-file-menu-row" key={file.path}>
+            <button type="button" className="action-menu-item recent-file-item" aria-label={file.title} aria-description={failedRecentPaths.includes(file.path) ? t.recentFileUnavailable : undefined} onClick={() => onOpenRecent(file.path)} disabled={!nativeFilesEnabled} title={file.path} role="menuitem"><span className="recent-file-title">{file.title}{failedRecentPaths.includes(file.path) ? <small className="recent-file-warning">{t.recentFileUnavailable}</small> : null}</span></button>
+            {canRevealFiles ? <button type="button" className="recent-file-reveal" onClick={() => failedRecentPaths.includes(file.path) && onLocateRecent ? onLocateRecent(file.path) : onReveal(file.path)} title={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.reveal} aria-label={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.revealInFolder(file.title)} role="menuitem"><FolderSearch aria-hidden="true" /></button> : null}
+            {onRemoveRecent ? <button type="button" className="recent-file-remove" onClick={() => onRemoveRecent(file.path)} aria-label={t.removeRecentFile(file.title)} title={t.removeRecentFile(file.title)} role="menuitem"><X aria-hidden="true" /></button> : null}
           </div>) : <div className="action-menu-empty">{t.noRecentFiles}</div>}
           <button type="button" className="action-menu-item action-menu-clear" onClick={onClearRecent} disabled={recentFiles.length === 0} role="menuitem">{t.clearRecentFiles}</button>
         </div> : null}
       </div>
       {!isWelcomeVisible ? <div className="action-menu">
-        <button type="button" onClick={() => onToggleMenu('export')} aria-haspopup="menu" aria-expanded={activeMenu === 'export'} disabled={!nativeFilesEnabled} title={nativeFileTitle}><Download aria-hidden="true" /><span>{t.exportMenu}</span><ChevronDown aria-hidden="true" /></button>
+        <button type="button" onClick={() => onToggleMenu('export')} aria-haspopup="menu" aria-expanded={activeMenu === 'export'} disabled={!nativeFilesEnabled || isExporting} title={isExporting ? t.exportBusy : nativeFileTitle}><Download aria-hidden="true" /><span>{isExporting ? t.exportBusy : t.exportMenu}</span><ChevronDown aria-hidden="true" /></button>
         {activeMenu === 'export' && nativeFilesEnabled ? <div className="action-menu-panel action-menu-panel-compact" role="menu">
-          <button type="button" className="action-menu-item" onClick={onExportHtml} role="menuitem">{t.exportAsHtml}</button>
-          <button type="button" className="action-menu-item" onClick={onExportPdf} role="menuitem">{t.exportAsPdf}</button>
-          <button type="button" className="action-menu-item" onClick={onExportDocx} role="menuitem">{t.exportAsDocx}</button>
+          <button type="button" className="action-menu-item" aria-label={t.exportAsHtml} onClick={onExportHtml} disabled={isExporting} role="menuitem">{t.exportAsHtml}<small className="export-format-hint">{t.exportHtmlHint}</small></button>
+          <button type="button" className="action-menu-item" aria-label={t.exportAsPdf} onClick={onExportPdf} disabled={isExporting} role="menuitem">{t.exportAsPdf}<small className="export-format-hint">{t.exportPdfHint}</small></button>
+          <button type="button" className="action-menu-item" aria-label={t.exportAsDocx} onClick={onExportDocx} disabled={isExporting} role="menuitem">{t.exportAsDocx}<small className="export-format-hint">{t.exportWordHint}</small></button>
         </div> : null}
       </div> : null}
       <div className="action-menu">
-        <button type="button" onClick={() => onToggleMenu('app')} aria-haspopup="menu" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
+        <button type="button" data-menu-trigger="app" onClick={() => onToggleMenu('app')} aria-haspopup="menu" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
         {activeMenu === 'app' ? <div className="action-menu-panel action-menu-panel-compact" role="menu">
           <div className="action-menu-section-label">{t.languageLabel}</div>
           <button type="button" className={`action-menu-item ${language === 'en' ? 'active' : ''}`} onClick={() => onLanguage('en')} role="menuitem">{t.languageEnglish}</button>

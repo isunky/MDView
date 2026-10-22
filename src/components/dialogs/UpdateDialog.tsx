@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { CircleCheck, Download, ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
 import { appInfo } from '../../appInfo'
 import type { Translation } from '../../i18n'
@@ -34,21 +34,7 @@ export function UpdateDialog({
   const isInstallInProgress = phase === 'downloading' || phase === 'installing'
   const isOpen = phase !== 'idle'
 
-  useEffect(() => {
-    if (!isOpen || isInstallInProgress) {
-      return
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isInstallInProgress, isOpen, onClose])
-
+  const dialogRef = useDialogFocus(isOpen, isInstallInProgress ? undefined : onClose)
   if (!isOpen) {
     return null
   }
@@ -59,7 +45,7 @@ export function UpdateDialog({
 
   return (
     <div
-      className="dialog-backdrop"
+      ref={dialogRef} className="dialog-backdrop"
       onMouseDown={(event) => {
         if (!isInstallInProgress && event.currentTarget === event.target) {
           onClose()

@@ -137,7 +137,7 @@ function sourceLineAtTop(tops: number[], top: number): number {
   return low + 1 + (next === undefined ? 0 : clamp((top - tops[low]) / Math.max(1, next - tops[low]), 0, 1))
 }
 
-function mapSourceLineToPreview(
+export function mapSourceLineToPreview(
   sourceLine: number,
   anchors: NormalizedSplitScrollAnchors,
 ): number {
@@ -145,7 +145,7 @@ function mapSourceLineToPreview(
   return interpolate(sourceLine, before.sourceLine, after.sourceLine, before.previewTop, after.previewTop)
 }
 
-function mapPreviewTopToSourceLine(
+export function mapPreviewTopToSourceLine(
   previewTop: number,
   anchors: NormalizedSplitScrollAnchors,
 ): number {

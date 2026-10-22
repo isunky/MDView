@@ -13,7 +13,7 @@ describe('document state', () => {
 
     expect(document.title).toBe('Untitled.md')
     expect(document.path).toBeNull()
-    expect(document.content).toContain('# Untitled')
+    expect(document.content).toBe('')
     expect(document.savedContent).toBe(document.content)
     expect(document.isDirty).toBe(false)
   })
