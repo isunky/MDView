@@ -66,6 +66,8 @@ MDView 是一款轻量、美观、免费无广告的 Markdown 阅读器。将 AI
 
 切换视图时跟随当前段落，分屏宽度可拖动调整并记住选择。保存状态在阅读与编辑时持续可见；离开未保存的文档时，可以选择保存并继续。最近文件暂时打不开时可重试或重新选择位置，也可临时隐藏名称与路径。
 
+顶部按「文件、阅读、应用」分为三个菜单：导出放在「文件」，查找与排版设置放在「阅读」，语言、更新与关于放在「应用」。查找也可使用 Ctrl+F（macOS 为 Command+F）打开，支持连续输入、清空关键词和回车切换结果；源码中的当前匹配会持续高亮。菜单显示常用快捷键，也支持方向键选择和 Esc 返回。
+
 **Word 转入，精致导出**
 
 导入 Word 即可转换为 Markdown 草稿，编辑后保存为 `.md` 文件。也可导出排版美观的 Word、独立 HTML，或通过系统打印生成 PDF，让整理好的内容便于分享与交付。
@@ -103,6 +105,8 @@ Save the current image from the preview: regular images keep their original form
 Switch to source editing or write alongside a synchronized preview. Paste, drop, or batch-insert images, with quick tools for tables and formulas. Find and replace, undo and redo, and draft recovery support everyday revisions.
 
 View changes follow the current paragraph. Resize the split panes and keep your preferred width. Save status stays visible, and you can save before continuing to another document. Unavailable recent files can be retried or relocated, and their names and paths can be temporarily hidden.
+
+The toolbar has three menus: File for document actions and export, Reading for find and typography, and App for language, updates, and about. Press Ctrl+F (Command+F on macOS) to find. Keep typing, clear the query, or press Enter to move between results; the current source match stays highlighted. Menus show common shortcuts and support arrow-key navigation and Escape to return.
 
 **From Word to Markdown, and back to polished documents**
 

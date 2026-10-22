@@ -33,6 +33,7 @@ import { MathEditorDialog, type MathEditorDialogLabels } from '../dialogs/MathEd
 import { applyMathExpression, findMathExpression, type MathDisplayMode, type MathExpression } from '../../domain/markdownMath'
 import { getTextareaSelection, useEditorHistory } from '../../hooks/useEditorHistory'
 import { useEditorImageInput } from '../../hooks/useEditorImageInput'
+import { useEditorSearchMarker } from '../../hooks/useEditorSearchMarker'
 
 export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
@@ -63,6 +64,7 @@ type MarkdownEditorProps = {
   isImportingImages?: boolean
   imageImportBusyLabel?: string
   imageDropLabel?: string
+  searchMatch?: SelectionRange | null
 }
 
 export type { SelectionRange } from '../../domain/editorCommands'
@@ -71,7 +73,7 @@ export type MarkdownEditorHandle = {
   focus: () => void
   getScrollElement: () => HTMLTextAreaElement | null
   getSelection: () => SelectionRange
-  setSelection: (selection: SelectionRange) => void
+  setSelection: (selection: SelectionRange, options?: { focus?: boolean }) => void
 }
 
 type MarkdownCommand = ToolbarFormatCommand
@@ -91,8 +93,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   isImportingImages = false,
   imageImportBusyLabel,
   imageDropLabel,
+  searchMatch = null,
 }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const searchMarkerRef = useEditorSearchMarker(textareaRef, searchMatch, value)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
   const [mathEditor, setMathEditor] = useState<{ expression: MathExpression | null; selection: SelectionRange; latex: string; mode: MathDisplayMode } | null>(null)
   const shortcutPlatform = detectShortcutPlatform()
@@ -115,13 +119,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     getSelection() {
       return textareaRef.current ? getTextareaSelection(textareaRef.current) : { start: 0, end: 0 }
     },
-    setSelection(selection) {
+    setSelection(selection, options) {
       const textarea = textareaRef.current
       if (!textarea) {
         return
       }
 
-      textarea.focus()
+      if (options?.focus !== false) textarea.focus()
       textarea.setSelectionRange(selection.start, selection.end)
       onSelectionChange?.(selection)
     },
@@ -295,6 +299,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         aria-hidden="true"
         onChange={(event) => imageInput.handleInputChange(event.currentTarget)}
       />
+      <div className="editor-search-marker-viewport" aria-hidden="true"><div ref={searchMarkerRef} className="editor-search-markers" /></div>
       <textarea
         placeholder={placeholder}
         ref={textareaRef}

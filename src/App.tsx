@@ -100,6 +100,7 @@ function App({
   const {
     activeMenu,
     closeMenu,
+    handleMenuKeyDown,
     menuBarRef,
     toggleMenu,
   } = useAppMenu()
@@ -344,9 +345,11 @@ function App({
     viewMode,
   })
   const documentSearch = useDocumentSearch({
+    enabled: !isWelcomeVisible,
     content: markdownDocument.content,
     editorRef,
     onContentChange: handleContentChange,
+    onOpen: closeMenu,
     viewMode,
   })
   const {
@@ -407,7 +410,7 @@ function App({
 
   function handleOpenReadingSettings() {
     closeMenu()
-    menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="app"]')?.focus()
+    menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="reading"]')?.focus()
     setIsReadingSettingsOpen(true)
   }
 
@@ -482,6 +485,7 @@ function App({
         isWelcomeVisible={isWelcomeVisible}
         language={language}
         menuBarRef={menuBarRef}
+        onMenuKeyDown={handleMenuKeyDown}
         nativeFileTitle={nativeFileTitle}
         newTitle={newTitle}
         openTitle={openTitle}
@@ -506,6 +510,9 @@ function App({
         onOpen={() => void handleOpenFileWithPreviewPreload()}
         onOpenRecent={(path) => void handleOpenRecentFileWithPreviewPreload(path)}
         onOpenReadingSettings={handleOpenReadingSettings}
+        onFind={documentSearch.open}
+        isFindOpen={documentSearch.isOpen}
+        findTitle={withShortcutTitle(t.find, { key: 'f' }, shortcutPlatform)}
         onReveal={(path) => void handleRevealRecentFile(path)}
         onSave={() => void handleSaveFile()}
         onSaveAs={() => void handleSaveFileAs()}
@@ -554,9 +561,15 @@ function App({
           isOpen={documentSearch.isOpen}
           isReplaceOpen={documentSearch.isReplaceOpen}
           isSourceSearch={documentSearch.isSourceSearch}
+          isSearchPending={documentSearch.isSearchPending}
           labels={{
+            clear: t.clearFind,
             close: t.closeFind,
             find: t.find,
+            findInPreview: t.findInPreview,
+            findInSource: t.findInSource,
+            noResults: t.findNoResults,
+            searching: t.findSearching,
             matchCount: t.findMatchCount,
             next: t.findNext,
             previous: t.findPrevious,
@@ -626,6 +639,7 @@ function App({
           <MarkdownEditor
             ref={editorRef}
             value={markdownDocument.content}
+            searchMatch={documentSearch.activeSourceMatch}
             historyKey={documentSessionId}
             onChange={handleContentChange}
             onImportImages={(files, selection) => void importImages(files, selection)}

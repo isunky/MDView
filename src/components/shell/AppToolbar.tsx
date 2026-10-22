@@ -1,5 +1,5 @@
-import { ChevronDown, Download, Eye, FolderOpen, FolderSearch, EyeOff, X, PencilLine, Settings, SplitSquareHorizontal } from 'lucide-react'
-import type { MouseEvent, RefObject } from 'react'
+import { BookOpen, Check, ChevronDown, Download, Eye, FileInput, FilePlus2, FolderOpen, FolderSearch, EyeOff, X, PencilLine, Save, Search, Settings, SlidersHorizontal, SplitSquareHorizontal } from 'lucide-react'
+import type { KeyboardEvent, MouseEvent, RefObject } from 'react'
 import type { RecentFile } from '../../domain/recentFiles'
 import type { AppMenuId } from '../../hooks/useAppMenu'
 import type { AppLanguage, Translation } from '../../i18n'
@@ -7,6 +7,7 @@ import type { AppUpdatePhase } from '../../hooks/useAppUpdater'
 import type { AppWindowFrame } from '../../platform/windowFrame'
 import { AppLogo } from './AppLogo'
 import { WindowControls } from './WindowControls'
+import { formatShortcut } from '../../platform/keyboardShortcuts'
 
 type ViewMode = 'preview' | 'edit' | 'split'
 
@@ -18,7 +19,7 @@ export function AppToolbar({
   windowFrame,
   onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
-  onSave, onSaveAs, onToggleMenu, onViewMode,
+  onSave, onSaveAs, onToggleMenu, onViewMode, onMenuKeyDown, onFind, findTitle, isFindOpen,
 }: {
   isExporting?: boolean
   saveStateLabel?: string
@@ -65,8 +66,17 @@ export function AppToolbar({
   onSaveAs: () => void
   onToggleMenu: (menu: AppMenuId) => void
   onViewMode: (mode: ViewMode) => void
+  onMenuKeyDown?: (event: KeyboardEvent<HTMLElement>) => void
+  onFind?: () => void
+  findTitle?: string
+  isFindOpen?: boolean
 }) {
   const nativeFilesEnabled = nativeFileTitle === undefined
+  const exportOptions = [
+    { format: 'HTML', label: t.exportAsHtml, hint: t.exportHtmlSummary, description: t.exportHtmlHint, onClick: onExportHtml },
+    { format: 'PDF', label: t.exportAsPdf, hint: t.exportPdfSummary, description: t.exportPdfHint, onClick: onExportPdf },
+    { format: 'Word', label: t.exportAsDocx, hint: t.exportWordSummary, description: t.exportWordHint, onClick: onExportDocx },
+  ]
   const handleTitlebarMouseDown = (event: MouseEvent<HTMLElement>) => {
     if (windowFrame.kind === 'native' || event.button !== 0) return
     if ((event.target as HTMLElement).closest(
@@ -85,19 +95,33 @@ export function AppToolbar({
   >
     <div className="brand-block">
       <div className="app-mark" aria-hidden="true"><AppLogo /></div>
-      <div className="brand-text"><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}><span>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</span>{!isWelcomeVisible && saveStateLabel ? <span className={`document-save-badge${hasUnsavedChanges ? ' dirty' : ''}`} role="status" aria-label={saveStateLabel}>{viewMode === 'preview' ? saveStateLabel : hasUnsavedChanges ? '●' : null}</span> : null}</p></div>
+      <div className="brand-text"><h1>MDView</h1><p title={isWelcomeVisible ? t.welcomeBrand : documentPath ?? documentTitle}><span>{isWelcomeVisible ? t.welcomeBrand : documentTitle}</span>{!isWelcomeVisible && saveStateLabel ? <span className={`document-save-badge${hasUnsavedChanges ? ' dirty' : ''}${viewMode !== 'preview' ? ' compact' : ''}`} role="status" aria-label={saveStateLabel} title={saveStateLabel}><span className="save-state-dot" aria-hidden="true" />{viewMode === 'preview' ? saveStateLabel : null}</span> : null}</p></div>
     </div>
-    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef}>
+    <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef} onKeyDown={onMenuKeyDown}>
       <div className="action-menu">
-        <button type="button" data-menu-trigger="file" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-expanded={activeMenu === 'file'}>
+        <button type="button" id="file-menu-trigger" data-menu-trigger="file" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-controls="file-menu-panel" aria-expanded={activeMenu === 'file'}>
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />
         </button>
-        {activeMenu === 'file' ? <div className="action-menu-panel" role="menu">
-          <button type="button" className="action-menu-item" onClick={onNew} title={newTitle} role="menuitem">{t.createNew}</button>
-          <button type="button" className="action-menu-item" onClick={onOpen} disabled={!nativeFilesEnabled} title={nativeFileTitle ?? openTitle} role="menuitem">{t.openMarkdownFile}</button>
-          {onImportDocx ? <button type="button" className="action-menu-item" onClick={onImportDocx} disabled={!nativeFilesEnabled} title={nativeFileTitle} role="menuitem">{t.importDocx}</button> : null}
-          <button type="button" className="action-menu-item" onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveTitle} role="menuitem">{t.save}</button>
-          <button type="button" className="action-menu-item" onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveAsTitle} role="menuitem">{t.saveAs}</button>
+        {activeMenu === 'file' ? <div className="action-menu-panel" id="file-menu-panel" role="menu" aria-labelledby="file-menu-trigger">
+          <button type="button" className="action-menu-item" aria-label={t.createNew} onClick={onNew} title={newTitle} role="menuitem"><FilePlus2 aria-hidden="true" /><span>{t.createNew}</span><kbd aria-hidden="true">{formatShortcut({ key: 'n' })}</kbd></button>
+          <button type="button" className="action-menu-item" aria-label={t.openMarkdownFile} onClick={onOpen} disabled={!nativeFilesEnabled} title={nativeFileTitle ?? openTitle} role="menuitem"><FolderOpen aria-hidden="true" /><span>{t.openMarkdownFile}</span><kbd aria-hidden="true">{formatShortcut({ key: 'o' })}</kbd></button>
+          {onImportDocx ? <button type="button" className="action-menu-item" onClick={onImportDocx} disabled={!nativeFilesEnabled} title={nativeFileTitle} role="menuitem"><FileInput aria-hidden="true" />{t.importDocx}</button> : null}
+          <button type="button" className="action-menu-item" aria-label={t.save} onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveTitle} role="menuitem"><Save aria-hidden="true" /><span>{t.save}</span><kbd aria-hidden="true">{formatShortcut({ key: 's' })}</kbd></button>
+          <button type="button" className="action-menu-item" aria-label={t.saveAs} onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveAsTitle} role="menuitem"><Save aria-hidden="true" /><span>{t.saveAs}</span><kbd aria-hidden="true">{formatShortcut({ key: 's', shiftKey: true })}</kbd></button>
+          {!isWelcomeVisible ? <>
+            <div className="action-menu-divider" />
+            <div className="menu-export-heading"><Download aria-hidden="true" /><span>{t.exportMenu}</span>{isExporting ? <small role="status">{t.exportBusy}</small> : null}</div>
+            <div className="menu-export-formats" role="group" aria-label={t.exportMenu} aria-busy={isExporting}>
+              {exportOptions.map(option => <button
+                key={option.format} type="button" className="action-menu-item export-format-option" role="menuitem"
+                aria-label={option.label} aria-description={option.description} title={nativeFileTitle ?? option.description}
+                disabled={!nativeFilesEnabled || isExporting} onClick={() => {
+                  menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="file"]')?.focus()
+                  option.onClick()
+                }}
+              ><span>{option.format}</span><small>{option.hint}</small></button>)}
+            </div>
+          </> : null}
           <div className="action-menu-divider" /><div className="action-menu-section-label">{t.recentFiles}</div>
           {recentFiles.length > 0 && onToggleRecentVisibility ? <button type="button" className="action-menu-item" role="menuitem" onClick={onToggleRecentVisibility}>{recentFilesHidden ? <Eye /> : <EyeOff />}{recentFilesHidden ? t.showRecentFiles : t.hideRecentFiles}</button> : null}
           {recentFilesHidden ? <div className="action-menu-empty">{t.recentFilesHidden}</div> : recentFiles.length > 0 ? recentFiles.map((file) => <div className="recent-file-menu-row" key={file.path}>
@@ -108,31 +132,29 @@ export function AppToolbar({
           <button type="button" className="action-menu-item action-menu-clear" onClick={onClearRecent} disabled={recentFiles.length === 0} role="menuitem">{t.clearRecentFiles}</button>
         </div> : null}
       </div>
-      {!isWelcomeVisible ? <div className="action-menu">
-        <button type="button" onClick={() => onToggleMenu('export')} aria-haspopup="menu" aria-expanded={activeMenu === 'export'} disabled={!nativeFilesEnabled || isExporting} title={isExporting ? t.exportBusy : nativeFileTitle}><Download aria-hidden="true" /><span>{isExporting ? t.exportBusy : t.exportMenu}</span><ChevronDown aria-hidden="true" /></button>
-        {activeMenu === 'export' && nativeFilesEnabled ? <div className="action-menu-panel action-menu-panel-compact" role="menu">
-          <button type="button" className="action-menu-item" aria-label={t.exportAsHtml} onClick={onExportHtml} disabled={isExporting} role="menuitem">{t.exportAsHtml}<small className="export-format-hint">{t.exportHtmlHint}</small></button>
-          <button type="button" className="action-menu-item" aria-label={t.exportAsPdf} onClick={onExportPdf} disabled={isExporting} role="menuitem">{t.exportAsPdf}<small className="export-format-hint">{t.exportPdfHint}</small></button>
-          <button type="button" className="action-menu-item" aria-label={t.exportAsDocx} onClick={onExportDocx} disabled={isExporting} role="menuitem">{t.exportAsDocx}<small className="export-format-hint">{t.exportWordHint}</small></button>
-        </div> : null}
-      </div> : null}
       <div className="action-menu">
-        <button type="button" data-menu-trigger="app" onClick={() => onToggleMenu('app')} aria-haspopup="menu" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
-        {activeMenu === 'app' ? <div className="action-menu-panel action-menu-panel-compact" role="menu">
+        <button type="button" id="reading-menu-trigger" data-menu-trigger="reading" onClick={() => onToggleMenu('reading')} aria-haspopup="menu" aria-controls="reading-menu-panel" aria-expanded={activeMenu === 'reading'}><BookOpen aria-hidden="true" /><span>{t.readingMenu}</span><ChevronDown aria-hidden="true" /></button>
+        {activeMenu === 'reading' ? <div className="action-menu-panel action-menu-panel-compact" id="reading-menu-panel" role="menu" aria-labelledby="reading-menu-trigger">
+          {onFind ? <button type="button" className={`action-menu-item${isFindOpen ? ' active' : ''}`} role="menuitem" onClick={onFind} disabled={isWelcomeVisible} aria-label={t.find} aria-expanded={isFindOpen} aria-controls="document-search-panel" title={findTitle ?? t.find}><Search aria-hidden="true" /><span>{t.find}</span><kbd aria-hidden="true">{formatShortcut({ key: 'f' })}</kbd></button> : null}
+          <button type="button" className="action-menu-item" role="menuitem" onClick={onOpenReadingSettings} aria-haspopup="dialog"><SlidersHorizontal aria-hidden="true" /><span>{t.readingSettings}</span></button>
+        </div> : null}
+      </div>
+      <div className="action-menu">
+        <button type="button" id="app-menu-trigger" data-menu-trigger="app" onClick={() => onToggleMenu('app')} aria-haspopup="menu" aria-controls="app-menu-panel" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
+        {activeMenu === 'app' ? <div className="action-menu-panel action-menu-panel-compact" id="app-menu-panel" role="menu" aria-labelledby="app-menu-trigger">
           <div className="action-menu-section-label">{t.languageLabel}</div>
-          <button type="button" className={`action-menu-item ${language === 'en' ? 'active' : ''}`} onClick={() => onLanguage('en')} role="menuitem">{t.languageEnglish}</button>
-          <button type="button" className={`action-menu-item ${language === 'zh' ? 'active' : ''}`} onClick={() => onLanguage('zh')} role="menuitem">{t.languageChinese}</button>
+          <button type="button" className={`action-menu-item ${language === 'en' ? 'active' : ''}`} onClick={() => onLanguage('en')} role="menuitem"><span>{t.languageEnglish}</span>{language === 'en' ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>
+          <button type="button" className={`action-menu-item ${language === 'zh' ? 'active' : ''}`} onClick={() => onLanguage('zh')} role="menuitem"><span>{t.languageChinese}</span>{language === 'zh' ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>
           <div className="action-menu-divider" />
-          <button type="button" className="action-menu-item" onClick={onOpenReadingSettings} role="menuitem">{t.readingSettings}</button>
           {supportsAppUpdates ? <button type="button" className="action-menu-item" onClick={onCheckUpdates} disabled={updateActionTitle !== undefined || updatePhase === 'checking'} title={updateActionTitle} role="menuitem">{updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}</button> : null}
           <button type="button" className="action-menu-item" onClick={onAbout} role="menuitem">{t.about}</button>
         </div> : null}
       </div>
     </nav>
     {!isWelcomeVisible ? <div className="view-controls" role="group" aria-label={t.viewMode} data-window-interactive="true">
-      <button type="button" className={viewMode === 'preview' ? 'active' : ''} onClick={() => onViewMode('preview')} aria-label={t.previewLabel}><Eye aria-hidden="true" /><span>{t.preview}</span></button>
-      <button type="button" className={viewMode === 'edit' ? 'active' : ''} onClick={() => onViewMode('edit')} aria-label={t.editLabel}><PencilLine aria-hidden="true" /><span>{t.edit}</span></button>
-      <button type="button" className={viewMode === 'split' ? 'active' : ''} onClick={() => onViewMode('split')} aria-label={t.splitLabel}><SplitSquareHorizontal aria-hidden="true" /><span>{t.split}</span></button>
+      <button type="button" className={viewMode === 'preview' ? 'active' : ''} onClick={() => onViewMode('preview')} aria-pressed={viewMode === 'preview'} aria-label={t.previewLabel} title={t.previewLabel}><Eye aria-hidden="true" /><span>{t.preview}</span></button>
+      <button type="button" className={viewMode === 'edit' ? 'active' : ''} onClick={() => onViewMode('edit')} aria-pressed={viewMode === 'edit'} aria-label={t.editLabel} title={t.editLabel}><PencilLine aria-hidden="true" /><span>{t.edit}</span></button>
+      <button type="button" className={viewMode === 'split' ? 'active' : ''} onClick={() => onViewMode('split')} aria-pressed={viewMode === 'split'} aria-label={t.splitLabel} title={t.splitLabel}><SplitSquareHorizontal aria-hidden="true" /><span>{t.split}</span></button>
     </div> : null}
     {windowFrame.kind === 'windows-custom' ? <WindowControls
       frame={windowFrame}

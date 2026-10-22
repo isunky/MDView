@@ -113,13 +113,14 @@ export function WelcomeWorkspace({
           {recentFilesHidden ? <p className="welcome-empty">{t.recentFilesHidden}</p> : recentFiles.length > 0 ? (
             <ol className="welcome-recent-list">
               {recentFiles.map((file) => (
-                <li key={file.path} className="welcome-recent-row">
+                <li key={file.path} className={`welcome-recent-row${failedRecentPaths.includes(file.path) ? ' unavailable' : ''}`}>
                   <button
                     type="button"
                     className="welcome-recent-item"
                     onClick={() => void onOpenRecent(file.path)}
                     disabled={!canOpenFiles}
                     aria-label={t.openRecentFile(file.title)}
+                    aria-description={failedRecentPaths.includes(file.path) ? t.recentFileUnavailable : undefined}
                     title={file.path}
                   >
                     <FileText aria-hidden="true" />

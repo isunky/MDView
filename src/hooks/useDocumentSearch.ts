@@ -14,16 +14,20 @@ import type { ReadingViewMode } from '../domain/readingSessions'
 const SEARCH_QUERY_DEBOUNCE_MS = 120
 
 type UseDocumentSearchOptions = {
+  enabled?: boolean
   content: string
   editorRef: RefObject<MarkdownEditorHandle | null>
   onContentChange: (content: string) => void
+  onOpen?: () => void
   viewMode: ReadingViewMode
 }
 
 export function useDocumentSearch({
+  enabled = true,
   content,
   editorRef,
   onContentChange,
+  onOpen,
   viewMode,
 }: UseDocumentSearchOptions) {
   const [isOpen, setIsOpen] = useState(false)
@@ -34,6 +38,8 @@ export function useDocumentSearch({
   const [activeIndex, setActiveIndex] = useState(0)
   const [previewMatchResult, setPreviewMatchResult] = useState({ query: '', count: 0 })
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSourceSearch = viewMode !== 'preview'
   const isSearchPending = query !== appliedQuery
   const sourceMatches = useMemo(
@@ -63,26 +69,49 @@ export function useDocumentSearch({
     }
 
     const match = sourceMatches[Math.min(activeIndex, sourceMatches.length - 1)]
-    editorRef.current?.setSelection(match)
+    if (document.activeElement === editorRef.current?.getScrollElement()) return
+    editorRef.current?.setSelection(match, { focus: false })
   }, [activeIndex, editorRef, isOpen, isSearchPending, isSourceSearch, sourceMatches])
+
+  const open = useCallback(() => {
+    if (!enabled) return
+    if (!isOpen) {
+      const current = document.activeElement as HTMLElement | null
+      previousFocusRef.current = current?.closest('.action-menu')?.querySelector<HTMLElement>('[data-menu-trigger]') ?? current
+    }
+    onOpen?.()
+    setIsOpen(true)
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current)
+    focusTimerRef.current = setTimeout(() => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 0)
+  }, [enabled, isOpen, onOpen])
+
+  useEffect(() => () => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current)
+  }, [])
 
   useEffect(() => {
     const platform = detectShortcutPlatform()
     function handleKeyDown(event: KeyboardEvent) {
-      if (!matchesShortcut(event, { key: 'f' }, platform)) {
+      if (!enabled || event.defaultPrevented || !matchesShortcut(event, { key: 'f' }, platform)) {
         return
       }
 
       event.preventDefault()
-      setIsOpen(true)
-      window.setTimeout(() => inputRef.current?.focus(), 0)
+      open()
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [enabled, open])
 
   const close = useCallback(() => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current)
+    const previousFocus = previousFocusRef.current
+    if (previousFocus?.isConnected && previousFocus !== document.body && !previousFocus.closest('[inert]')) previousFocus.focus()
+    else document.querySelector<HTMLButtonElement>('[data-menu-trigger="reading"]')?.focus()
     setIsOpen(false)
     setIsReplaceOpen(false)
     setQuery('')
@@ -97,7 +126,7 @@ export function useDocumentSearch({
       return
     }
 
-    setActiveIndex((current) => (current + direction + matchCount) % matchCount)
+    setActiveIndex((current) => (Math.min(current, matchCount - 1) + direction + matchCount) % matchCount)
   }, [matchCount])
 
   const replaceCurrent = useCallback(() => {
@@ -131,6 +160,7 @@ export function useDocumentSearch({
     : Math.min(activeIndex, matchCount - 1)
 
   return {
+    activeSourceMatch: isOpen && isSourceSearch ? sourceMatches[currentActiveIndex] ?? null : null,
     activeIndex: currentActiveIndex,
     close,
     appliedQuery,
@@ -140,6 +170,8 @@ export function useDocumentSearch({
     isSourceSearch,
     matchCount,
     move,
+    open,
+    isSearchPending,
     query,
     replacement,
     replaceAll,
