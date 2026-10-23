@@ -14,6 +14,7 @@ dist-ssr
 playwright-report
 src-tauri/target
 test-results
+output/playwright
 *.local
 
 # Editor directories and files

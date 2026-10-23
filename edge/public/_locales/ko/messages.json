@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "MDView"
+  },
+  "extensionDescription": {
+    "message": "간결하고 편리한 Markdown 리더 및 편집기."
+  },
+  "actionTitle": {
+    "message": "MDView로 열기"
+  }
+}

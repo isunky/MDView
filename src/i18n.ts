@@ -1,10 +1,20 @@
 import { markdownSyntaxReference } from './domain/markdownSyntaxReference'
 
-export type AppLanguage = 'en' | 'zh'
+export const supportedLanguages = [
+  { id: 'en', name: 'English', locale: 'en' },
+  { id: 'zh', name: '中文', locale: 'zh-CN' },
+  { id: 'ja', name: '日本語', locale: 'ja' },
+  { id: 'ko', name: '한국어', locale: 'ko' },
+  { id: 'es', name: 'Español', locale: 'es' },
+] as const
 
-export type Translation = (typeof translations)['en']
+export type AppLanguage = (typeof supportedLanguages)[number]['id']
+export type AppLocale = (typeof supportedLanguages)[number]['locale']
+export type Translation = (typeof baseTranslations)['en']
 
-export const translations = {
+export const APP_LANGUAGE_STORAGE_KEY = 'mdview.language.v1'
+
+const baseTranslations = {
   en: {
     notSavedToFile: 'Not saved to a file',
     editorPlaceholder: 'Start writing Markdown here…',
@@ -60,8 +70,6 @@ export const translations = {
     updateClosingForInstall: 'MDView will close to finish installing the update.',
     closeUpdateDialog: 'Close update dialog',
     languageLabel: 'Interface language',
-    languageEnglish: 'English',
-    languageChinese: '中文',
     readingSettings: 'Reading Settings',
     readingSettingsSubtitle: 'Adjust appearance and typography for comfortable reading.',
     closeReadingSettings: 'Close reading settings',
@@ -381,8 +389,6 @@ export const translations = {
     updateClosingForInstall: 'MDView 将关闭以完成更新安装。',
     closeUpdateDialog: '关闭更新对话框',
     languageLabel: '界面语言',
-    languageEnglish: 'English',
-    languageChinese: '中文',
     readingSettings: '阅读设置',
     readingSettingsSubtitle: '调整主题与排版，获得更舒适的阅读体验。',
     closeReadingSettings: '关闭阅读设置',
@@ -649,11 +655,78 @@ export const translations = {
   },
 }
 
+export const translations = baseTranslations
+
+const loadedTranslations = new Map<AppLanguage, Translation>([
+  ['en', translations.en],
+  ['zh', translations.zh],
+])
+const translationPromises = new Map<AppLanguage, Promise<Translation>>()
+const translationLoaders = {
+  ja: () => import('./locales/ja').then((module) => module.japanese),
+  ko: () => import('./locales/ko').then((module) => module.korean),
+  es: () => import('./locales/es').then((module) => module.spanish),
+}
+
+export function getLoadedTranslation(language: AppLanguage): Translation | undefined {
+  return loadedTranslations.get(language)
+}
+
+export function loadTranslation(language: AppLanguage): Promise<Translation> {
+  const loaded = loadedTranslations.get(language)
+  if (loaded) return Promise.resolve(loaded)
+  const pending = translationPromises.get(language)
+  if (pending) return pending
+
+  // Cache the promise as well as the result for React Suspense and repeat switches.
+  const promise = (language === 'en' || language === 'zh'
+    ? Promise.resolve(translations[language])
+    : translationLoaders[language]())
+    .then((catalog) => {
+      loadedTranslations.set(language, catalog)
+      return catalog
+    })
+    .catch(() => {
+      loadedTranslations.set(language, translations.en)
+      return translations.en
+    })
+  translationPromises.set(language, promise)
+  return promise
+}
+
+export function getLanguageLocale(language: AppLanguage): AppLocale {
+  return supportedLanguages.find((option) => option.id === language)!.locale
+}
+
 export function detectSystemLanguage(): AppLanguage {
   const languageTags =
     typeof navigator === 'undefined'
       ? []
       : [...(navigator.languages ?? []), navigator.language].filter(Boolean)
 
-  return languageTags.some((language) => language.toLowerCase().startsWith('zh')) ? 'zh' : 'en'
+  for (const tag of languageTags) {
+    const primaryLanguage = tag.toLowerCase().split(/[-_]/)[0]
+    const match = supportedLanguages.find((option) => option.id === primaryLanguage)
+    if (match) return match.id
+  }
+  return 'en'
+}
+
+export function loadAppLanguage(): AppLanguage {
+  try {
+    const stored = window.localStorage.getItem(APP_LANGUAGE_STORAGE_KEY)
+    const match = supportedLanguages.find((option) => option.id === stored)
+    if (match) return match.id
+  } catch {
+    // Language selection still works when browser storage is unavailable.
+  }
+  return detectSystemLanguage()
+}
+
+export function saveAppLanguage(language: AppLanguage): void {
+  try {
+    window.localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, language)
+  } catch {
+    // The selected language remains available for the current session.
+  }
 }

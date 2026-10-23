@@ -4,7 +4,9 @@ import { UnsavedChangesDialog } from './components/dialogs/UnsavedChangesDialog'
 import { ExportWarningDialog } from './components/dialogs/ExportWarningDialog'
 import {
   Suspense,
+  use,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -16,6 +18,7 @@ import { SplitScrollControl } from './components/workspace/SplitScrollControl'
 import { Toast } from './components/shell/Toast'
 import { AppDialogs } from './components/shell/AppDialogs'
 import { AppToolbar } from './components/shell/AppToolbar'
+import { AppLogo } from './components/shell/AppLogo'
 import { DocumentOutline } from './components/workspace/DocumentOutline'
 import { DocumentSearchBar } from './components/editor/DocumentSearchBar'
 import { ExternalFileBanner } from './components/workspace/ExternalFileBanner'
@@ -25,9 +28,14 @@ import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/previe
 import { MarkdownEditor, type MarkdownEditorHandle } from './components/editor/MarkdownEditor'
 import { WelcomeWorkspace } from './components/workspace/WelcomeWorkspace'
 import {
-  detectSystemLanguage,
+  getLanguageLocale,
+  getLoadedTranslation,
+  loadAppLanguage,
+  loadTranslation,
+  saveAppLanguage,
   translations,
   type AppLanguage,
+  type Translation,
 } from './i18n'
 import {
   MAX_OUTLINE_WIDTH,
@@ -69,14 +77,21 @@ type AppProps = {
   windowFrame?: AppWindowFrame
 }
 
-function App({
+type AppWorkspaceProps = Omit<AppProps, 'initialLanguage'> & {
+  language: AppLanguage
+  t: Translation
+  onLanguageSelect: (language: AppLanguage) => void
+}
+
+function AppWorkspace({
   appUpdateClient = unsupportedAppUpdateClient,
   fileAccess,
-  initialLanguage,
+  language,
+  t,
+  onLanguageSelect,
   supportsAppUpdates = true,
   windowFrame = nativeWindowFrame,
-}: AppProps) {
-  const [language, setLanguage] = useState<AppLanguage>(() => initialLanguage ?? detectSystemLanguage())
+}: AppWorkspaceProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const splitLayout = useSplitLayout()
   const [recentFilesHidden, setRecentFilesHidden] = useState(false)
@@ -89,7 +104,6 @@ function App({
   const previewPanelRef = useRef<HTMLElement | null>(null)
   const previewRef = useRef<HTMLElement | null>(null)
   const editorRef = useRef<MarkdownEditorHandle | null>(null)
-  const t = translations[language]
   const {
     effectiveTheme,
     preferences: readingPreferences,
@@ -404,8 +418,8 @@ function App({
   }
 
   function handleLanguageSelect(nextLanguage: AppLanguage) {
-    setLanguage(nextLanguage)
     closeMenu()
+    onLanguageSelect(nextLanguage)
   }
 
   function handleOpenReadingSettings() {
@@ -466,7 +480,7 @@ function App({
     <main
       className={`app-shell view-${viewMode} ${isWelcomeVisible ? 'welcome-open' : ''}`}
       data-mdview-color-theme={effectiveTheme}
-      lang={language === 'zh' ? 'zh-CN' : 'en'}
+      lang={getLanguageLocale(language)}
     >
       <AppToolbar
         activeMenu={activeMenu}
@@ -782,4 +796,30 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : translations.en.fileOperationFailed
 }
 
-export default App
+function LocalizedApp(props: AppProps) {
+  const [language, setLanguage] = useState<AppLanguage>(() => props.initialLanguage ?? loadAppLanguage())
+  const languageRequestRef = useRef(0)
+  useEffect(() => {
+    document.documentElement.lang = getLanguageLocale(language)
+  }, [language])
+  const t = getLoadedTranslation(language) ?? use(loadTranslation(language))
+
+  function handleLanguageSelect(nextLanguage: AppLanguage) {
+    const request = ++languageRequestRef.current
+    void loadTranslation(nextLanguage).then(() => {
+      if (request !== languageRequestRef.current) return
+      setLanguage(nextLanguage)
+      saveAppLanguage(nextLanguage)
+    })
+  }
+
+  return <AppWorkspace {...props} language={language} t={t} onLanguageSelect={handleLanguageSelect} />
+}
+
+export default function App(props: AppProps) {
+  return (
+    <Suspense fallback={<div className="app-language-loading" role="status" aria-label="MDView"><AppLogo /></div>}>
+      <LocalizedApp {...props} />
+    </Suspense>
+  )
+}

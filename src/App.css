@@ -7,6 +7,25 @@
   background: var(--app-bg);
 }
 
+.app-language-loading {
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: var(--app-bg);
+}
+
+.app-language-loading .app-logo {
+  width: 48px;
+  height: 48px;
+}
+
+.reading-settings-dialog:lang(ko),
+.syntax-dialog:lang(ko),
+.welcome-workspace:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .topbar {
   --titlebar-height: 64px;
   height: var(--titlebar-height);
@@ -3325,6 +3344,17 @@
 .math-editor-actions svg { width: 16px; height: 16px; }
 
 @media (max-width: 520px) {
+  .topbar.window-frame-native .toolbar > .action-menu > button {
+    width: 36px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar.window-frame-native .toolbar > .action-menu > button > span,
+  .topbar.window-frame-native .toolbar > .action-menu > button > svg:last-child {
+    display: none;
+  }
+
   .welcome-open .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;

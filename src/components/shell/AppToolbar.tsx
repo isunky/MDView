@@ -2,7 +2,7 @@ import { BookOpen, Check, ChevronDown, Download, Eye, FileInput, FilePlus2, Fold
 import type { KeyboardEvent, MouseEvent, RefObject } from 'react'
 import type { RecentFile } from '../../domain/recentFiles'
 import type { AppMenuId } from '../../hooks/useAppMenu'
-import type { AppLanguage, Translation } from '../../i18n'
+import { supportedLanguages, type AppLanguage, type Translation } from '../../i18n'
 import type { AppUpdatePhase } from '../../hooks/useAppUpdater'
 import type { AppWindowFrame } from '../../platform/windowFrame'
 import { AppLogo } from './AppLogo'
@@ -99,7 +99,7 @@ export function AppToolbar({
     </div>
     <nav className="toolbar" aria-label={t.documentActions} ref={menuBarRef} onKeyDown={onMenuKeyDown}>
       <div className="action-menu">
-        <button type="button" id="file-menu-trigger" data-menu-trigger="file" onClick={() => onToggleMenu('file')} aria-haspopup="menu" aria-controls="file-menu-panel" aria-expanded={activeMenu === 'file'}>
+        <button type="button" id="file-menu-trigger" data-menu-trigger="file" onClick={() => onToggleMenu('file')} aria-label={t.fileMenu} title={t.fileMenu} aria-haspopup="menu" aria-controls="file-menu-panel" aria-expanded={activeMenu === 'file'}>
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />
         </button>
         {activeMenu === 'file' ? <div className="action-menu-panel" id="file-menu-panel" role="menu" aria-labelledby="file-menu-trigger">
@@ -133,18 +133,17 @@ export function AppToolbar({
         </div> : null}
       </div>
       <div className="action-menu">
-        <button type="button" id="reading-menu-trigger" data-menu-trigger="reading" onClick={() => onToggleMenu('reading')} aria-haspopup="menu" aria-controls="reading-menu-panel" aria-expanded={activeMenu === 'reading'}><BookOpen aria-hidden="true" /><span>{t.readingMenu}</span><ChevronDown aria-hidden="true" /></button>
+        <button type="button" id="reading-menu-trigger" data-menu-trigger="reading" onClick={() => onToggleMenu('reading')} aria-label={t.readingMenu} title={t.readingMenu} aria-haspopup="menu" aria-controls="reading-menu-panel" aria-expanded={activeMenu === 'reading'}><BookOpen aria-hidden="true" /><span>{t.readingMenu}</span><ChevronDown aria-hidden="true" /></button>
         {activeMenu === 'reading' ? <div className="action-menu-panel action-menu-panel-compact" id="reading-menu-panel" role="menu" aria-labelledby="reading-menu-trigger">
           {onFind ? <button type="button" className={`action-menu-item${isFindOpen ? ' active' : ''}`} role="menuitem" onClick={onFind} disabled={isWelcomeVisible} aria-label={t.find} aria-expanded={isFindOpen} aria-controls="document-search-panel" title={findTitle ?? t.find}><Search aria-hidden="true" /><span>{t.find}</span><kbd aria-hidden="true">{formatShortcut({ key: 'f' })}</kbd></button> : null}
           <button type="button" className="action-menu-item" role="menuitem" onClick={onOpenReadingSettings} aria-haspopup="dialog"><SlidersHorizontal aria-hidden="true" /><span>{t.readingSettings}</span></button>
         </div> : null}
       </div>
       <div className="action-menu">
-        <button type="button" id="app-menu-trigger" data-menu-trigger="app" onClick={() => onToggleMenu('app')} aria-haspopup="menu" aria-controls="app-menu-panel" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
+        <button type="button" id="app-menu-trigger" data-menu-trigger="app" onClick={() => onToggleMenu('app')} aria-label={t.appMenu} title={t.appMenu} aria-haspopup="menu" aria-controls="app-menu-panel" aria-expanded={activeMenu === 'app'}><Settings aria-hidden="true" /><span>{t.appMenu}</span><ChevronDown aria-hidden="true" /></button>
         {activeMenu === 'app' ? <div className="action-menu-panel action-menu-panel-compact" id="app-menu-panel" role="menu" aria-labelledby="app-menu-trigger">
           <div className="action-menu-section-label">{t.languageLabel}</div>
-          <button type="button" className={`action-menu-item ${language === 'en' ? 'active' : ''}`} onClick={() => onLanguage('en')} role="menuitem"><span>{t.languageEnglish}</span>{language === 'en' ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>
-          <button type="button" className={`action-menu-item ${language === 'zh' ? 'active' : ''}`} onClick={() => onLanguage('zh')} role="menuitem"><span>{t.languageChinese}</span>{language === 'zh' ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>
+          {supportedLanguages.map((option) => <button key={option.id} type="button" lang={option.locale} className={`action-menu-item ${language === option.id ? 'active' : ''}`} onClick={() => onLanguage(option.id)} role="menuitem" aria-current={language === option.id ? 'true' : undefined}><span>{option.name}</span>{language === option.id ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>)}
           <div className="action-menu-divider" />
           {supportsAppUpdates ? <button type="button" className="action-menu-item" onClick={onCheckUpdates} disabled={updateActionTitle !== undefined || updatePhase === 'checking'} title={updateActionTitle} role="menuitem">{updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}</button> : null}
           <button type="button" className="action-menu-item" onClick={onAbout} role="menuitem">{t.about}</button>

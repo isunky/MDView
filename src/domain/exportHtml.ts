@@ -1,4 +1,6 @@
-export type ExportHtmlLanguage = 'en' | 'zh-CN'
+import type { AppLocale } from '../i18n'
+
+export type ExportHtmlLanguage = AppLocale
 
 type BuildExportHtmlOptions = {
   title: string

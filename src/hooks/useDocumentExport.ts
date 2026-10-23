@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type RefObject } from 'react'
-import type { Translation, AppLanguage } from '../i18n'
+import { getLanguageLocale, type Translation, type AppLanguage } from '../i18n'
 import type { FileAccess } from '../platform/fileAccess'
 
 type ExportDocument = { content: string; path: string | null; title: string }
@@ -56,7 +56,7 @@ export function useDocumentExport({
       unresolvedResources: content.unresolvedResources,
       html: buildExportHtml({
         title: document.title,
-        lang: language === 'zh' ? 'zh-CN' : 'en',
+        lang: getLanguageLocale(language),
         contentHtml: content.html,
         mathStyles,
       }),

@@ -1,13 +1,25 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useDocumentExport } from './useDocumentExport'
-import { translations } from '../i18n'
+import { loadTranslation, translations } from '../i18n'
 import type { FileAccess } from '../platform/fileAccess'
+import { buildExportHtml } from '../domain/exportHtml'
 
-vi.mock('../domain/exportHtml', () => ({ buildExportHtml: () => '<html>export</html>' }))
+vi.mock('../domain/exportHtml', () => ({ buildExportHtml: vi.fn(() => '<html>export</html>') }))
 vi.mock('../domain/exportPreview', () => ({ createLightExportContent: async () => ({ html: '<p>content</p>', unresolvedResources: [] }) }))
 
 describe('export workflow', () => {
+  it.each(['ja', 'ko', 'es'] as const)('exports HTML with the %s language tag', async (language) => {
+    const t = await loadTranslation(language)
+    const { result } = renderHook(() => useDocumentExport({
+      closeMenu: vi.fn(), document: { content: '# Content', path: null, title: 'test.md' },
+      fileAccess: { exportHtmlFile: vi.fn(async () => null) } as unknown as FileAccess,
+      language, previewRef: { current: document.createElement('article') }, setStatusMessage: vi.fn(), t,
+    }))
+    await act(async () => { await result.current.exportHtml() })
+    expect(buildExportHtml).toHaveBeenLastCalledWith(expect.objectContaining({ lang: language }))
+  })
+
   it('blocks overlapping exports and releases the lock after a canceled save', async () => {
     let complete!: (path: string | null) => void
     const exportHtmlFile = vi.fn(() => new Promise<string | null>((resolve) => { complete = resolve }))

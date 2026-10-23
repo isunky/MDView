@@ -125,14 +125,14 @@ Format hints explain the differences before export, including Mermaid being kept
 | macOS | **[本机源码编译 / Local build](#macos-build)**：推荐使用 AI 编程工具辅助 / AI-assisted build recommended |
 | Microsoft Edge | **Extension ZIP**：解压后加载 / Extract and load unpacked |
 
-**Windows：**需要预先安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)，MDView 不附带或下载运行时。MSI 安装界面为英文，应用支持中英文。
+**Windows：**需要预先安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)，MDView 不附带或下载运行时。MSI 安装界面为英文；应用支持中文、英语、日语、韩语和西班牙语，首次启动跟随系统语言，也可在「应用」菜单中切换并记住选择。
 
 **macOS：**因发布包尚未完成 Apple 签名与公证，建议在自己的 Mac 上[通过 AI 辅助编译](#ai-build)。本地构建仍可能出现系统安全提示。
 
 <details>
 <summary>English installation notes</summary>
 
-Windows requires WebView2 Runtime to be installed separately; MDView does not bundle or download it. The MSI uses an English installer; the app supports Chinese and English.
+Windows requires WebView2 Runtime to be installed separately; MDView does not bundle or download it. The MSI uses an English installer. The app supports Chinese, English, Japanese, Korean, and Spanish, follows your system language on first launch, and remembers changes made in the App menu.
 
 The macOS Universal DMG supports Intel and Apple Silicon on macOS 10.15+. It uses ad-hoc signing without Developer ID signing or Apple notarization and may be blocked by macOS. We recommend building from source on your own Mac.
 
