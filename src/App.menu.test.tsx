@@ -118,6 +118,9 @@ describe('App', () => {
       'Open Markdown File',
       'Save',
       'Save As',
+      'Export as HTML',
+      'Export as PDF',
+      'Export as Word (.docx)',
       'Hide recent files',
       'recent.md',
       'Reveal recent.md in folder',
@@ -126,7 +129,7 @@ describe('App', () => {
     ])
   })
 
-  it('shows export actions together in the Export menu', async () => {
+  it('shows export actions in the File menu', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })
 
@@ -439,7 +442,7 @@ async function openFileMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function openExportMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Export' }))
+  await user.click(screen.getByRole('button', { name: 'File' }))
 }
 
 async function openAppMenu(user: ReturnType<typeof userEvent.setup>) {

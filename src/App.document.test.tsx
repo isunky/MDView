@@ -237,7 +237,6 @@ describe('App', () => {
     expect(screen.getByText('Interface language')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Reading Settings' })).toBeInTheDocument()
   })
 
   it('offers to restore a pending draft during a normal launch', async () => {
@@ -350,11 +349,11 @@ describe('App', () => {
     })
   })
 
-  it('applies and persists reading settings from the App menu', async () => {
+  it('applies and persists reading settings from the Reading menu', async () => {
     const user = userEvent.setup()
     renderApp({ fileAccess: createFileAccess() })
 
-    await openAppMenu(user)
+    await user.click(screen.getByRole('button', { name: 'Reading' }))
     await user.click(screen.getByRole('menuitem', { name: 'Reading Settings' }))
     expect(screen.getByRole('dialog', { name: 'Reading Settings' })).toBeInTheDocument()
 

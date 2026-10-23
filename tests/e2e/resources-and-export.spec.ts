@@ -45,7 +45,7 @@ test('runs HTML, PDF, and DOCX exports', async ({ page }) => {
   await page.getByRole('button', { name: 'Preview markdown' }).click()
 
   for (const name of ['Export as HTML', 'Export as PDF', 'Export as Word (.docx)']) {
-    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await page.getByRole('button', { name: 'File', exact: true }).click()
     await page.getByRole('menuitem', { name }).click()
   }
 

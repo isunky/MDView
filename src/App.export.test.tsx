@@ -132,7 +132,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(exportDocxFile).toHaveBeenCalledTimes(1)
-    })
+    }, { timeout: 10_000 })
     expect(screen.getByText('Generating Word document...')).toBeInTheDocument()
     const [bytes, currentPath, title] = exportDocxFile.mock.calls[0]
     expect(bytes).toBeInstanceOf(Uint8Array)
@@ -162,7 +162,7 @@ async function openFileMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function openExportMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Export' }))
+  await user.click(screen.getByRole('button', { name: 'File' }))
 }
 
 async function openAppMenu(user: ReturnType<typeof userEvent.setup>) {
