@@ -1,0 +1,5 @@
+{
+  "extensionName": { "message": "MDView" },
+  "extensionDescription": { "message": "簡潔專注的 Markdown 閱讀與編輯工具。" },
+  "actionTitle": { "message": "使用 MDView 開啟" }
+}

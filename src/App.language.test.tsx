@@ -26,7 +26,7 @@ describe('App language selection', () => {
   })
 
   it.each([
-    ['ja', '日本語'], ['ko', '한국어'], ['es', 'Español'],
+    ['ja', '日本語'], ['ko', '한국어'], ['es', 'Español'], ['zh-TW', '繁體中文'],
   ] as const)('switches to %s and restores the manual selection on the next launch', async (language, name) => {
     const user = userEvent.setup()
     const { unmount } = render(<App fileAccess={tauriFileAccess} initialLanguage="en" />)

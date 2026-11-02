@@ -32,7 +32,7 @@ for (const language of languages) {
       await expect(page.getByRole('heading', { name: language.welcome, exact: true })).toBeVisible()
       await expect(page.locator('html')).toHaveAttribute('lang', language.id)
       await page.getByRole('button', { name: language.app, exact: true }).click()
-      for (const name of ['English', '中文', '日本語', '한국어', 'Español']) {
+      for (const name of ['English', '简体中文', '繁體中文', '日本語', '한국어', 'Español']) {
         await expect(page.getByRole('menuitem', { name, exact: true })).toBeVisible()
       }
 

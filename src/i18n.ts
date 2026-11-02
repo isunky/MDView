@@ -2,7 +2,8 @@ import { markdownSyntaxReference } from './domain/markdownSyntaxReference'
 
 export const supportedLanguages = [
   { id: 'en', name: 'English', locale: 'en' },
-  { id: 'zh', name: '中文', locale: 'zh-CN' },
+  { id: 'zh', name: '简体中文', locale: 'zh-CN' },
+  { id: 'zh-TW', name: '繁體中文', locale: 'zh-TW' },
   { id: 'ja', name: '日本語', locale: 'ja' },
   { id: 'ko', name: '한국어', locale: 'ko' },
   { id: 'es', name: 'Español', locale: 'es' },
@@ -663,6 +664,7 @@ const loadedTranslations = new Map<AppLanguage, Translation>([
 ])
 const translationPromises = new Map<AppLanguage, Promise<Translation>>()
 const translationLoaders = {
+  'zh-TW': () => import('./locales/zh-TW').then((module) => module.traditionalChinese),
   ja: () => import('./locales/ja').then((module) => module.japanese),
   ko: () => import('./locales/ko').then((module) => module.korean),
   es: () => import('./locales/es').then((module) => module.spanish),
@@ -705,7 +707,13 @@ export function detectSystemLanguage(): AppLanguage {
       : [...(navigator.languages ?? []), navigator.language].filter(Boolean)
 
   for (const tag of languageTags) {
-    const primaryLanguage = tag.toLowerCase().split(/[-_]/)[0]
+    const parts = tag.toLowerCase().split(/[-_]/)
+    const primaryLanguage = parts[0]
+    if (primaryLanguage === 'zh') {
+      if (parts.includes('hant')) return 'zh-TW'
+      if (parts.includes('hans')) return 'zh'
+      return parts.some((part) => ['tw', 'hk', 'mo'].includes(part)) ? 'zh-TW' : 'zh'
+    }
     const match = supportedLanguages.find((option) => option.id === primaryLanguage)
     if (match) return match.id
   }

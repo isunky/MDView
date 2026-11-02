@@ -236,7 +236,8 @@ describe('App', () => {
     expect(screen.getByRole('menuitem', { name: 'About' })).toBeInTheDocument()
     expect(screen.getByText('Interface language')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: '中文' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '简体中文' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '繁體中文' })).toBeInTheDocument()
   })
 
   it('offers to restore a pending draft during a normal launch', async () => {

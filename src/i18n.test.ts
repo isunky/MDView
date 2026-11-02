@@ -24,7 +24,7 @@ describe('interface languages', () => {
 
   it.each([
     ['ja-JP', 'ja'], ['ko-KR', 'ko'], ['es-MX', 'es'],
-    ['es-ES', 'es'], ['zh-Hant-TW', 'zh'], ['JA_jp', 'ja'],
+    ['es-ES', 'es'], ['zh-Hant-TW', 'zh-TW'], ['zh-TW', 'zh-TW'], ['zh-HK', 'zh-TW'], ['zh-MO', 'zh-TW'], ['zh-Hans-HK', 'zh'], ['zh-CN', 'zh'], ['JA_jp', 'ja'],
     ['en-GB', 'en'], ['fr-FR', 'en'],
   ] as const)('detects %s as %s', (tag, expected) => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue([tag])
@@ -68,7 +68,7 @@ describe('interface languages', () => {
   })
 
   it.each([
-    ['ja', 'ファイル'], ['ko', '파일'], ['es', 'Archivo'],
+    ['ja', 'ファイル'], ['ko', '파일'], ['es', 'Archivo'], ['zh-TW', '檔案'],
   ] as const)('loads and caches the %s catalog with the full syntax reference', async (language, fileMenu) => {
     const catalog = await loadTranslation(language)
     expect(catalog.fileMenu).toBe(fileMenu)
