@@ -113,7 +113,7 @@ test('saves edited markdown content', async ({ page }) => {
 
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
-  await page.getByRole('menuitem', { name: '中文' }).click()
+  await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()
 
   await expect(page.getByRole('button', { exact: true, name: '文件' })).toBeVisible()
 
