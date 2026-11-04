@@ -6,6 +6,8 @@ export type AppWindowFrame = {
   minimize: () => Promise<void>
   startDragging: () => Promise<void>
   toggleMaximize: () => Promise<void>
+  isAlwaysOnTop?: () => Promise<boolean>
+  setAlwaysOnTop?: (value: boolean) => Promise<void>
   subscribeMaximized: (listener: (maximized: boolean) => void) => Promise<() => void>
 }
 

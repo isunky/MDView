@@ -27,6 +27,11 @@ describe('AppToolbar window frame', () => {
     rerender(toolbar(createWindowFrame('macos-overlay')))
     expect(screen.queryByRole('button', { name: 'Minimize' })).not.toBeInTheDocument()
   })
+
+  it('does not show the pin control without native window support', () => {
+    renderToolbar(createWindowFrame('native'))
+    expect(screen.queryByRole('button', { name: 'Keep window on top' })).not.toBeInTheDocument()
+  })
 })
 
 function renderToolbar(frame: AppWindowFrame) {

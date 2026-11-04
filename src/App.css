@@ -416,6 +416,26 @@
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
 }
 
+.window-pin {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--control-text);
+  cursor: pointer;
+}
+
+.window-pin svg { width: 16px; height: 16px; }
+.window-pin:hover:not(:disabled) { background: var(--control-hover); }
+.window-pin.active { color: var(--accent); background: var(--accent-soft); border-color: var(--border); }
+.window-pin:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.window-pin:disabled { opacity: 0.55; cursor: default; }
+
 .window-controls {
   height: var(--titlebar-height);
   display: flex;

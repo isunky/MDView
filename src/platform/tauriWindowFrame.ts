@@ -10,6 +10,8 @@ export function createTauriWindowFrame(): AppWindowFrame {
     minimize: () => appWindow.minimize(),
     startDragging: () => appWindow.startDragging(),
     toggleMaximize: () => appWindow.toggleMaximize(),
+    isAlwaysOnTop: () => appWindow.isAlwaysOnTop(),
+    setAlwaysOnTop: (value) => appWindow.setAlwaysOnTop(value),
     subscribeMaximized: async (listener) => {
       let frameId: number | null = null
       let disposed = false

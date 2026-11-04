@@ -12,6 +12,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-toggle-maximize",
     "core:window:allow-set-theme",
+    "core:window:allow-set-always-on-top",
     "opener:allow-open-url",
     "opener:allow-default-urls"
   ]

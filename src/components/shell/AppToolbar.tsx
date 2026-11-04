@@ -7,6 +7,7 @@ import type { AppUpdatePhase } from '../../hooks/useAppUpdater'
 import type { AppWindowFrame } from '../../platform/windowFrame'
 import { AppLogo } from './AppLogo'
 import { WindowControls } from './WindowControls'
+import { WindowPin } from './WindowPin'
 import { formatShortcut } from '../../platform/keyboardShortcuts'
 
 type ViewMode = 'preview' | 'edit' | 'split'
@@ -20,6 +21,7 @@ export function AppToolbar({
   onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
   onSave, onSaveAs, onToggleMenu, onViewMode, onMenuKeyDown, onFind, findTitle, isFindOpen,
+  onWindowPinError,
 }: {
   isExporting?: boolean
   saveStateLabel?: string
@@ -70,6 +72,7 @@ export function AppToolbar({
   onFind?: () => void
   findTitle?: string
   isFindOpen?: boolean
+  onWindowPinError?: () => void
 }) {
   const nativeFilesEnabled = nativeFileTitle === undefined
   const exportOptions = [
@@ -155,6 +158,7 @@ export function AppToolbar({
       <button type="button" className={viewMode === 'edit' ? 'active' : ''} onClick={() => onViewMode('edit')} aria-pressed={viewMode === 'edit'} aria-label={t.editLabel} title={t.editLabel}><PencilLine aria-hidden="true" /><span>{t.edit}</span></button>
       <button type="button" className={viewMode === 'split' ? 'active' : ''} onClick={() => onViewMode('split')} aria-pressed={viewMode === 'split'} aria-label={t.splitLabel} title={t.splitLabel}><SplitSquareHorizontal aria-hidden="true" /><span>{t.split}</span></button>
     </div> : null}
+    {windowFrame.isAlwaysOnTop && windowFrame.setAlwaysOnTop ? <WindowPin frame={windowFrame} pinLabel={t.windowPin} unpinLabel={t.windowUnpin} onError={onWindowPinError} /> : null}
     {windowFrame.kind === 'windows-custom' ? <WindowControls
       frame={windowFrame}
       labels={{

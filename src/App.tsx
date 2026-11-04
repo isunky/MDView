@@ -512,6 +512,7 @@ function AppWorkspace({
         updatePhase={updatePhase}
         viewMode={viewMode}
         windowFrame={windowFrame}
+        onWindowPinError={() => showAppToast(t.windowPinFailed)}
         onAbout={handleOpenAboutFromAppMenu}
         onCheckUpdates={() => void handleCheckForUpdates()}
         onClearRecent={handleClearRecentFiles}
