@@ -34,85 +34,73 @@
 
 ## 中文
 
-**让 AI 生成的内容，也有舒适的阅读体验。**
+**让每一份 Markdown，都更适合阅读。**
 
-MDView 是一款轻量、美观、免费无广告的 Markdown 阅读器。将 AI 生成的方案、笔记或技术说明保存为 Markdown 文件，即可在清晰的排版中阅读，用目录浏览长文，查看其中的图表与公式。打开轻快，无需注册，也适合你已有的本地文档。
+MDView 是一款面向 AI 场景的轻量 Markdown 阅读器，也适合阅读笔记、项目文档和技术资料。它打开轻快、界面简洁，免费无广告，无需注册账号。无论内容来自 AI 还是本地已有文件，都可以用舒适的排版阅读，必要时直接编辑、转换和分享。
 
-阅读是核心，编辑与转换随手可用：需要时修改几处内容，或导出一份排版整洁的文档，与他人分享。
+### 专注阅读，也照顾你的习惯
 
-想看看这些功能在实际阅读里是什么感觉？可以读读我写的[《给 Markdown 一个好读的家：我为什么做了 MDView》](docs/articles/MDView-wechat-intro.zh-CN.md)。
+打开 `.md` 或 `.markdown` 文件，即可在阅读视图中查看清晰排版的正文、表格、任务列表和代码。浅色、深色与跟随系统主题适应不同环境；字体、字号、行距、正文宽度和缩放均可调整，桌面版还支持选择电脑中已安装的字体。
 
-**舒适阅读，自由排版**
+长文档可以通过左侧目录快速跳转，当前章节随正文滚动高亮；目录可关闭、调整宽度并选择显示层级。重新打开文件时，MDView 会恢复阅读位置、视图和相关阅读设置。需要参考文档时，还可将桌面窗口置顶，切换到其他应用后继续查看。
 
-明暗主题与细致的文字排版，让内容清晰呈现。字体、字号、行距和正文宽度均可调整；Windows 和 macOS 还可直接选择电脑中已安装的字体，找到适合自己的阅读方式。
+### 图表、公式和图片，不必离开文档
 
-**长篇文档，定位自如**
+Mermaid 图表、LaTeX 数学公式、语法高亮代码和常见 Markdown 表格可直接预览；支持的颜色值旁会显示色块，阅读设计规范或配色方案时更直观。文档中的本地图片和相对路径 Markdown 链接也可以直接查看或打开。
 
-可折叠的多级目录支持章节跳转与当前位置高亮。再次打开文件，恢复阅读进度、缩放和视图设置，接着上次往下读。
+图片与 Mermaid 图表可在独立预览中按文档顺序浏览，支持缩放、拖动、适应窗口和前后切换。普通图片可按原格式保存，Mermaid 图表可保存为完整 PNG，不受当前缩放位置影响。
 
-**图表、公式与配色，一目了然**
+### 阅读为主，修改也顺手
 
-直接预览 Mermaid 图表、LaTeX 公式、表格和高亮代码。支持的颜色值旁会显示对应色块，查看设计规范与配色方案更直观。
+需要调整内容时，切换到源码编辑或分屏视图即可；分屏支持双向同步滚动，拖动分隔线可调整两侧宽度。编辑工具栏提供标题、列表、链接、表格、图片和公式等快捷入口，也可通过粘贴、拖放或批量选择插入图片。
 
-双击 Mermaid 图表可打开独立预览；图表和图片预览都支持滚轮或按钮缩放、拖动移动，以及一键适应窗口。
+查找支持匹配数量和前后跳转，编辑时可替换或全部替换；撤销重做、常用快捷键和内置 Markdown 语法参考，方便处理日常修改。状态栏显示字数、字符数、光标位置和预计阅读时长，保存状态也始终可见。
 
-预览弹窗可按文档顺序浏览图片和 Mermaid 图表，通过上一张/下一张按钮或左右方向键切换，并显示当前位置。
+### 本地文件，更安心
 
-在预览弹窗中可直接保存当前图片：普通图片保留原格式，Mermaid 图表保存为完整 PNG 图片，不受当前缩放和拖动影响。
+文档保存在自己的设备上。最近文件列表支持重新打开、定位所在文件夹、移除记录或临时隐藏文件名与路径；文件在外部发生变化时，MDView 会提示处理，避免无意覆盖。未保存的修改有本地草稿备份，重新启动时可以选择恢复；恢复后仍需主动保存到文件。
 
-**阅读为主，随手可改**
+### 从 Word 导入，也能整洁导出
 
-切换源码编辑，或在同步分屏中边写边看。图片可粘贴、拖入或批量插入，表格与公式也有快捷入口；查找替换、撤销重做和草稿恢复，让日常修改更省心。
+将 Word `.docx` 导入为 Markdown 草稿，编辑后另存为 `.md`；原 Word 文件不会被修改。转换在本机进行，首次使用需准备 Python 和转换组件，下载组件时需要联网。
 
-切换视图时跟随当前段落，分屏宽度可拖动调整并记住选择。保存状态在阅读与编辑时持续可见；离开未保存的文档时，可以选择保存并继续。最近文件暂时打不开时可重试或重新选择位置，也可临时隐藏名称与路径。
+整理完成后，可导出排版整洁的 Word、独立 HTML，或通过系统打印生成 PDF。不同格式的能力会在导出前说明：例如导出 Word 时，Mermaid 图表保留为代码。HTML 和 Word 导出后可直接打开文件或所在文件夹。
 
-顶部按「文件、阅读、应用」分为三个菜单：导出放在「文件」，查找与排版设置放在「阅读」，语言、更新与关于放在「应用」。查找也可使用 Ctrl+F（macOS 为 Command+F）打开，支持连续输入、清空关键词和回车切换结果；源码中的当前匹配会持续高亮。菜单显示常用快捷键，也支持方向键选择和 Esc 返回。
-
-**Word 转入，精致导出**
-
-导入 Word 即可转换为 Markdown 草稿，编辑后保存为 `.md` 文件。也可导出排版美观的 Word、独立 HTML，或通过系统打印生成 PDF，让整理好的内容便于分享与交付。
-
-导出前会说明格式差异，含 Mermaid 时选择 Word 会提示图表将保留为代码；导出期间防止重复操作，HTML 和 Word 导出完成后可直接打开文件或所在文件夹。
+更多产品设计背景可阅读[《给 Markdown 一个好读的家：我为什么做了 MDView》](docs/articles/MDView-wechat-intro.zh-CN.md)。
 
 ## English
 
-**Give AI-generated content a better place to be read.**
+**Give every Markdown document a better place to be read.**
 
-MDView is a lightweight, thoughtfully designed Markdown reader, free and ad-free. Save AI-generated plans, notes, or technical explanations as Markdown files, then read them with clear typography, section navigation, diagrams, and formulas. It opens quickly, needs no account, and works just as well with your existing local documents.
+MDView is a lightweight Markdown reader designed for AI workflows and equally at home with notes, project documentation, and technical references. It opens quickly, has a clean interface, and is free and ad-free with no account required. Read your local files comfortably, then edit, convert, or share them when needed.
 
-Reading comes first. Editing and conversion are close at hand when you need to revise a passage or share a neatly formatted document.
+### Read your way
 
-**A polished reading experience**
+Open `.md` and `.markdown` files with clear typography for text, tables, task lists, and code. Choose a light, dark, or system theme, and adjust the font, size, line spacing, page width, and zoom. The desktop app also lets you select fonts installed on your computer.
 
-Light and dark themes pair with carefully styled text. Adjust the font, size, line spacing, and page width; on Windows and macOS, you can also choose any installed font for comfortable reading.
+Navigate long documents with the adjustable outline and follow the highlighted current section as you scroll. Hide the outline or choose its heading depth and width. When you reopen a file, MDView restores its reading position, view, and related reading settings. Pin the desktop window on top to keep a reference visible while working in another app.
 
-**Pick up where you left off**
+### See diagrams, formulas, and images in context
 
-A collapsible outline lets you jump between sections and highlights your current heading. Reopen a file to restore its reading position, zoom, and view settings.
+Preview Mermaid diagrams, LaTeX math, syntax-highlighted code, and Markdown tables directly. Supported color values have a matching swatch, making design specifications and palettes easier to scan. Local images and relative Markdown links can be opened from the document.
 
-**Diagrams, formulas, and colors in context**
+Open images and Mermaid diagrams in a separate viewer to browse them in document order, zoom, pan, and fit them to the window. Save ordinary images in their original format or export an entire Mermaid diagram as a PNG, independent of the current zoom and pan.
 
-Preview Mermaid diagrams, LaTeX formulas, tables, and highlighted code. Color swatches appear beside supported color values, making palettes and design specifications easier to read.
+### Read first, edit when needed
 
-Double-click a Mermaid diagram to open a separate preview. Diagram and image previews support wheel or button zoom, dragging to pan, and fitting to the window.
+Switch to source editing or a split view with synchronized scrolling in both directions. Drag the divider to adjust pane widths. The editor provides shortcuts for headings, lists, links, tables, images, and formulas; images can also be pasted, dropped, or inserted in batches.
 
-Browse images and Mermaid diagrams in document order using the previous/next buttons or arrow keys, with a current-position indicator.
+Find shows match counts and previous/next navigation; the editor adds replace and replace all. Undo and redo, common keyboard shortcuts, and a built-in Markdown syntax reference make everyday changes easier. The status bar shows word and character counts, cursor position, and estimated reading time, while save status remains visible.
 
-Save the current image from the preview: regular images keep their original format, while Mermaid diagrams are saved as complete PNG images, independent of zoom and pan.
+### Keep control of local files
 
-**Built for reading, ready for quick edits**
+Documents stay on your device. Reopen recent files, reveal their folders, remove entries, or temporarily hide names and paths. MDView warns when a file changes externally to help prevent accidental overwrites. Unsaved work is backed up locally and can be restored on the next launch; restored content still needs to be saved explicitly.
 
-Switch to source editing or write alongside a synchronized preview. Paste, drop, or batch-insert images, with quick tools for tables and formulas. Find and replace, undo and redo, and draft recovery support everyday revisions.
+### Import Word and share polished documents
 
-View changes follow the current paragraph. Resize the split panes and keep your preferred width. Save status stays visible, and you can save before continuing to another document. Unavailable recent files can be retried or relocated, and their names and paths can be temporarily hidden.
+Import a Word `.docx` as a Markdown draft, then edit and save it as `.md` without changing the original. Conversion takes place locally. First-time setup requires Python and conversion components; downloading those components requires internet access.
 
-The toolbar has three menus: File for document actions and export, Reading for find and typography, and App for language, updates, and about. Press Ctrl+F (Command+F on macOS) to find. Keep typing, clear the query, or press Enter to move between results; the current source match stays highlighted. Menus show common shortcuts and support arrow-key navigation and Escape to return.
-
-**From Word to Markdown, and back to polished documents**
-
-Import Word as a Markdown draft, then edit and save it as a `.md` file. Export neatly formatted Word documents or standalone HTML, or print to PDF for sharing and delivery.
-
-Format hints explain the differences before export, including Mermaid being kept as code in Word. Duplicate exports are blocked while processing. Open an exported HTML or Word file, or its containing folder, directly after saving.
+Export a neatly formatted Word document or standalone HTML, or use system printing to create a PDF. MDView explains format limitations before export: for example, Mermaid diagrams are kept as code in Word. After exporting HTML or Word, you can open the file or its containing folder directly.
 
 ## 下载与安装 / Installation
 
@@ -127,12 +115,16 @@ Format hints explain the differences before export, including Mermaid being kept
 
 **Windows：**需要预先安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)，MDView 不附带或下载运行时。MSI 安装界面为英文；应用支持简体中文、繁体中文、韩语、日语、西班牙语和英语，首次启动跟随系统语言，也可在「应用」菜单中切换并记住选择。
 
+安装版可在「应用」菜单中手动检查更新并安装新版；绿色版可检查更新并前往 Release 页面下载新版 ZIP。MSI 安装时可选择关联 Markdown 文件，之后双击文件即可打开。
+
 **macOS：**因发布包尚未完成 Apple 签名与公证，建议在自己的 Mac 上[通过 AI 辅助编译](#ai-build)。本地构建仍可能出现系统安全提示。
 
 <details>
 <summary>English installation notes</summary>
 
 Windows requires WebView2 Runtime to be installed separately; MDView does not bundle or download it. The MSI uses an English installer. The app supports Simplified Chinese, Traditional Chinese, Korean, Japanese, Spanish, and English, follows your system language on first launch, and remembers changes made in the App menu.
+
+Use the App menu to check for updates: the MSI edition can install an available update, while the portable edition opens the Release page to download the new ZIP. The MSI also offers Markdown file association during installation.
 
 The macOS Universal DMG supports Intel and Apple Silicon on macOS 10.15+. It uses ad-hoc signing without Developer ID signing or Apple notarization and may be blocked by macOS. We recommend building from source on your own Mac.
 
