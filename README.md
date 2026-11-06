@@ -12,6 +12,7 @@
     <a href="https://github.com/isunky/MDView/releases/latest"><strong>下载 / Download</strong></a>
     · <a href="#中文">中文</a>
     · <a href="#english">English</a>
+    · <a href="docs/USER_GUIDE.zh-CN.md">使用手册</a>
     · <a href="#ai-build">AI 辅助编译 / Build with AI</a>
   </p>
   <p><strong>Version / 版本：</strong>3.7.1 · <a href="https://www.sunky.net">Sunky</a></p>
@@ -35,6 +36,8 @@
 ## 中文
 
 **给 Markdown 一个好读的地方。**
+
+首次使用或想了解更多操作，可查看[图文使用手册](docs/USER_GUIDE.zh-CN.md)。
 
 AI 写好的方案、平时积累的笔记，或是项目里的技术文档，用 MDView 打开就能舒舒服服地读。它是一款轻量的 Markdown 阅读器，界面简洁，打开轻快，免费无广告，也不需要注册账号。遇到需要修改的地方，直接编辑；整理好之后，也可以转换成便于分享的文档。
 
