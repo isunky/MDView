@@ -136,6 +136,8 @@ export const korean: Translation = {
   lineHeight: (value) => `줄 간격 ${value.toFixed(2)}`,
   contentWidth: (value) => `본문 너비 ${value}px`,
   resetReadingSettings: '기본값으로 재설정',
+  decreaseValue: (label) => `줄이기: ${label}`,
+  increaseValue: (label) => `늘리기: ${label}`,
   documentActions: '문서 작업',
   windowMinimize: '최소화',
   windowMaximize: '최대화',

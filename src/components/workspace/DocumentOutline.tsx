@@ -178,6 +178,7 @@ export function DocumentOutline({
                   }}
                   aria-expanded={hasChildren ? !collapsedIds?.has(item.id) : undefined}
                   aria-label={t.jumpTo(item.text)}
+                  title={item.text}
                   aria-current={isActive ? 'location' : undefined}
                   ref={isActive ? activeItemRef : undefined}
                 >

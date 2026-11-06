@@ -283,6 +283,8 @@ export const traditionalChinese: Translation = {
     lineHeight: (value: number) => `行高 ${value.toFixed(2)}`,
     contentWidth: (value: number) => `內容寬度 ${value}px`,
     resetReadingSettings: '恢復預設設定',
+    decreaseValue: (label) => `減小：${label}`,
+    increaseValue: (label) => `增大：${label}`,
     documentActions: '文件操作',
     windowMinimize: '最小化',
     windowMaximize: '最大化',

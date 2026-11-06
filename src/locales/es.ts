@@ -136,6 +136,8 @@ export const spanish: Translation = {
   lineHeight: (value) => `Interlineado: ${value.toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   contentWidth: (value) => `Ancho del texto: ${value} px`,
   resetReadingSettings: 'Restablecer valores',
+  decreaseValue: (label) => `Reducir: ${label}`,
+  increaseValue: (label) => `Aumentar: ${label}`,
   documentActions: 'Acciones del documento',
   windowMinimize: 'Minimizar',
   windowMaximize: 'Maximizar',

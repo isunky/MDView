@@ -1,6 +1,6 @@
 import { useDialogFocus } from '../../hooks/useDialogFocus'
-import { Monitor, Moon, RotateCcw, Sun, X } from 'lucide-react'
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { Minus, Monitor, Moon, Plus, RotateCcw, Sun, X } from 'lucide-react'
+import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   READING_CONTENT_WIDTH_RANGE,
   READING_FONT_SIZE_RANGE,
@@ -161,17 +161,19 @@ export function ReadingSettingsDialog({
         </section>
 
         <section className="reading-settings-section reading-settings-sliders" aria-label={t.readingLayout}>
-          <RangeSetting label={t.fontSize(preferences.fontSize)} value={preferences.fontSize} range={READING_FONT_SIZE_RANGE} onChange={(fontSize) => onUpdate({ fontSize })} />
-          <RangeSetting label={t.lineHeight(preferences.lineHeight)} value={preferences.lineHeight} range={READING_LINE_HEIGHT_RANGE} onChange={(lineHeight) => onUpdate({ lineHeight })} />
-          <RangeSetting label={t.contentWidth(preferences.contentWidth)} value={preferences.contentWidth} range={READING_CONTENT_WIDTH_RANGE} onChange={(contentWidth) => onUpdate({ contentWidth })} />
+          <RangeSetting label={t.fontSize(preferences.fontSize)} value={preferences.fontSize} range={READING_FONT_SIZE_RANGE} onChange={(fontSize) => onUpdate({ fontSize })} t={t} />
+          <RangeSetting label={t.lineHeight(preferences.lineHeight)} value={preferences.lineHeight} range={READING_LINE_HEIGHT_RANGE} onChange={(lineHeight) => onUpdate({ lineHeight })} t={t} />
+          <RangeSetting label={t.contentWidth(preferences.contentWidth)} value={preferences.contentWidth} range={READING_CONTENT_WIDTH_RANGE} onChange={(contentWidth) => onUpdate({ contentWidth })} t={t} />
         </section>
 
         <section className="reading-sample-section" aria-label={t.readingSampleTitle}>
           <h3>{t.readingSampleTitle}</h3>
-          <div className="reading-sample" style={{ width: `${preferences.contentWidth / READING_CONTENT_WIDTH_RANGE.max * 100}%` }}>
-            <p>{t.readingSampleText}</p>
-            <code>const theme = "MDView"</code>
-            <table><tbody><tr><th>Markdown</th><td>{t.readingSampleCode}</td></tr></tbody></table>
+          <div className="reading-sample-stage">
+            <div className="reading-sample" style={{ width: `${preferences.contentWidth / READING_CONTENT_WIDTH_RANGE.max * 100}%` }}>
+              <p>{t.readingSampleText}</p>
+              <code>const theme = "MDView"</code>
+              <table><tbody><tr><th>Markdown</th><td>{t.readingSampleCode}</td></tr></tbody></table>
+            </div>
           </div>
         </section>
         <footer className="reading-settings-actions">
@@ -229,17 +231,30 @@ function RangeSetting({
   value,
   range,
   onChange,
+  t,
 }: {
   label: string
   value: number
   range: { min: number; max: number; step: number }
   onChange: (value: number) => void
+  t: Translation
 }) {
+  const inputId = useId()
+  const adjust = (direction: 1 | -1) => {
+    const next = Math.min(range.max, Math.max(range.min, value + direction * range.step))
+    onChange(Number(next.toFixed(2)))
+  }
   return (
-    <label className="reading-range-setting">
-      <span>{label}</span>
-      <input type="range" min={range.min} max={range.max} step={range.step} value={value} onChange={(event) => onChange(Number(event.currentTarget.value))} />
-    </label>
+    <div className="reading-range-setting">
+      <label htmlFor={inputId}>{label}</label>
+      <div className="reading-range-control">
+        <button type="button" onClick={() => adjust(-1)} disabled={value <= range.min} aria-label={t.decreaseValue(label)} title={t.decreaseValue(label)}><Minus aria-hidden="true" /></button>
+        <input id={inputId} type="range" min={range.min} max={range.max} step={range.step} value={value} aria-valuetext={label}
+          style={{ '--reading-range-progress': `${(value - range.min) / (range.max - range.min) * 100}%` } as CSSProperties}
+          onChange={(event) => onChange(Number(event.currentTarget.value))} />
+        <button type="button" onClick={() => adjust(1)} disabled={value >= range.max} aria-label={t.increaseValue(label)} title={t.increaseValue(label)}><Plus aria-hidden="true" /></button>
+      </div>
+    </div>
   )
 }
 
