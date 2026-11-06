@@ -9,11 +9,14 @@
     <img alt="Windows, macOS, and Edge" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Edge-334155?style=flat-square" />
   </p>
   <p>
-    <a href="https://github.com/isunky/MDView/releases/latest"><strong>下载 / Download</strong></a>
-    · <a href="#中文">中文</a>
+    <a href="#中文">中文</a>
     · <a href="#english">English</a>
-    · <a href="docs/USER_GUIDE.zh-CN.md">使用手册</a>
     · <a href="#ai-build">AI 辅助编译 / Build with AI</a>
+  </p>
+  <p>
+    <a href="https://github.com/isunky/MDView/releases/latest"><img alt="下载 MDView，获取最新版本" src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD%20MDView-%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC-087f75?style=for-the-badge&amp;logo=github&amp;logoColor=white&amp;labelColor=164b45" /></a>
+    &nbsp;
+    <a href="docs/USER_GUIDE.zh-CN.md"><img alt="图文使用手册，立即查阅" src="https://img.shields.io/badge/%E5%9B%BE%E6%96%87%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C-%E7%AB%8B%E5%8D%B3%E6%9F%A5%E9%98%85-087f75?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white&amp;labelColor=164b45" /></a>
   </p>
   <p><strong>Version / 版本：</strong>3.7.1 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
