@@ -34,73 +34,81 @@
 
 ## 中文
 
-**让每一份 Markdown，都更适合阅读。**
+**给 Markdown 一个好读的地方。**
 
-MDView 是一款面向 AI 场景的轻量 Markdown 阅读器，也适合阅读笔记、项目文档和技术资料。它打开轻快、界面简洁，免费无广告，无需注册账号。无论内容来自 AI 还是本地已有文件，都可以用舒适的排版阅读，必要时直接编辑、转换和分享。
+AI 写好的方案、平时积累的笔记，或是项目里的技术文档，用 MDView 打开就能舒舒服服地读。它是一款轻量的 Markdown 阅读器，界面简洁，打开轻快，免费无广告，也不需要注册账号。遇到需要修改的地方，直接编辑；整理好之后，也可以转换成便于分享的文档。
 
-### 专注阅读，也照顾你的习惯
+### 收到一份 AI 生成的长文，先好好读一遍
 
-打开 `.md` 或 `.markdown` 文件，即可在阅读视图中查看清晰排版的正文、表格、任务列表和代码。浅色、深色与跟随系统主题适应不同环境；字体、字号、行距、正文宽度和缩放均可调整，桌面版还支持选择电脑中已安装的字体。
+让 AI 帮忙整理了一份方案、报告或学习笔记？把内容保存为 `.md` 或 `.markdown` 文件，用 MDView 打开，正文、表格、任务列表和代码就能清晰呈现。阅读时可以调整字体、字号、行距、正文宽度和缩放；主题支持浅色、深色或跟随系统，桌面版还可以使用电脑中已安装的字体。
 
-长文档可以通过左侧目录快速跳转，当前章节随正文滚动高亮；目录可关闭、调整宽度并选择显示层级。重新打开文件时，MDView 会恢复阅读位置、视图和相关阅读设置。需要参考文档时，还可将桌面窗口置顶，切换到其他应用后继续查看。
+内容很长也不用反复翻找：左侧目录可以直接跳到需要的章节，当前章节会随正文滚动高亮。目录可以关闭、调整宽度和显示层级；下次打开同一文件，还能回到上次的阅读位置和视图。
 
-### 图表、公式和图片，不必离开文档
+### 看技术文档时，图表和公式都在原处
 
-Mermaid 图表、LaTeX 数学公式、语法高亮代码和常见 Markdown 表格可直接预览；支持的颜色值旁会显示色块，阅读设计规范或配色方案时更直观。文档中的本地图片和相对路径 Markdown 链接也可以直接查看或打开。
+阅读接口说明、架构设计或数据分析笔记时，Mermaid 图表、LaTeX 公式、代码和表格都能直接看，不必先转换格式。支持的颜色值旁还会显示对应色块，看设计规范或配色方案更直观。文档引用的本地图片和相对路径 Markdown 文件，也可以直接查看或打开。
 
-图片与 Mermaid 图表可在独立预览中按文档顺序浏览，支持缩放、拖动、适应窗口和前后切换。普通图片可按原格式保存，Mermaid 图表可保存为完整 PNG，不受当前缩放位置影响。
+想看清图片或图表的细节，可以打开独立预览，缩放、拖动，或按文档顺序前后浏览。普通图片支持按原格式保存，Mermaid 图表则可保存为完整的 PNG，不受预览时的缩放和拖动影响。
 
-### 阅读为主，修改也顺手
+### 一边查资料，一边继续手头的工作
 
-需要调整内容时，切换到源码编辑或分屏视图即可；分屏支持双向同步滚动，拖动分隔线可调整两侧宽度。编辑工具栏提供标题、列表、链接、表格、图片和公式等快捷入口，也可通过粘贴、拖放或批量选择插入图片。
+写代码、做笔记或整理材料时，可以把 MDView 窗口置顶，让参考文档留在眼前。最近打开的文件也能随时找回，或直接定位到所在文件夹。
 
-查找支持匹配数量和前后跳转，编辑时可替换或全部替换；撤销重做、常用快捷键和内置 Markdown 语法参考，方便处理日常修改。状态栏显示字数、字符数、光标位置和预计阅读时长，保存状态也始终可见。
+### 读到需要修改的地方，直接动手
 
-### 本地文件，更安心
+发现一处需要修改？切到编辑模式就能动手，也可以打开分屏，边写边看效果。两侧内容支持同步滚动，分隔线可拖动调整宽度。标题、列表、链接、表格和公式都有快捷入口，图片也可以粘贴、拖入或批量选择。
 
-文档保存在自己的设备上。最近文件列表支持重新打开、定位所在文件夹、移除记录或临时隐藏文件名与路径；文件在外部发生变化时，MDView 会提示处理，避免无意覆盖。未保存的修改有本地草稿备份，重新启动时可以选择恢复；恢复后仍需主动保存到文件。
+查找时可以查看匹配数量、在结果间跳转，编辑模式还支持替换和全部替换。常用快捷键、撤销重做和内置语法参考都在手边；状态栏会显示字数、字符数、光标位置和预计阅读时长，保存状态也一目了然。
 
-### 从 Word 导入，也能整洁导出
+### 文档留在本地，修改有迹可循
 
-将 Word `.docx` 导入为 Markdown 草稿，编辑后另存为 `.md`；原 Word 文件不会被修改。转换在本机进行，首次使用需准备 Python 和转换组件，下载组件时需要联网。
+文档保存在自己的设备上。需要整理最近文件列表时，可以移除记录，或暂时隐藏文件名和路径。文件被其他程序修改时，MDView 会提醒你处理，避免无意覆盖。未保存的内容会备份为本地草稿，重新启动时可选择恢复，再由你决定何时保存到文件。
 
-整理完成后，可导出排版整洁的 Word、独立 HTML，或通过系统打印生成 PDF。不同格式的能力会在导出前说明：例如导出 Word 时，Mermaid 图表保留为代码。HTML 和 Word 导出后可直接打开文件或所在文件夹。
+### 接到 Word 材料，整理后再分享
+
+手头有 Word 文档？可以将 `.docx` 导入为 Markdown 草稿，修改后保存成 `.md`，原文件不会被改动。转换在本机进行；首次使用时需要准备 Python 和转换组件，下载组件需要联网。
+
+整理好内容后，可以导出排版整洁的 Word、独立 HTML，或通过系统打印生成 PDF。导出前会说明格式差异，例如 Word 中的 Mermaid 图表会保留为代码。导出 HTML 或 Word 后，也可以直接打开文件或所在文件夹。
 
 更多产品设计背景可阅读[《给 Markdown 一个好读的家：我为什么做了 MDView》](docs/articles/MDView-wechat-intro.zh-CN.md)。
 
 ## English
 
-**Give every Markdown document a better place to be read.**
+**A comfortable place to read Markdown.**
 
-MDView is a lightweight Markdown reader designed for AI workflows and equally at home with notes, project documentation, and technical references. It opens quickly, has a clean interface, and is free and ad-free with no account required. Read your local files comfortably, then edit, convert, or share them when needed.
+Whether it's an AI-generated plan, a collection of notes, or project documentation, MDView makes it easy to settle in and read. It's a lightweight Markdown reader with a clean interface: quick to open, free and ad-free, with no account required. When something needs changing, you can edit it on the spot or turn it into a document that's ready to share.
 
-### Read your way
+### Read an AI-generated document from start to finish
 
-Open `.md` and `.markdown` files with clear typography for text, tables, task lists, and code. Choose a light, dark, or system theme, and adjust the font, size, line spacing, page width, and zoom. The desktop app also lets you select fonts installed on your computer.
+Turn an AI-generated plan, report, or study note into an `.md` or `.markdown` file, then open it in MDView to read the text, tables, task lists, and code in a clear layout. Choose a light, dark, or system theme, adjust the typography and zoom, or use a font already installed on your computer in the desktop app.
 
-Navigate long documents with the adjustable outline and follow the highlighted current section as you scroll. Hide the outline or choose its heading depth and width. When you reopen a file, MDView restores its reading position, view, and related reading settings. Pin the desktop window on top to keep a reference visible while working in another app.
+Use the outline to find your way through a long document; the current section stays highlighted as you scroll. Hide it when you need more room, or adjust its width and heading depth. When you come back to the file, MDView picks up your reading position and view.
 
-### See diagrams, formulas, and images in context
+### Explore diagrams and formulas in technical documents
 
-Preview Mermaid diagrams, LaTeX math, syntax-highlighted code, and Markdown tables directly. Supported color values have a matching swatch, making design specifications and palettes easier to scan. Local images and relative Markdown links can be opened from the document.
+When reading an API reference, architecture design, or analysis note, Mermaid diagrams, LaTeX formulas, highlighted code, and tables are ready to read without conversion. Supported color values come with a matching swatch, which is handy for design specifications and palettes. You can also view local images and open relative Markdown links from the document.
 
-Open images and Mermaid diagrams in a separate viewer to browse them in document order, zoom, pan, and fit them to the window. Save ordinary images in their original format or export an entire Mermaid diagram as a PNG, independent of the current zoom and pan.
+Need a closer look? Open an image or Mermaid diagram in the viewer to zoom, pan, fit it to the window, or browse forwards and backwards through the document. Save ordinary images in their original format, or save a complete Mermaid diagram as a PNG regardless of the current zoom and pan.
 
-### Read first, edit when needed
+### Keep a reference nearby while you work
 
-Switch to source editing or a split view with synchronized scrolling in both directions. Drag the divider to adjust pane widths. The editor provides shortcuts for headings, lists, links, tables, images, and formulas; images can also be pasted, dropped, or inserted in batches.
+Writing code, taking notes, or preparing materials? Pin the MDView window on top to keep the reference visible. Recent files are easy to reopen, and you can reveal their folders directly.
 
-Find shows match counts and previous/next navigation; the editor adds replace and replace all. Undo and redo, common keyboard shortcuts, and a built-in Markdown syntax reference make everyday changes easier. The status bar shows word and character counts, cursor position, and estimated reading time, while save status remains visible.
+### Make changes as you read
 
-### Keep control of local files
+Spot something to change? Switch to the source editor, or open split view to write and preview side by side. The two panes can scroll together, and you can drag the divider to resize them. Shortcuts are available for headings, lists, links, tables, images, and formulas; images can also be pasted, dropped, or inserted in batches.
 
-Documents stay on your device. Reopen recent files, reveal their folders, remove entries, or temporarily hide names and paths. MDView warns when a file changes externally to help prevent accidental overwrites. Unsaved work is backed up locally and can be restored on the next launch; restored content still needs to be saved explicitly.
+Find shows how many matches there are and lets you move between them; in the editor, you can also replace one or all matches. Undo and redo, common keyboard shortcuts, and a built-in syntax reference are close at hand. The status bar shows word and character counts, cursor position, and estimated reading time, and the save state stays visible.
 
-### Import Word and share polished documents
+### Keep local files and edits under control
 
-Import a Word `.docx` as a Markdown draft, then edit and save it as `.md` without changing the original. Conversion takes place locally. First-time setup requires Python and conversion components; downloading those components requires internet access.
+Your documents stay on your device. You can remove recent-file entries or temporarily hide their names and paths. If another app changes a file, MDView warns you before an accidental overwrite. Unsaved work is backed up locally and can be restored on the next launch; you remain in control of when to save it to a file.
 
-Export a neatly formatted Word document or standalone HTML, or use system printing to create a PDF. MDView explains format limitations before export: for example, Mermaid diagrams are kept as code in Word. After exporting HTML or Word, you can open the file or its containing folder directly.
+### Turn Word materials into something ready to share
+
+Have a Word document to work with? Import a `.docx` as a Markdown draft, edit it, and save it as `.md`; the original Word file stays untouched. Conversion takes place locally. First-time setup requires Python and conversion components, and downloading those components requires internet access.
+
+When you're ready to share, export a neatly formatted Word document or standalone HTML, or use system printing to create a PDF. MDView explains format differences before export: for example, Mermaid diagrams are kept as code in Word. After exporting HTML or Word, you can open the file or its folder straight away.
 
 ## 下载与安装 / Installation
 
