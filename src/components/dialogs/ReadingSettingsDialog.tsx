@@ -169,7 +169,7 @@ export function ReadingSettingsDialog({
         <section className="reading-sample-section" aria-label={t.readingSampleTitle}>
           <h3>{t.readingSampleTitle}</h3>
           <div className="reading-sample-stage">
-            <div className="reading-sample" style={{ width: `${preferences.contentWidth / READING_CONTENT_WIDTH_RANGE.max * 100}%` }}>
+            <div className="reading-sample" style={{ width: `${preferences.contentWidth}%` }}>
               <p>{t.readingSampleText}</p>
               <code>const theme = "MDView"</code>
               <table><tbody><tr><th>Markdown</th><td>{t.readingSampleCode}</td></tr></tbody></table>

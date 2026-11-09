@@ -134,7 +134,7 @@ export const japanese: Translation = {
   readingLayout: '本文のレイアウト',
   fontSize: (size) => `文字サイズ ${size}px`,
   lineHeight: (value) => `行間 ${value.toFixed(2)}`,
-  contentWidth: (value) => `本文の幅 ${value}px`,
+  contentWidth: (value) => `本文の幅 ${value}%`,
   resetReadingSettings: '既定に戻す',
   decreaseValue: (label) => `小さくする：${label}`,
   increaseValue: (label) => `大きくする：${label}`,

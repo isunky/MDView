@@ -134,7 +134,7 @@ export const spanish: Translation = {
   readingLayout: 'Diseño de lectura',
   fontSize: (size) => `Tamaño de fuente: ${size} px`,
   lineHeight: (value) => `Interlineado: ${value.toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-  contentWidth: (value) => `Ancho del texto: ${value} px`,
+  contentWidth: (value) => `Ancho del texto: ${value}%`,
   resetReadingSettings: 'Restablecer valores',
   decreaseValue: (label) => `Reducir: ${label}`,
   increaseValue: (label) => `Aumentar: ${label}`,

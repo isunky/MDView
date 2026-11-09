@@ -29,7 +29,7 @@ export function applyReadingTheme(
     : 'initial')
   root.style.setProperty('--reader-font-size', `${preferences.fontSize}px`)
   root.style.setProperty('--reader-line-height', String(preferences.lineHeight))
-  root.style.setProperty('--reader-content-width', `${preferences.contentWidth}px`)
+  root.style.setProperty('--reader-content-width', `${preferences.contentWidth}%`)
 }
 
 function quoteCssFontFamily(fontFamily: string): string {

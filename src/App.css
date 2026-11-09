@@ -2340,7 +2340,8 @@
 
 .markdown-preview {
   zoom: var(--preview-zoom, 1);
-  width: min(var(--reader-content-width), calc(100% - 64px));
+  width: var(--reader-content-width);
+  max-width: calc(100% - 64px);
   margin: 32px auto 72px;
   padding: clamp(34px, 5vw, 56px) clamp(26px, 5vw, 58px) clamp(48px, 7vw, 76px);
   border: 1px solid var(--preview-paper-border);
@@ -3288,7 +3289,8 @@
   }
 
   .markdown-preview {
-    width: min(100% - 28px, var(--reader-content-width));
+    width: var(--reader-content-width);
+    max-width: calc(100% - 28px);
     margin-top: 14px;
     padding-top: 28px;
     border-radius: 14px;

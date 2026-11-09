@@ -281,7 +281,7 @@ export const traditionalChinese: Translation = {
     readingLayout: '閱讀排版',
     fontSize: (size: number) => `字號 ${size}px`,
     lineHeight: (value: number) => `行高 ${value.toFixed(2)}`,
-    contentWidth: (value: number) => `內容寬度 ${value}px`,
+    contentWidth: (value: number) => `內容寬度 ${value}%`,
     resetReadingSettings: '恢復預設設定',
     decreaseValue: (label) => `減小：${label}`,
     increaseValue: (label) => `增大：${label}`,

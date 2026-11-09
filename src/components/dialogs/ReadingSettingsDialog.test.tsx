@@ -33,13 +33,13 @@ describe('ReadingSettingsDialog', () => {
     expect(screen.getByRole('slider', { name: 'Font size 16px' })).toHaveValue('16')
     await user.click(screen.getByRole('button', { name: 'Increase: Line height 1.80' }))
     expect(screen.getByRole('slider', { name: 'Line height 1.85' })).toHaveAttribute('aria-valuetext', 'Line height 1.85')
-    await user.click(screen.getByRole('button', { name: 'Increase: Content width 940px' }))
-    expect(screen.getByRole('slider', { name: 'Content width 960px' })).toHaveValue('960')
+    await user.click(screen.getByRole('button', { name: 'Increase: Content width 80%' }))
+    expect(screen.getByRole('slider', { name: 'Content width 85%' })).toHaveValue('85')
   })
 
   it.each([
-    { fontSize: 14, lineHeight: 1.5, contentWidth: 680, action: 'Decrease' },
-    { fontSize: 22, lineHeight: 2.1, contentWidth: 1180, action: 'Increase' },
+    { fontSize: 10, lineHeight: 1, contentWidth: 40, action: 'Decrease' },
+    { fontSize: 24, lineHeight: 2.5, contentWidth: 100, action: 'Increase' },
   ])('disables adjustments at the $action limit', ({ action, ...values }) => {
     render(<ReadingSettingsDialog open preferences={{ ...DEFAULT_READING_PREFERENCES, ...values }}
       onClose={vi.fn()} onReset={vi.fn()} onUpdate={vi.fn()} t={translations.en} />)

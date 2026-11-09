@@ -26,11 +26,17 @@ describe('readingPreferences', () => {
       themeMode: 'dark',
       fontFamily: 'serif',
       customFontFamily: null,
-      fontSize: 22,
+      fontSize: 24,
       lineHeight: 1.65,
-      contentWidth: 700,
+      contentWidth: 60,
     })
   })
+
+  it.each([[1, 1], [1.2, 1.2], [2.3, 2.3], [2.5, 2.5], [0.5, 1], [3, 2.5]])(
+    'restores line height %s within the supported range', (stored, expected) => {
+      expect(loadReadingPreferences(createStorage(JSON.stringify({ lineHeight: stored }))).lineHeight).toBe(expected)
+    },
+  )
 
   it('restores a valid custom installed font and sanitizes its name', () => {
     expect(normalizeReadingPreferences({

@@ -134,7 +134,7 @@ export const korean: Translation = {
   readingLayout: '본문 레이아웃',
   fontSize: (size) => `글자 크기 ${size}px`,
   lineHeight: (value) => `줄 간격 ${value.toFixed(2)}`,
-  contentWidth: (value) => `본문 너비 ${value}px`,
+  contentWidth: (value) => `본문 너비 ${value}%`,
   resetReadingSettings: '기본값으로 재설정',
   decreaseValue: (label) => `줄이기: ${label}`,
   increaseValue: (label) => `늘리기: ${label}`,

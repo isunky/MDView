@@ -11,13 +11,13 @@ describe('readingTheme', () => {
   })
 
   it('applies the selected color and reading layout to the document root', () => {
-    applyReadingTheme({ ...DEFAULT_READING_PREFERENCES, fontFamily: 'serif', fontSize: 18, lineHeight: 2, contentWidth: 1040 }, 'dark')
+    applyReadingTheme({ ...DEFAULT_READING_PREFERENCES, fontFamily: 'serif', fontSize: 18, lineHeight: 2, contentWidth: 90 }, 'dark')
 
     expect(document.documentElement.dataset.mdviewColorTheme).toBe('dark')
     expect(document.documentElement.dataset.mdviewFontFamily).toBe('serif')
     expect(document.documentElement.style.getPropertyValue('--reader-font-size')).toBe('18px')
     expect(document.documentElement.style.getPropertyValue('--reader-line-height')).toBe('2')
-    expect(document.documentElement.style.getPropertyValue('--reader-content-width')).toBe('1040px')
+    expect(document.documentElement.style.getPropertyValue('--reader-content-width')).toBe('90%')
   })
 
   it('uses the system color preference while bootstrapping', () => {

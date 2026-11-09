@@ -18,12 +18,12 @@ export const DEFAULT_READING_PREFERENCES: ReadingPreferences = {
   customFontFamily: null,
   fontSize: 16,
   lineHeight: 1.8,
-  contentWidth: 940,
+  contentWidth: 80,
 }
 
-export const READING_FONT_SIZE_RANGE = { min: 14, max: 22, step: 1 }
-export const READING_LINE_HEIGHT_RANGE = { min: 1.5, max: 2.1, step: 0.05 }
-export const READING_CONTENT_WIDTH_RANGE = { min: 680, max: 1180, step: 20 }
+export const READING_FONT_SIZE_RANGE = { min: 10, max: 24, step: 1 }
+export const READING_LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.05 }
+export const READING_CONTENT_WIDTH_RANGE = { min: 40, max: 100, step: 5 }
 
 export function loadReadingPreferences(
   storage: Storage | null = getLocalStorage(),
@@ -84,7 +84,9 @@ export function normalizeReadingPreferences(value: unknown): ReadingPreferences 
       DEFAULT_READING_PREFERENCES.lineHeight,
     ),
     contentWidth: clampPreferenceNumber(
-      preferences.contentWidth,
+      typeof preferences.contentWidth === 'number' && preferences.contentWidth > 100
+        ? preferences.contentWidth / 1180 * 100
+        : preferences.contentWidth,
       READING_CONTENT_WIDTH_RANGE,
       DEFAULT_READING_PREFERENCES.contentWidth,
     ),
