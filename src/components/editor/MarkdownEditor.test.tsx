@@ -89,6 +89,21 @@ describe('MarkdownEditor', () => {
     expect(onChange).toHaveBeenCalledWith('**hello**')
   })
 
+  it('toggles formatting from the toolbar and keeps undo history', async () => {
+    const user = userEvent.setup()
+    render(<ControlledEditor initialValue="hello" />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    expect(editor).toHaveValue('**hello**')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 7])
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    expect(editor).toHaveValue('hello')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 5])
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('**hello**')
+  })
+
   it('supports common formatting keyboard shortcuts', () => {
     const onChange = vi.fn()
     render(<MarkdownEditor value="hello" onChange={onChange} label="Markdown source" t={labels} />)
@@ -248,6 +263,29 @@ describe('MarkdownEditor', () => {
     fireEvent.keyDown(editor, { key: 'Enter' })
 
     expect(onChange).toHaveBeenLastCalledWith('')
+  })
+
+  it('preserves input method composition and modified Enter', () => {
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="- item" onChange={onChange} label="Markdown source" t={labels} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(6, 6)
+    expect(fireEvent.keyDown(editor, { key: 'Enter', isComposing: true })).toBe(true)
+    expect(fireEvent.keyDown(editor, { key: 'Enter', keyCode: 229 })).toBe(true)
+    expect(fireEvent.keyDown(editor, { key: 'Enter', shiftKey: true })).toBe(true)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('undoes and redoes list continuation as one edit', () => {
+    render(<ControlledEditor initialValue="* [x] done" />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(editor.value.length, editor.value.length)
+    fireEvent.keyDown(editor, { key: 'Enter' })
+    expect(editor).toHaveValue('* [x] done\n* [ ] ')
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('* [x] done')
+    fireEvent.keyDown(editor, { key: 'y', ctrlKey: true })
+    expect(editor).toHaveValue('* [x] done\n* [ ] ')
   })
 
   it('opens and closes the markdown syntax reference', async () => {

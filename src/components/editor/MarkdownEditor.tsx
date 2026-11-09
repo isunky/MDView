@@ -181,6 +181,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return
     if (matchesShortcut(event, { key: 'z' }, shortcutPlatform)) {
       event.preventDefault()
       restore('undo')
@@ -233,7 +234,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       return
     }
 
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const edit = applyListContinuation(value, getTextareaSelection(event.currentTarget))
       if (edit) {
         applyEdit(edit)

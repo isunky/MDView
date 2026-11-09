@@ -141,6 +141,33 @@ test('saves edited markdown content', async ({ page }) => {
     .toContain('# Saved from E2E')
 })
 
+test('continues task lists and returns to the parent list', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('- parent\n  * [x] completed')
+  await editor.press('End')
+  await editor.press('Enter')
+  await expect(editor).toHaveValue('- parent\n  * [x] completed\n  * [ ] ')
+  await editor.press('Enter')
+  await expect(editor).toHaveValue('- parent\n  * [x] completed\n- ')
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('- parent\n  * [x] completed\n  * [ ] ')
+})
+
+test('toggles selected formatting with the toolbar', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('hello')
+  await editor.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(0, 5))
+  const bold = page.getByRole('button', { name: 'Bold', exact: true })
+  await bold.click()
+  await expect(editor).toHaveValue('**hello**')
+  await bold.click()
+  await expect(editor).toHaveValue('hello')
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('**hello**')
+})
+
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()
