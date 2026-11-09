@@ -5,15 +5,17 @@ import { applyReadingTheme, bootstrapReadingTheme, getSystemReadingTheme } from 
 describe('readingTheme', () => {
   afterEach(() => {
     document.documentElement.removeAttribute('data-mdview-color-theme')
+    document.documentElement.removeAttribute('data-mdview-color-scheme')
     document.documentElement.removeAttribute('data-mdview-font-family')
     document.documentElement.style.cssText = ''
     vi.unstubAllGlobals()
   })
 
   it('applies the selected color and reading layout to the document root', () => {
-    applyReadingTheme({ ...DEFAULT_READING_PREFERENCES, fontFamily: 'serif', fontSize: 18, lineHeight: 2, contentWidth: 90 }, 'dark')
+    applyReadingTheme({ ...DEFAULT_READING_PREFERENCES, colorScheme: 'ocean', fontFamily: 'serif', fontSize: 18, lineHeight: 2, contentWidth: 90 }, 'dark')
 
     expect(document.documentElement.dataset.mdviewColorTheme).toBe('dark')
+    expect(document.documentElement.dataset.mdviewColorScheme).toBe('ocean')
     expect(document.documentElement.dataset.mdviewFontFamily).toBe('serif')
     expect(document.documentElement.style.getPropertyValue('--reader-font-size')).toBe('18px')
     expect(document.documentElement.style.getPropertyValue('--reader-line-height')).toBe('2')

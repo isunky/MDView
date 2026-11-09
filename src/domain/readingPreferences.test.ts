@@ -24,12 +24,19 @@ describe('readingPreferences', () => {
       contentWidth: 703,
     })).toEqual({
       themeMode: 'dark',
+      colorScheme: 'jade',
       fontFamily: 'serif',
       customFontFamily: null,
       fontSize: 24,
       lineHeight: 1.65,
       contentWidth: 60,
     })
+  })
+
+  it('restores a valid color theme and falls back for older or invalid settings', () => {
+    expect(loadReadingPreferences(createStorage(JSON.stringify({ colorScheme: 'ocean' }))).colorScheme).toBe('ocean')
+    expect(normalizeReadingPreferences({ colorScheme: 'unknown' }).colorScheme).toBe('jade')
+    expect(normalizeReadingPreferences({}).colorScheme).toBe('jade')
   })
 
   it.each([[1, 1], [1.2, 1.2], [2.3, 2.3], [2.5, 2.5], [0.5, 1], [3, 2.5]])(

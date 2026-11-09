@@ -3522,3 +3522,22 @@
     max-width: 150px;
   }
 }
+
+.reading-settings-section .reading-color-heading { margin: 18px 0 10px; }
+.reading-color-schemes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.reading-color-schemes button {
+  min-width: 0; min-height: 58px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 5px; padding: 6px 2px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface-subtle); color: var(--control-text);
+  font: 600 11px/1.2 var(--ui-font); overflow-wrap: anywhere; cursor: pointer;
+}
+.reading-color-schemes button:hover { border-color: var(--accent); }
+.reading-color-schemes button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.reading-color-schemes button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.reading-color-swatch { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.reading-color-swatch.jade { background: #0f766e; }
+.reading-color-swatch.ocean { background: #24649a; }
+.reading-color-swatch.lavender { background: #8568ae; }
+.reading-color-swatch.amber { background: #b07b35; }
+.reading-color-swatch.rose { background: #b3697b; }
+@media (max-width: 520px) { .reading-color-schemes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

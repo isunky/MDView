@@ -18,6 +18,15 @@ vi.mock('../../platform/systemFonts', () => ({
 }))
 
 describe('ReadingSettingsDialog', () => {
+  it('offers five color themes and applies the selection', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+    render(<ReadingSettingsDialog open preferences={DEFAULT_READING_PREFERENCES} onClose={vi.fn()}
+      onReset={vi.fn()} onUpdate={onUpdate} t={translations.en} />)
+    expect(screen.getByRole('button', { name: 'Jade' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Ocean' }))
+    expect(onUpdate).toHaveBeenCalledWith({ colorScheme: 'ocean' })
+  })
   it('adjusts reading preferences in small steps and updates their accessible values', async () => {
     const user = userEvent.setup()
     function Settings() {

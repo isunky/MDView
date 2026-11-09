@@ -114,6 +114,8 @@ export const korean: Translation = {
   readingSettingsSubtitle: '편하게 읽을 수 있도록 테마와 글꼴을 조절하세요.',
   closeReadingSettings: '읽기 설정 닫기',
   themeMode: '테마',
+  colorScheme: '색상 테마',
+  colorSchemes: { jade: '비취', ocean: '바다', lavender: '라벤더', amber: '호박', rose: '장미' },
   themeSystem: '시스템',
   themeLight: '라이트',
   themeDark: '다크',

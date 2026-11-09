@@ -114,6 +114,8 @@ export const spanish: Translation = {
   readingSettingsSubtitle: 'Ajusta la apariencia y la tipografía para leer con comodidad.',
   closeReadingSettings: 'Cerrar ajustes de lectura',
   themeMode: 'Apariencia',
+  colorScheme: 'Tema de color',
+  colorSchemes: { jade: 'Jade', ocean: 'Océano', lavender: 'Lavanda', amber: 'Ámbar', rose: 'Rosa' },
   themeSystem: 'Sistema',
   themeLight: 'Claro',
   themeDark: 'Oscuro',

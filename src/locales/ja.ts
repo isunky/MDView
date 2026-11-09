@@ -114,6 +114,8 @@ export const japanese: Translation = {
   readingSettingsSubtitle: '外観と文字の表示を調整して、読みやすくします。',
   closeReadingSettings: '表示設定を閉じる',
   themeMode: '外観',
+  colorScheme: 'カラーテーマ',
+  colorSchemes: { jade: '翡翠', ocean: '海', lavender: 'ラベンダー', amber: '琥珀', rose: 'ローズ' },
   themeSystem: 'システム',
   themeLight: 'ライト',
   themeDark: 'ダーク',

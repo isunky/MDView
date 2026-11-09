@@ -151,3 +151,45 @@ button,
 textarea {
   font: inherit;
 }
+
+/* Color themes change the reading paper and accents in both appearance modes. */
+:root[data-mdview-color-scheme='ocean'] {
+  --accent: #24649a; --accent-soft: #e9f2fa; --quote-bg: #edf5fb;
+  --preview-paper: #fbfdff; --preview-bg: #f2f7fa;
+  --preview-panel-bg: linear-gradient(180deg, #f5f9fc, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-scheme='lavender'] {
+  --accent: #70549b; --accent-soft: #f0ebf8; --quote-bg: #f4effa;
+  --preview-paper: #fefcff; --preview-bg: #f6f3fa;
+  --preview-panel-bg: linear-gradient(180deg, #faf8fc, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-scheme='amber'] {
+  --accent: #8a5b1f; --accent-soft: #f8f0df; --quote-bg: #faf3e6;
+  --preview-paper: #fffdf8; --preview-bg: #f8f5ee;
+  --preview-panel-bg: linear-gradient(180deg, #fcfaf5, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-scheme='rose'] {
+  --accent: #9a5363; --accent-soft: #faedf0; --quote-bg: #fbf0f2;
+  --preview-paper: #fffafb; --preview-bg: #faf3f5;
+  --preview-panel-bg: linear-gradient(180deg, #fdf8f9, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-theme='dark'][data-mdview-color-scheme='ocean'] {
+  --accent: #83bde6; --accent-soft: #203c50; --accent-contrast: #10212d; --quote-bg: #192f3c;
+  --preview-paper: #202a30; --preview-bg: #151c20;
+  --preview-panel-bg: linear-gradient(180deg, #1b252b, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-theme='dark'][data-mdview-color-scheme='lavender'] {
+  --accent: #c4acec; --accent-soft: #3c3150; --accent-contrast: #241b30; --quote-bg: #30273d;
+  --preview-paper: #292630; --preview-bg: #1b1920;
+  --preview-panel-bg: linear-gradient(180deg, #25222b, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-theme='dark'][data-mdview-color-scheme='amber'] {
+  --accent: #e4b879; --accent-soft: #493a25; --accent-contrast: #2b2012; --quote-bg: #382e20;
+  --preview-paper: #2d2921; --preview-bg: #1f1d19;
+  --preview-panel-bg: linear-gradient(180deg, #29251f, var(--preview-bg) 220px);
+}
+:root[data-mdview-color-theme='dark'][data-mdview-color-scheme='rose'] {
+  --accent: #e4a8b5; --accent-soft: #4a3037; --accent-contrast: #2e1b21; --quote-bg: #38262c;
+  --preview-paper: #30272a; --preview-bg: #211a1d;
+  --preview-panel-bg: linear-gradient(180deg, #2b2225, var(--preview-bg) 220px);
+}

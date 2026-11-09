@@ -1,9 +1,12 @@
 export type ReadingThemeMode = 'system' | 'light' | 'dark'
 export type EffectiveReadingTheme = 'light' | 'dark'
 export type ReadingFontFamily = 'sans' | 'serif' | 'monospace' | 'custom'
+export const READING_COLOR_SCHEMES = ['jade', 'ocean', 'lavender', 'amber', 'rose'] as const
+export type ReadingColorScheme = (typeof READING_COLOR_SCHEMES)[number]
 
 export type ReadingPreferences = {
   themeMode: ReadingThemeMode
+  colorScheme: ReadingColorScheme
   fontFamily: ReadingFontFamily
   customFontFamily: string | null
   fontSize: number
@@ -14,6 +17,7 @@ export type ReadingPreferences = {
 export const READING_PREFERENCES_STORAGE_KEY = 'mdview.readingPreferences.v1'
 export const DEFAULT_READING_PREFERENCES: ReadingPreferences = {
   themeMode: 'system',
+  colorScheme: 'jade',
   fontFamily: 'sans',
   customFontFamily: null,
   fontSize: 16,
@@ -69,6 +73,7 @@ export function normalizeReadingPreferences(value: unknown): ReadingPreferences 
     themeMode: isReadingThemeMode(preferences.themeMode)
       ? preferences.themeMode
       : DEFAULT_READING_PREFERENCES.themeMode,
+    colorScheme: READING_COLOR_SCHEMES.find((scheme) => scheme === preferences.colorScheme) ?? DEFAULT_READING_PREFERENCES.colorScheme,
     fontFamily: requestedFontFamily === 'custom' && !customFontFamily
       ? DEFAULT_READING_PREFERENCES.fontFamily
       : requestedFontFamily,

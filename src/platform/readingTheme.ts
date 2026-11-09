@@ -23,6 +23,7 @@ export function applyReadingTheme(
 
   const root = document.documentElement
   root.dataset.mdviewColorTheme = effectiveTheme
+  root.dataset.mdviewColorScheme = preferences.colorScheme
   root.dataset.mdviewFontFamily = preferences.fontFamily
   root.style.setProperty('--reader-custom-font-family', preferences.customFontFamily
     ? quoteCssFontFamily(preferences.customFontFamily)

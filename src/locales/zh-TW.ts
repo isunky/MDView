@@ -261,6 +261,8 @@ export const traditionalChinese: Translation = {
     readingSettingsSubtitle: '調整主題與排版，獲得更舒適的閱讀體驗。',
     closeReadingSettings: '關閉閱讀設定',
     themeMode: '外觀',
+    colorScheme: '主題配色',
+    colorSchemes: { jade: '青玉', ocean: '海藍', lavender: '薰衣草', amber: '琥珀', rose: '玫瑰' },
     themeSystem: '跟隨系統',
     themeLight: '淺色',
     themeDark: '深色',

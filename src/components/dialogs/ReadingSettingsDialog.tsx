@@ -3,6 +3,7 @@ import { Minus, Monitor, Moon, Plus, RotateCcw, Sun, X } from 'lucide-react'
 import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   READING_CONTENT_WIDTH_RANGE,
+  READING_COLOR_SCHEMES,
   READING_FONT_SIZE_RANGE,
   READING_LINE_HEIGHT_RANGE,
   type ReadingPreferences,
@@ -96,6 +97,16 @@ export function ReadingSettingsDialog({
             <ThemeModeButton mode="system" value={preferences.themeMode} label={t.themeSystem} onChange={onUpdate} icon={<Monitor />} />
             <ThemeModeButton mode="light" value={preferences.themeMode} label={t.themeLight} onChange={onUpdate} icon={<Sun />} />
             <ThemeModeButton mode="dark" value={preferences.themeMode} label={t.themeDark} onChange={onUpdate} icon={<Moon />} />
+          </div>
+          <h3 id="color-scheme-label" className="reading-color-heading">{t.colorScheme}</h3>
+          <div className="reading-color-schemes" role="group" aria-labelledby="color-scheme-label">
+            {READING_COLOR_SCHEMES.map((scheme) => (
+              <button key={scheme} type="button" className={preferences.colorScheme === scheme ? 'active' : ''}
+                onClick={() => onUpdate({ colorScheme: scheme })} aria-pressed={preferences.colorScheme === scheme}>
+                <span className={`reading-color-swatch ${scheme}`} aria-hidden="true" />
+                <span>{t.colorSchemes[scheme]}</span>
+              </button>
+            ))}
           </div>
         </section>
 
