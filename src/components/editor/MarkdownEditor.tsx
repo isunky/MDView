@@ -37,6 +37,7 @@ import { getTextareaSelection, useEditorHistory } from '../../hooks/useEditorHis
 import { useEditorImageInput } from '../../hooks/useEditorImageInput'
 import { useEditorSearchMarker } from '../../hooks/useEditorSearchMarker'
 import { navigateTable } from '../../domain/tableEditing'
+import { editLines } from '../../domain/lineEditing'
 
 export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
@@ -187,6 +188,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) {
       event.stopPropagation()
+      return
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault()
+      const direction = event.key === 'ArrowUp' ? 'up' : 'down'
+      const edit = editLines(value, getTextareaSelection(event.currentTarget), `${event.shiftKey ? 'copy' : 'move'}-${direction}`)
+      if (edit) applyEdit(edit)
+      return
+    }
+    if (matchesShortcut(event, { key: 'k', shiftKey: true }, shortcutPlatform)) {
+      event.preventDefault()
+      const edit = editLines(value, getTextareaSelection(event.currentTarget), 'delete')
+      if (edit) applyEdit(edit)
       return
     }
     if (matchesShortcut(event, { key: 'z' }, shortcutPlatform)) {

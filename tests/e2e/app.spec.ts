@@ -219,6 +219,22 @@ test('undoes typing at separate cursor positions independently', async ({ page }
   await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(2)
 })
 
+test('moves, duplicates and deletes lines with undo', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('first\nsecond\nthird')
+  await editor.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(8, 8))
+  await editor.press('Alt+ArrowUp')
+  await expect(editor).toHaveValue('second\nfirst\nthird')
+  await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(2)
+  await editor.press('Alt+Shift+ArrowDown')
+  await expect(editor).toHaveValue('second\nsecond\nfirst\nthird')
+  await editor.press('Control+Shift+k')
+  await expect(editor).toHaveValue('second\nfirst\nthird')
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('second\nsecond\nfirst\nthird')
+})
+
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()

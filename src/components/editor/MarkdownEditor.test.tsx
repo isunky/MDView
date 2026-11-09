@@ -366,6 +366,46 @@ describe('MarkdownEditor', () => {
     expect(editor).toHaveValue('* [x] done\n* [ ] ')
   })
 
+  it('moves, copies and deletes lines using shortcuts with undo', () => {
+    render(<ControlledEditor initialValue={'first\nsecond\nthird'} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(8, 8)
+    fireEvent.keyDown(editor, { key: 'ArrowUp', altKey: true })
+    expect(editor).toHaveValue('second\nfirst\nthird')
+    expect(editor.selectionStart).toBe(2)
+    fireEvent.keyDown(editor, { key: 'ArrowDown', altKey: true, shiftKey: true })
+    expect(editor).toHaveValue('second\nsecond\nfirst\nthird')
+    expect(editor.selectionStart).toBe(9)
+    fireEvent.keyDown(editor, { key: 'K', ctrlKey: true, shiftKey: true })
+    expect(editor).toHaveValue('second\nfirst\nthird')
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('second\nsecond\nfirst\nthird')
+    expect(editor.selectionStart).toBe(9)
+  })
+
+  it('does not run line shortcuts while an input method is composing', () => {
+    const onChange = vi.fn()
+    render(<MarkdownEditor value={'first\nsecond'} onChange={onChange} label="Markdown source" t={labels} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(8, 8)
+    fireEvent.compositionStart(editor)
+    expect(fireEvent.keyDown(editor, { key: 'ArrowUp', altKey: true })).toBe(true)
+    expect(fireEvent.keyDown(editor, { key: 'K', ctrlKey: true, shiftKey: true })).toBe(true)
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.compositionEnd(editor)
+  })
+
+  it('uses Command+Shift+K for deleting a line on macOS', () => {
+    setNavigatorPlatform('MacIntel')
+    render(<ControlledEditor initialValue={'first\nsecond'} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(8, 8)
+    fireEvent.keyDown(editor, { key: 'K', ctrlKey: true, shiftKey: true })
+    expect(editor).toHaveValue('first\nsecond')
+    fireEvent.keyDown(editor, { key: 'K', metaKey: true, shiftKey: true })
+    expect(editor).toHaveValue('first')
+  })
+
   it('opens and closes the markdown syntax reference', async () => {
     const user = userEvent.setup()
     render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown source" t={labels} />)

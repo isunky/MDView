@@ -277,11 +277,17 @@ Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView
 | 粗体 / Bold | `Ctrl+B` | `Command+B` |
 | 斜体 / Italic | `Ctrl+I` | `Command+I` |
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |
+| 上移 / 下移行 / Move line up / down | `Alt+↑` / `Alt+↓` | `Option+↑` / `Option+↓` |
+| 向上 / 向下复制行 / Copy line up / down | `Alt+Shift+↑` / `Alt+Shift+↓` | `Option+Shift+↑` / `Option+Shift+↓` |
+| 删除行 / Delete line | `Ctrl+Shift+K` | `Command+Shift+K` |
 | 缩进 / 反向缩进（表格外）/ Indent / Outdent (outside tables) | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
 | 表格单元格：下一个 / 上一个 / Table cell: next / previous | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
 
 在表格最后一个单元格按 `Tab` 会新增一行；选中多行时，`Tab` 仍用于缩进。
 Press `Tab` in the last table cell to add a row. For a multi-line selection, `Tab` still indents the selection.
+
+行操作会处理当前行或选区覆盖的多行，均可撤销。
+Line commands apply to the current line or the selected lines and can be undone.
 
 </details>
 
