@@ -489,7 +489,7 @@ describe('MarkdownPreview', () => {
     expect(image.releasePointerCapture).toHaveBeenCalledWith(1)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fit to window' }))
-    expect(image.style.transform).toBe('translate(0px, 0px) scale(1)')
+    expect(image.style.transform).toMatch(/^translate\(0px(?:, 0px)?\) scale\(1\)$/)
     fireEvent.wheel(image.parentElement!, { deltaY: -100, clientX: 0, clientY: 0 })
     expect(image.style.transform).not.toContain('scale(1)')
     for (let i = 0; i < 20; i++) fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))

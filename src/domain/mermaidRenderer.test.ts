@@ -6,12 +6,29 @@ const mermaid = vi.hoisted(() => ({
 }))
 
 vi.mock('mermaid', () => ({ default: mermaid }))
+const legacyMermaid = vi.hoisted(() => ({ initialize: vi.fn(), render: vi.fn() }))
+vi.mock('mermaid-legacy', () => ({ default: legacyMermaid }))
 
 describe('mermaidRenderer', () => {
   beforeEach(() => {
     vi.resetModules()
     mermaid.initialize.mockReset()
     mermaid.render.mockReset()
+    legacyMermaid.initialize.mockReset()
+    legacyMermaid.render.mockReset()
+  })
+
+  it('uses the legacy renderer when ES2024 is unavailable', async () => {
+    vi.stubGlobal('ArrayBuffer', class ArrayBuffer {})
+    try {
+      legacyMermaid.render.mockResolvedValue({ svg: '<svg />' })
+      const { renderMermaidDiagram } = await import('./mermaidRenderer')
+      await renderMermaidDiagram('legacy-diagram', 'graph TD')
+      expect(legacyMermaid.render).toHaveBeenCalledWith('legacy-diagram', 'graph TD')
+      expect(mermaid.render).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('loads and initializes Mermaid once while rendering multiple diagrams', async () => {
@@ -28,6 +45,8 @@ describe('mermaidRenderer', () => {
       startOnLoad: false,
       securityLevel: 'strict',
       htmlLabels: false,
+      layout: 'dagre',
+      look: 'classic',
       theme: 'default',
     })
     expect(mermaid.render).toHaveBeenNthCalledWith(1, 'first', 'graph TD')
@@ -45,12 +64,16 @@ describe('mermaidRenderer', () => {
       startOnLoad: false,
       securityLevel: 'strict',
       htmlLabels: false,
+      layout: 'dagre',
+      look: 'classic',
       theme: 'default',
     })
     expect(mermaid.initialize).toHaveBeenNthCalledWith(2, {
       startOnLoad: false,
       securityLevel: 'strict',
       htmlLabels: false,
+      layout: 'dagre',
+      look: 'classic',
       theme: 'dark',
     })
   })

@@ -7,7 +7,10 @@ let renderQueue: Promise<void> = Promise.resolve()
 
 function loadMermaid() {
   if (!mermaidModulePromise) {
-    mermaidModulePromise = import('mermaid').then(({ default: mermaid }) => mermaid)
+    // Mermaid 12 requires ES2024; older WebKit versions still use Mermaid 11.
+    const supportsES2024 = 'groupBy' in Object && 'withResolvers' in Promise && 'transfer' in ArrayBuffer.prototype
+    const module = supportsES2024 ? import('mermaid') : import('mermaid-legacy')
+    mermaidModulePromise = module.then(({ default: mermaid }) => mermaid as unknown as MermaidModule['default'])
   }
 
   return mermaidModulePromise
@@ -22,6 +25,8 @@ export function renderMermaidDiagram(id: string, chart: string, theme: MermaidTh
         securityLevel: 'strict',
         // Keep labels in SVG <text> nodes so the safety sanitizer can retain them.
         htmlLabels: false,
+        layout: 'dagre',
+        look: 'classic',
         theme: theme === 'dark' ? 'dark' : 'default',
       })
       configuredTheme = theme

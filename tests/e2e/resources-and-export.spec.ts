@@ -31,13 +31,24 @@ test.beforeEach(async ({ page }) => {
 
 test('renders local images and Mermaid diagrams', async ({ page }) => {
   const editor = page.getByRole('textbox', { name: 'Markdown source' })
-  await editor.fill('# Resources\n\n![Pixel](assets/pixel.png)\n\n```mermaid\ngraph TD\nA[Start] --> B[Done]\n```')
+  await editor.fill('# Resources\n\nFormula: $x^2$\n\n![Pixel](assets/pixel.png)\n\n```mermaid\ngraph TD\nA[Start] --> B[Done]\n```')
   await page.getByRole('button', { name: 'File', exact: true }).click()
   await page.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await page.getByRole('button', { name: 'Preview markdown' }).click()
 
   await expect(page.getByRole('img', { name: 'Pixel' })).toHaveAttribute('src', /^data:image\/png/)
   await expect(page.getByRole('img', { name: 'Mermaid diagram' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.katex').first()).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Mermaid diagram' }).locator('svg')).toContainText('Start')
+})
+
+test('renders diagrams when the browser lacks ES2024 features', async ({ page }) => {
+  await page.evaluate(() => { Reflect.deleteProperty(ArrayBuffer.prototype, 'transfer') })
+  await page.getByRole('textbox', { name: 'Markdown source' }).fill('```mermaid\ngraph TD\nA[Legacy] --> B[Ready]\n```')
+  await page.getByRole('button', { name: 'Preview markdown' }).click()
+  const diagram = page.getByRole('img', { name: 'Mermaid diagram' })
+  await expect(diagram).toBeVisible({ timeout: 15_000 })
+  await expect(diagram.locator('svg')).toContainText('Legacy')
 })
 
 test('runs HTML, PDF, and DOCX exports', async ({ page }) => {

@@ -6,7 +6,7 @@ authors = ["MDView"]
 license = "GPL-3.0"
 repository = "https://github.com/isunky/MDView"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,25 +15,25 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.6.2", features = [] }
+tauri-build = { version = "2.7.4", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.2", features = [] }
+tauri = { version = "2.12.5", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 url = "2"
 base64 = "0.22"
-tauri-plugin-opener = "2"
+tauri-plugin-opener = "2.7.2"
 tempfile = "3"
 sha2 = "0.10"
 reqwest = { version = "=0.12.15", default-features = false, features = ["rustls-tls", "stream"] }
 notify = "8.2"
 
 [target.'cfg(windows)'.dependencies]
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "2.14.1"
 
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 font-kit = "0.14.3"

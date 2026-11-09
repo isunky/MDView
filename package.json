@@ -4,9 +4,15 @@
   "version": "3.7.3",
   "overrides": {
     "katex": "$katex",
-    "eslint": { "minimatch": "^11.0.5" },
-    "@eslint/config-array": { "minimatch": "^11.0.5" },
-    "@typescript-eslint/typescript-estree": { "minimatch": "^11.0.5" }
+    "eslint": {
+      "minimatch": "^11.0.5"
+    },
+    "@eslint/config-array": {
+      "minimatch": "^11.0.5"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.5"
+    }
   },
   "license": "GPL-3.0",
   "type": "module",
@@ -32,19 +38,20 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.11.0",
-    "@tauri-apps/plugin-opener": "^2.5.4",
-    "@tauri-apps/plugin-updater": "^2.10.1",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-opener": "^2.7.2",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "@unified-latex/unified-latex-util-parse": "^1.8.4",
-    "docx": "^9.7.1",
-    "highlight.js": "^11.11.1",
+    "docx": "^9.15.3",
+    "highlight.js": "^11.12.0",
     "html-to-image": "^1.11.13",
-    "katex": "^0.18.4",
-    "lucide-react": "^1.17.0",
+    "katex": "^0.19.1",
+    "lucide-react": "^1.70.0",
     "mdast-util-to-string": "^4.0.0",
-    "mermaid": "^11.16.1",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "mermaid": "^12.3.0",
+    "mermaid-legacy": "npm:mermaid@^11.17.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",
@@ -57,26 +64,27 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.61.0",
-    "@tauri-apps/cli": "^2.11.2",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
+    "@playwright/test": "^1.65.0",
+    "@tauri-apps/cli": "^2.12.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/katex": "^0.16.8",
     "@types/mdast": "^4.0.4",
-    "@types/node": "^24.12.3",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@~7.0.2",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.6.0",
-    "jsdom": "^29.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.14.0",
+    "jsdom": "^31.0.0",
+    "jszip": "^3.10.2",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.59.2",
+    "typescript-eslint": "^8.72.1",
     "vite": "^8.0.12",
-    "vitest": "^4.1.12"
+    "vitest": "^5.1.0"
   }
 }

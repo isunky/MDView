@@ -28,8 +28,8 @@ import { LazyMarkdownPreview, preloadMarkdownPreview } from './components/previe
 import { MarkdownEditor, type MarkdownEditorHandle } from './components/editor/MarkdownEditor'
 import { WelcomeWorkspace } from './components/workspace/WelcomeWorkspace'
 import {
-  getLanguageLocale,
   getLoadedTranslation,
+  getLanguageLocale,
   loadAppLanguage,
   loadTranslation,
   saveAppLanguage,
@@ -797,13 +797,18 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : translations.en.fileOperationFailed
 }
 
+function TranslationLoadingWorkspace(props: Omit<AppWorkspaceProps, 't'>) {
+  const t = use(loadTranslation(props.language))
+  return <AppWorkspace {...props} t={t} />
+}
+
 function LocalizedApp(props: AppProps) {
   const [language, setLanguage] = useState<AppLanguage>(() => props.initialLanguage ?? loadAppLanguage())
   const languageRequestRef = useRef(0)
   useEffect(() => {
     document.documentElement.lang = getLanguageLocale(language)
   }, [language])
-  const t = getLoadedTranslation(language) ?? use(loadTranslation(language))
+  const t = getLoadedTranslation(language)
 
   function handleLanguageSelect(nextLanguage: AppLanguage) {
     const request = ++languageRequestRef.current
@@ -814,7 +819,10 @@ function LocalizedApp(props: AppProps) {
     })
   }
 
-  return <AppWorkspace {...props} language={language} t={t} onLanguageSelect={handleLanguageSelect} />
+  const workspaceProps = { ...props, language, onLanguageSelect: handleLanguageSelect }
+  return t
+    ? <AppWorkspace {...workspaceProps} t={t} />
+    : <TranslationLoadingWorkspace {...workspaceProps} />
 }
 
 export default function App(props: AppProps) {

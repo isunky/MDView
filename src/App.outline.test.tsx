@@ -145,7 +145,7 @@ describe('App', () => {
     try {
       renderApp({ fileAccess: createFileAccess() })
       expect(await screen.findByRole('heading', { name: 'Untitled' })).toBeInTheDocument()
-      vi.useFakeTimers()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
       fireEvent.click(screen.getByRole('button', { name: 'Split preview and source' }))
 
       const editor = screen.getByRole('textbox', { name: 'Markdown source' })
@@ -338,6 +338,7 @@ describe('App', () => {
     mockElementTop(firstHeading, 80)
     mockElementTop(secondHeading, 130)
 
+    fireEvent(window, new Event('resize'))
     fireEvent.scroll(previewPanel)
 
     await waitFor(() => {
@@ -362,6 +363,7 @@ describe('App', () => {
     mockElementTop(previewPanel, 100)
     mockElementTop(screen.getByRole('heading', { name: 'First' }), 80)
     mockElementTop(screen.getByRole('heading', { name: 'Second' }), 360)
+    fireEvent(window, new Event('resize'))
     fireEvent.scroll(previewPanel)
 
     await waitFor(() => {

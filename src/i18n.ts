@@ -689,8 +689,6 @@ export function getLoadedTranslation(language: AppLanguage): Translation | undef
 }
 
 export function loadTranslation(language: AppLanguage): Promise<Translation> {
-  const loaded = loadedTranslations.get(language)
-  if (loaded) return Promise.resolve(loaded)
   const pending = translationPromises.get(language)
   if (pending) return pending
 

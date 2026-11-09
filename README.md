@@ -237,9 +237,9 @@ If the build cannot finish, explain the specific blocker.
 <details>
 <summary>Mac 环境、手动命令与签名 / Mac prerequisites, commands, and signing</summary>
 
-准备 [Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo stable](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
+准备 [Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo 1.90 或更新的 stable 版本](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
 
-Install Node.js 24, stable Rust/Cargo, and Xcode Command Line Tools. See the Tauri prerequisites linked above.
+Install Node.js 24, Rust/Cargo 1.90 or newer (stable recommended), and Xcode Command Line Tools. See the Tauri prerequisites linked above.
 
 ```bash
 # 仅在缺少 Apple 编译工具时执行 / Only if Apple's build tools are missing
@@ -304,7 +304,7 @@ Use `$...$` for inline math and `$$` on separate lines for display math. Click `
 
 技术栈 / Stack：Tauri 2 · React 19 · TypeScript · Vite。
 
-准备 Node.js 24、Rust/Cargo 和[对应平台构建工具](https://v2.tauri.app/start/prerequisites/)，在源码目录运行： / Install Node.js 24, Rust/Cargo, and platform build tools, then run from the source directory:
+准备 Node.js 24、Rust/Cargo 1.90 或更新版本和[对应平台构建工具](https://v2.tauri.app/start/prerequisites/)，在源码目录运行： / Install Node.js 24, Rust/Cargo 1.90 or newer, and platform build tools, then run from the source directory:
 
 ```bash
 npm ci
