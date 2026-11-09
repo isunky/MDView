@@ -183,6 +183,23 @@ test('pastes a web address onto selected text as a Markdown link', async ({ page
   await expect(editor).toHaveValue('Project')
 })
 
+test('navigates table cells and adds an undoable row', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  const table = '| Name | Value |\n| --- | --- |\n| one | two |'
+  await editor.fill(table)
+  await editor.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(2, 6))
+  await editor.press('Tab')
+  await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.value.slice(element.selectionStart, element.selectionEnd))).toBe('Value')
+  await editor.press('Tab')
+  await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.value.slice(element.selectionStart, element.selectionEnd))).toBe('one')
+  await editor.press('Tab')
+  await editor.press('Tab')
+  await expect(editor).toHaveValue(`${table}\n|   |   |`)
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue(table)
+})
+
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()

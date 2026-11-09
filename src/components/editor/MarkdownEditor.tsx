@@ -36,6 +36,7 @@ import { applyMathExpression, findMathExpression, type MathDisplayMode, type Mat
 import { getTextareaSelection, useEditorHistory } from '../../hooks/useEditorHistory'
 import { useEditorImageInput } from '../../hooks/useEditorImageInput'
 import { useEditorSearchMarker } from '../../hooks/useEditorSearchMarker'
+import { navigateTable } from '../../domain/tableEditing'
 
 export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
@@ -232,7 +233,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     if (event.key === 'Tab') {
       event.preventDefault()
-      applyEdit(applyIndent(value, getTextareaSelection(event.currentTarget), event.shiftKey))
+      const selection = getTextareaSelection(event.currentTarget)
+      const tableEdit = !event.ctrlKey && !event.altKey && !event.metaKey ? navigateTable(value, selection, event.shiftKey) : null
+      if (tableEdit?.value === value) {
+        event.currentTarget.setSelectionRange(tableEdit.selection.start, tableEdit.selection.end)
+        updateSelection(tableEdit.selection)
+      } else {
+        applyEdit(tableEdit ?? applyIndent(value, selection, event.shiftKey))
+      }
       return
     }
 

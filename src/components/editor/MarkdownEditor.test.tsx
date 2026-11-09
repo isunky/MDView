@@ -136,6 +136,25 @@ describe('MarkdownEditor', () => {
     expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('Header 1')
   })
 
+  it('moves between table cells without changing text and adds an undoable row', () => {
+    const value = '| A | B |\n| --- | --- |\n| one | two |'
+    render(<ControlledEditor initialValue={value} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(2, 3)
+    fireEvent.keyDown(editor, { key: 'Tab' })
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('B')
+    fireEvent.keyDown(editor, { key: 'Tab' })
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('one')
+    fireEvent.keyDown(editor, { key: 'Tab', shiftKey: true })
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('B')
+    const last = value.lastIndexOf('two')
+    editor.setSelectionRange(last, last + 3)
+    fireEvent.keyDown(editor, { key: 'Tab' })
+    expect(editor).toHaveValue(`${value}\n|   |   |`)
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue(value)
+  })
+
   it('undoes and redoes toolbar changes', async () => {
     const user = userEvent.setup()
     render(<ControlledEditor initialValue="hello" />)

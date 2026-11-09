@@ -277,7 +277,11 @@ Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView
 | 粗体 / Bold | `Ctrl+B` | `Command+B` |
 | 斜体 / Italic | `Ctrl+I` | `Command+I` |
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |
-| 缩进 / 反向缩进 / Indent / Outdent | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
+| 缩进 / 反向缩进（表格外）/ Indent / Outdent (outside tables) | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
+| 表格单元格：下一个 / 上一个 / Table cell: next / previous | `Tab` / `Shift+Tab` | `Tab` / `Shift+Tab` |
+
+在表格最后一个单元格按 `Tab` 会新增一行；选中多行时，`Tab` 仍用于缩进。
+Press `Tab` in the last table cell to add a row. For a multi-line selection, `Tab` still indents the selection.
 
 </details>
 

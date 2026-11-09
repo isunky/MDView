@@ -167,7 +167,7 @@ function findParentList(value: string, lineStart: number, currentIndent: number)
   return null
 }
 
-function isInsideFencedCode(value: string, lineStart: number): boolean {
+export function isInsideFencedCode(value: string, lineStart: number): boolean {
   let fence: { marker: string; length: number } | null = null
   for (const line of value.slice(0, lineStart).split('\n')) {
     const match = line.match(/^[ \t]*(?:(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])[ \t]+)[ \t]*)*(`{3,}|~{3,})(.*)$/)
