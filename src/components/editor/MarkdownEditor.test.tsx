@@ -295,6 +295,65 @@ describe('MarkdownEditor', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it.each(['你', '日', '한'])('does not intercept composition keys or reset the cursor while entering %s', (text) => {
+    render(<ControlledEditor initialValue="- " />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(2, 2)
+    fireEvent.select(editor)
+    const setSelection = vi.spyOn(editor, 'setSelectionRange')
+    const globalKeydown = vi.fn()
+    window.addEventListener('keydown', globalKeydown)
+    fireEvent.compositionStart(editor)
+    fireEvent.change(editor, { target: { value: '- n', selectionStart: 3, selectionEnd: 3 } })
+    expect(fireEvent.keyDown(editor, { key: 'Enter' })).toBe(true)
+    expect(fireEvent.keyDown(editor, { key: 'Tab' })).toBe(true)
+    expect(fireEvent.keyDown(editor, { key: 'b', ctrlKey: true })).toBe(true)
+    expect(globalKeydown).not.toHaveBeenCalled()
+    fireEvent.change(editor, { target: { value: `- ${text}`, selectionStart: 3, selectionEnd: 3 } })
+    expect(setSelection).not.toHaveBeenCalled()
+    fireEvent.compositionEnd(editor, { data: text })
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('- ')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 2])
+    fireEvent.keyDown(editor, { key: 'y', ctrlKey: true })
+    expect(editor).toHaveValue(`- ${text}`)
+    window.removeEventListener('keydown', globalKeydown)
+  })
+
+  it('restores the pre-typing cursor on undo and separates typing after cursor movement', () => {
+    render(<ControlledEditor initialValue="hello" />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(2, 2)
+    fireEvent.select(editor)
+    fireEvent.change(editor, { target: { value: 'heXllo', selectionStart: 3, selectionEnd: 3 } })
+    editor.setSelectionRange(0, 0)
+    fireEvent.select(editor)
+    fireEvent.change(editor, { target: { value: 'YheXllo', selectionStart: 1, selectionEnd: 1 } })
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('heXllo')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 0])
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('hello')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 2])
+  })
+
+  it('keeps consecutive input-method commits as separate undo steps', () => {
+    render(<ControlledEditor initialValue="" />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    fireEvent.compositionStart(editor)
+    fireEvent.change(editor, { target: { value: 'n', selectionStart: 1, selectionEnd: 1 } })
+    fireEvent.change(editor, { target: { value: '你', selectionStart: 1, selectionEnd: 1 } })
+    fireEvent.compositionEnd(editor, { data: '你' })
+    fireEvent.compositionStart(editor)
+    fireEvent.change(editor, { target: { value: '你h', selectionStart: 2, selectionEnd: 2 } })
+    fireEvent.change(editor, { target: { value: '你好', selectionStart: 2, selectionEnd: 2 } })
+    fireEvent.compositionEnd(editor, { data: '好' })
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('你')
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('')
+  })
+
   it('undoes and redoes list continuation as one edit', () => {
     render(<ControlledEditor initialValue="* [x] done" />)
     const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement

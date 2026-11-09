@@ -10,6 +10,7 @@ type ShortcutKeyboardEvent = {
   code?: string
   ctrlKey?: boolean
   isComposing?: boolean
+  keyCode?: number
   key: string
   metaKey?: boolean
   shiftKey?: boolean
@@ -28,7 +29,7 @@ export function matchesShortcut(
   shortcut: ShortcutDefinition,
   platform: ShortcutPlatform = detectShortcutPlatform(),
 ): boolean {
-  if (event.isComposing || event.altKey) {
+  if (event.isComposing || event.keyCode === 229 || event.altKey) {
     return false
   }
 

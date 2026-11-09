@@ -5,6 +5,7 @@ import {
   recordEditorChange,
   redoEditorChange,
   undoEditorChange,
+  updateEditorHistorySelection,
 } from './editorHistory'
 
 describe('editor history', () => {
@@ -16,6 +17,24 @@ describe('editor history', () => {
 
     expect(undoEditorChange(history).present.value).toBe('ab')
     expect(undoEditorChange(undoEditorChange(history)).present.value).toBe('')
+  })
+
+  it('groups composition updates regardless of time and separates later typing', () => {
+    let history = createEditorHistory('')
+    history = recordEditorChange(history, { value: 'n', selection: { start: 1, end: 1 } }, 'composition', 100)
+    history = recordEditorChange(history, { value: '你', selection: { start: 1, end: 1 } }, 'composition', 5000)
+    history = recordEditorChange(history, { value: '你!', selection: { start: 2, end: 2 } }, 'typing', 5100)
+    const afterTypingUndo = undoEditorChange(history)
+    expect(afterTypingUndo.present.value).toBe('你')
+    expect(undoEditorChange(afterTypingUndo).present.value).toBe('')
+  })
+
+  it('starts a new typing undo group after the cursor moves', () => {
+    let history = createEditorHistory('')
+    history = recordEditorChange(history, { value: 'a', selection: { start: 1, end: 1 } }, 'typing', 100)
+    history = updateEditorHistorySelection(history, { start: 0, end: 0 })
+    history = recordEditorChange(history, { value: 'ba', selection: { start: 1, end: 1 } }, 'typing', 200)
+    expect(undoEditorChange(history).present).toEqual({ value: 'a', selection: { start: 0, end: 0 } })
   })
 
   it('supports redo after undo', () => {

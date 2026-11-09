@@ -8,7 +8,7 @@ export type EditorSnapshot = {
   selection: EditorSelection
 }
 
-export type EditorChangeKind = 'typing' | 'command' | 'external'
+export type EditorChangeKind = 'typing' | 'composition' | 'command' | 'external'
 
 export type EditorHistory = {
   past: EditorSnapshot[]
@@ -46,9 +46,9 @@ export function recordEditorChange(
     }
   }
 
-  const mergeTyping = kind === 'typing'
-    && history.lastChangeKind === 'typing'
-    && timestamp - history.lastChangeAt <= TYPING_MERGE_WINDOW_MS
+  const mergeTyping = (kind === 'typing' && history.lastChangeKind === 'typing'
+    && timestamp - history.lastChangeAt <= TYPING_MERGE_WINDOW_MS)
+    || (kind === 'composition' && history.lastChangeKind === 'composition')
 
   return limitHistory({
     past: mergeTyping
@@ -67,6 +67,9 @@ export function updateEditorHistorySelection(
 ): EditorHistory {
   return {
     ...history,
+    lastChangeKind: history.lastChangeKind === 'typing'
+      && (selection.start !== history.present.selection.start || selection.end !== history.present.selection.end)
+      ? null : history.lastChangeKind,
     present: {
       ...history.present,
       selection,

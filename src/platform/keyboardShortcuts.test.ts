@@ -50,5 +50,6 @@ describe('keyboardShortcuts', () => {
         'windows',
       ),
     ).toBe(false)
+    expect(matchesShortcut(keyboardEvent({ key: 's', ctrlKey: true, keyCode: 229 }), { key: 's' }, 'windows')).toBe(false)
   })
 })

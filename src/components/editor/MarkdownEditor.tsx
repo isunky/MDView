@@ -99,11 +99,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   searchMatch = null,
 }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const composingRef = useRef(false)
   const searchMarkerRef = useEditorSearchMarker(textareaRef, searchMatch, value)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
   const [mathEditor, setMathEditor] = useState<{ expression: MathExpression | null; selection: SelectionRange; latex: string; mode: MathDisplayMode } | null>(null)
   const shortcutPlatform = detectShortcutPlatform()
-  const { canUndo, canRedo, restore, update, updateSelection } = useEditorHistory({
+  const { canUndo, canRedo, restore, update, updateSelection, beginComposition, finishComposition } = useEditorHistory({
     historyKey, value, textareaRef, onChange, onSelectionChange,
   })
   const imageInput = useEditorImageInput({
@@ -130,9 +131,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       if (options?.focus !== false) textarea.focus()
       textarea.setSelectionRange(selection.start, selection.end)
-      onSelectionChange?.(selection)
+      updateSelection(selection)
     },
-  }), [onSelectionChange])
+  }), [updateSelection])
 
   function runCommand(command: MarkdownCommand) {
     const textarea = textareaRef.current
@@ -184,7 +185,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    if (composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) {
+      event.stopPropagation()
+      return
+    }
     if (matchesShortcut(event, { key: 'z' }, shortcutPlatform)) {
       event.preventDefault()
       restore('undo')
@@ -329,8 +333,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         value={value}
         onChange={(event) => {
           const selection = getTextareaSelection(event.currentTarget)
-          update(event.currentTarget.value, selection, 'typing')
+          const input = event.nativeEvent as InputEvent
+          const composing = composingRef.current || input.isComposing || input.inputType === 'insertFromComposition'
+          update(event.currentTarget.value, selection, composing ? 'composition' : 'typing')
           onSelectionChange?.(selection)
+        }}
+        onCompositionStart={(event) => {
+          composingRef.current = true
+          beginComposition(getTextareaSelection(event.currentTarget))
+        }}
+        onCompositionEnd={(event) => {
+          composingRef.current = false
+          finishComposition(event.currentTarget.value, getTextareaSelection(event.currentTarget))
         }}
         onKeyDown={handleKeyDown}
         onSelect={handleSelectionChange}

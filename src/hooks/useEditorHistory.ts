@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import {
   createEditorHistory,
   recordEditorChange,
@@ -79,13 +79,16 @@ export function useEditorHistory({
   }, [onSelectionChange, textareaRef, value])
 
   function update(nextValue: string, selection: SelectionRange, kind: EditorChangeKind = 'command') {
-    const currentSelection = textareaRef.current
-      ? getTextareaSelection(textareaRef.current)
-      : historyRef.current.present.selection
-    historyRef.current = updateEditorHistorySelection(historyRef.current, currentSelection)
+    if (kind === 'command') {
+      const currentSelection = textareaRef.current
+        ? getTextareaSelection(textareaRef.current)
+        : historyRef.current.present.selection
+      historyRef.current = updateEditorHistorySelection(historyRef.current, currentSelection)
+    }
     historyRef.current = recordEditorChange(historyRef.current, { value: nextValue, selection }, kind)
     pendingValueRef.current = nextValue
-    pendingSelectionRef.current = selection
+    // Native input owns the selection while typing or composing. Resetting it can cancel an IME session.
+    pendingSelectionRef.current = kind === 'command' ? selection : null
     refreshAvailability()
     onChange(nextValue)
   }
@@ -105,12 +108,21 @@ export function useEditorHistory({
     onChange(nextHistory.present.value)
   }
 
-  function updateSelection(selection: SelectionRange) {
+  const updateSelection = useCallback((selection: SelectionRange) => {
     historyRef.current = updateEditorHistorySelection(historyRef.current, selection)
     onSelectionChange?.(selection)
+  }, [onSelectionChange])
+
+  function beginComposition(selection: SelectionRange) {
+    historyRef.current = { ...updateEditorHistorySelection(historyRef.current, selection), lastChangeKind: null }
   }
 
-  return { ...availability, restore, update, updateSelection }
+  function finishComposition(value: string, selection: SelectionRange) {
+    if (historyRef.current.present.value !== value) update(value, selection, 'composition')
+    else updateSelection(selection)
+  }
+
+  return { ...availability, restore, update, updateSelection, beginComposition, finishComposition }
 }
 
 export function getTextareaSelection(textarea: HTMLTextAreaElement): SelectionRange {

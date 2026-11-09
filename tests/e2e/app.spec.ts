@@ -200,6 +200,25 @@ test('navigates table cells and adds an undoable row', async ({ page }) => {
   await expect(editor).toHaveValue(table)
 })
 
+test('undoes typing at separate cursor positions independently', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('hello')
+  await editor.press('Home')
+  await editor.press('ArrowRight')
+  await editor.press('ArrowRight')
+  await editor.pressSequentially('X')
+  await editor.press('Home')
+  await editor.pressSequentially('Y')
+  await expect(editor).toHaveValue('YheXllo')
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('heXllo')
+  await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(0)
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('hello')
+  await expect.poll(() => editor.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(2)
+})
+
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()
