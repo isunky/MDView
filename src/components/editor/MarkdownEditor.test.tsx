@@ -394,6 +394,33 @@ describe('MarkdownEditor', () => {
     expect(onImportImages).toHaveBeenCalledWith([image], { start: 1, end: 4 })
   })
 
+  it('turns a pasted web address into a link and supports undo', () => {
+    render(<ControlledEditor initialValue="Project" />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 7)
+    const clipboardData = { files: [], getData: () => 'https://example.com/docs' }
+    expect(fireEvent.paste(editor, { clipboardData })).toBe(false)
+    expect(editor).toHaveValue('[Project](https://example.com/docs)')
+    expect(editor.selectionStart).toBe(editor.value.length)
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true })
+    expect(editor).toHaveValue('Project')
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 7])
+  })
+
+  it('preserves normal text paste and gives image imports priority', () => {
+    const onImportImages = vi.fn()
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="hello" onChange={onChange} onImportImages={onImportImages} label="Markdown source" t={labels} />)
+    const editor = screen.getByRole('textbox', { name: 'Markdown source' }) as HTMLTextAreaElement
+    editor.setSelectionRange(0, 5)
+    expect(fireEvent.paste(editor, { clipboardData: { files: [], getData: () => 'normal text' } })).toBe(true)
+    expect(onChange).not.toHaveBeenCalled()
+    const image = new File(['image'], 'photo.png', { type: 'image/png' })
+    expect(fireEvent.paste(editor, { clipboardData: { files: [image], getData: () => 'https://example.com/' } })).toBe(false)
+    expect(onImportImages).toHaveBeenCalledWith([image], { start: 0, end: 5 })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('opens a multi-image picker from the image toolbar button and preserves the selection', async () => {
     const user = userEvent.setup()
     const onImportImages = vi.fn()

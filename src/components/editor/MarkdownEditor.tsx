@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ClipboardEvent,
   type ReactNode,
 } from 'react'
 import type { MarkdownSyntaxSection } from '../../domain/markdownSyntaxReference'
@@ -15,6 +16,7 @@ import {
   applyIndent,
   applyInlineCommand,
   applyListContinuation,
+  applyPastedLink,
   applyTable,
   type EditorEdit,
   type SelectionRange,
@@ -250,6 +252,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     }
   }
 
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    imageInput.handlePaste(event)
+    if (event.defaultPrevented || typeof event.clipboardData.getData !== 'function') return
+    const edit = applyPastedLink(value, getTextareaSelection(event.currentTarget), event.clipboardData.getData('text/plain'))
+    if (!edit) return
+    event.preventDefault()
+    applyEdit(edit)
+  }
+
   function handleImageAction() {
     imageInput.openPicker(textareaRef.current)
   }
@@ -315,7 +326,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         }}
         onKeyDown={handleKeyDown}
         onSelect={handleSelectionChange}
-        onPaste={imageInput.handlePaste}
+        onPaste={handlePaste}
         onDragEnter={imageInput.handleDragEnter}
         onDragOver={imageInput.handleDragOver}
         onDragLeave={imageInput.clearDragState}

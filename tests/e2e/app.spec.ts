@@ -168,6 +168,21 @@ test('toggles selected formatting with the toolbar', async ({ page }) => {
   await expect(editor).toHaveValue('**hello**')
 })
 
+test('pastes a web address onto selected text as a Markdown link', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('Project')
+  await editor.evaluate((element: HTMLTextAreaElement) => {
+    element.setSelectionRange(0, 7)
+    const clipboard = new DataTransfer()
+    clipboard.setData('text/plain', 'https://example.com/docs')
+    element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: clipboard }))
+  })
+  await expect(editor).toHaveValue('[Project](https://example.com/docs)')
+  await editor.press('Control+z')
+  await expect(editor).toHaveValue('Project')
+})
+
 test('switches the interface language from the App menu', async ({ page }) => {
   await page.getByRole('button', { name: 'App' }).click()
   await page.getByRole('menuitem', { exact: true, name: '简体中文' }).click()

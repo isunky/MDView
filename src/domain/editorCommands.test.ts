@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { applyHeading, applyInlineCommand, applyListContinuation, type InlineMarkdownCommand } from './editorCommands'
+import { applyHeading, applyInlineCommand, applyListContinuation, applyPastedLink, type InlineMarkdownCommand } from './editorCommands'
 
 function continueAtEnd(value: string) {
   return applyListContinuation(value, { start: value.length, end: value.length })
 }
+
+describe('pasting links', () => {
+  it('wraps selected text and leaves the cursor after the link', () => {
+    const edit = applyPastedLink('visit project now', { start: 6, end: 13 }, 'https://example.com/docs')
+    const result = 'visit [project](https://example.com/docs) now'
+    expect(edit).toEqual({ value: result, selection: { start: result.indexOf(' now'), end: result.indexOf(' now') } })
+  })
+
+  it('preserves link labels and destinations containing Markdown punctuation', () => {
+    const edit = applyPastedLink('a [b]', { start: 0, end: 5 }, ' https://example.com/a(b)?q=1&amp;x=2\n')
+    expect(edit?.value).toBe('[a \\[b\\]](https://example.com/a%28b%29?q=1&amp;amp;x=2)')
+    expect(applyPastedLink('\\[a\\]', { start: 0, end: 5 }, 'https://example.com')?.value).toBe('[\\[a\\]](https://example.com/)')
+  })
+
+  it.each([
+    ['hello', 0, 0, 'https://example.com'],
+    ['  ', 0, 2, 'https://example.com'],
+    ['line\nbreak', 0, 10, 'https://example.com'],
+    ['hello', 0, 5, 'plain text'],
+    ['hello', 0, 5, 'javascript:alert(1)'],
+    ['hello', 0, 5, 'https://example.com/a b'],
+    ['hello', 0, 5, 'https://'],
+  ])('leaves ordinary or unsupported pastes untouched', (value, start, end, clipboard) => {
+    expect(applyPastedLink(value, { start, end }, clipboard)).toBeNull()
+  })
+})
 
 describe('list continuation', () => {
   it.each([

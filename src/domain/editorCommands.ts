@@ -21,6 +21,27 @@ export type InlineMarkdownCommand =
   | 'ordered-list'
   | 'task-list'
 
+export function applyPastedLink(value: string, selection: SelectionRange, clipboardText: string): EditorEdit | null {
+  const label = value.slice(selection.start, selection.end)
+  const input = clipboardText.trim()
+  if (!label.trim() || /[\r\n]/.test(label) || !/^https?:\/\//i.test(input) || /\s/.test(input)) return null
+  let destination: string
+  try {
+    const url = new URL(input)
+    if (!url.hostname || (url.protocol !== 'http:' && url.protocol !== 'https:')) return null
+    destination = url.href.replace(/[()]/g, (char) => char === '(' ? '%28' : '%29')
+      .replace(/&(?=(?:#[0-9]+|#x[0-9a-f]+|[a-z][a-z0-9]{1,31});)/gi, '&amp;')
+  } catch {
+    return null
+  }
+  const escapedLabel = label.replace(/\\*(?:\[|])/g, (match) =>
+    match.length % 2 === 1 ? `${match.slice(0, -1)}\\${match.slice(-1)}` : match,
+  )
+  const replacement = `[${escapedLabel}](${destination})`
+  const cursor = selection.start + replacement.length
+  return replaceSelection(value, selection, replacement, { start: cursor, end: cursor })
+}
+
 export function applyInlineCommand(
   value: string,
   selection: SelectionRange,
