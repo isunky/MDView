@@ -1,7 +1,7 @@
 {
   "name": "mdview",
   "private": true,
-  "version": "3.7.2",
+  "version": "3.7.3",
   "overrides": {
     "katex": "$katex",
     "eslint": { "minimatch": "^11.0.5" },
