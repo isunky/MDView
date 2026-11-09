@@ -64,6 +64,10 @@ AI 写好的方案、平时积累的笔记，或是项目里的技术文档，�
 
 发现一处需要修改？切到编辑模式就能动手，也可以打开分屏，边写边看效果。两侧内容支持同步滚动，分隔线可拖动调整宽度。标题、列表、链接、表格和公式都有快捷入口，图片也可以粘贴、拖入或批量选择。
 
+写作时，列表会自动续行，已完成任务后的新任务会保持未勾选；空列表项按回车可以退出或返回上一级。选中单行文字后粘贴 HTTP 或 HTTPS 网址，会直接生成 Markdown 链接。粗体、斜体、行内代码、标题、引用和列表等格式可以再次选择来取消。
+
+普通表格中可以用 Tab 在单元格间跳转，在最后一个单元格继续按 Tab 会新增一行。整理内容时，还可以用快捷键移动、复制或删除当前行及选中的多行；这些操作都支持撤销。输入法选词期间，编辑器不会把回车或 Tab 当作编辑快捷键。
+
 查找时可以查看匹配数量、在结果间跳转，编辑模式还支持替换和全部替换。常用快捷键、撤销重做和内置语法参考都在手边；状态栏会显示字数、字符数、光标位置和预计阅读时长，保存状态也一目了然。
 
 ### 文档留在本地，修改有迹可循
@@ -103,6 +107,10 @@ Writing code, taking notes, or preparing materials? Pin the MDView window on top
 ### Make changes as you read
 
 Spot something to change? Switch to the source editor, or open split view to write and preview side by side. The two panes can scroll together, and you can drag the divider to resize them. Shortcuts are available for headings, lists, links, tables, images, and formulas; images can also be pasted, dropped, or inserted in batches.
+
+Lists continue as you type, and a new task after a completed one starts unchecked. Press Enter on an empty list item to leave the list or return to the parent level. Select text on a single line and paste an HTTP or HTTPS address to create a Markdown link. Bold, italic, inline code, headings, quotes, and lists can be toggled off by choosing the same format again.
+
+In a standard table, use Tab to move between cells and press it in the last cell to add a row. Keyboard shortcuts also move, copy, or delete the current line or selected lines; each action can be undone. While an input method is composing text, Enter and Tab remain available for choosing candidates.
 
 Find shows how many matches there are and lets you move between them; in the editor, you can also replace one or all matches. Undo and redo, common keyboard shortcuts, and a built-in syntax reference are close at hand. The status bar shows word and character counts, cursor position, and estimated reading time, and the save state stays visible.
 
@@ -277,6 +285,7 @@ Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView
 | 粗体 / Bold | `Ctrl+B` | `Command+B` |
 | 斜体 / Italic | `Ctrl+I` | `Command+I` |
 | 插入链接 / Insert link | `Ctrl+K` | `Command+K` |
+| 有序 / 无序列表 / Numbered / bulleted list | `Ctrl+Shift+7` / `Ctrl+Shift+8` | `Command+Shift+7` / `Command+Shift+8` |
 | 上移 / 下移行 / Move line up / down | `Alt+↑` / `Alt+↓` | `Option+↑` / `Option+↓` |
 | 向上 / 向下复制行 / Copy line up / down | `Alt+Shift+↑` / `Alt+Shift+↓` | `Option+Shift+↑` / `Option+Shift+↓` |
 | 删除行 / Delete line | `Ctrl+Shift+K` | `Command+Shift+K` |
@@ -285,6 +294,9 @@ Find the DMG in `src-tauri/target/release/bundle/dmg/`, open it, and drag MDView
 
 在表格最后一个单元格按 `Tab` 会新增一行；选中多行时，`Tab` 仍用于缩进。
 Press `Tab` in the last table cell to add a row. For a multi-line selection, `Tab` still indents the selection.
+
+表格内快捷跳转适用于普通 Markdown 表格；引用块或深层缩进中的表格暂不支持。
+Table cell navigation supports standard Markdown tables, but not tables inside blockquotes or deeply indented blocks.
 
 行操作会处理当前行或选区覆盖的多行，均可撤销。
 Line commands apply to the current line or the selected lines and can be undone.
