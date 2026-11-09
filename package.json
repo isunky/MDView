@@ -2,6 +2,12 @@
   "name": "mdview",
   "private": true,
   "version": "3.7.2",
+  "overrides": {
+    "katex": "$katex",
+    "eslint": { "minimatch": "^11.0.5" },
+    "@eslint/config-array": { "minimatch": "^11.0.5" },
+    "@typescript-eslint/typescript-estree": { "minimatch": "^11.0.5" }
+  },
   "license": "GPL-3.0",
   "type": "module",
   "engines": {
@@ -11,8 +17,8 @@
     "dev": "vite",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "build": "tsc -b && vite build && npm run bundle:check",
-    "edge:build": "tsc -p tsconfig.edge.json && vite build --config vite.edge.config.ts",
+    "build": "node ./node_modules/@typescript/native/bin/tsc -b && vite build && npm run bundle:check",
+    "edge:build": "node ./node_modules/@typescript/native/bin/tsc -p tsconfig.edge.json && vite build --config vite.edge.config.ts",
     "edge:package": "npm run edge:build && node scripts/package-edge-extension.mjs",
     "bundle:check": "node scripts/check-startup-bundle.mjs",
     "lint": "eslint .",
@@ -61,15 +67,16 @@
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native": "npm:typescript@~7.0.2",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
-    "typescript": "~6.0.2",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.12"
   }
 }
