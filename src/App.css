@@ -986,6 +986,16 @@
   box-shadow: 0 0 0 1px var(--search-match-active-ring);
 }
 
+::highlight(mdview-search) {
+  background-color: var(--search-match-bg);
+  color: inherit;
+}
+
+::highlight(mdview-search-active) {
+  background-color: var(--search-match-active-bg);
+  color: inherit;
+}
+
 .preview-loading {
   display: grid;
   min-height: 100%;

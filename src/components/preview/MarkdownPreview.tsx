@@ -9,6 +9,7 @@ import './highlightThemes.css'
 import { resolveLocalMarkdownResource, resolveSameDocumentHeading } from '../../domain/localMarkdownResources'
 import { markdownSanitizeSchema, rehypeSafeHeadingIds, rehypeSourcePositions, rehypeWindowsFileUrls } from '../../domain/markdownSanitize'
 import { createSearchHighlightPlugin } from '../../domain/previewSearchHighlight'
+import { findPreviewSearchRanges, supportsSearchHighlights } from '../../domain/previewSearchRanges'
 import type { EffectiveReadingTheme } from '../../domain/readingPreferences'
 import { isExternalWebUrl, openExternalLink, type OpenExternalLink } from '../../platform/externalLinks'
 import type { FileAccess } from '../../platform/fileAccess'
@@ -109,6 +110,8 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   const articleRef = useRef<HTMLElement | null>(null)
   const searchMatchesRef = useRef<HTMLElement[]>([])
   const activeSearchMatchRef = useRef<HTMLElement | null>(null)
+  const searchRangesRef = useRef<Range[]>([])
+  const nativeSearchHighlights = supportsSearchHighlights()
   const [mathPlugins, setMathPlugins] = useState<MathPlugins | null>(null)
   const context = useMemo(() => ({ content, sourcePath }), [content, sourcePath])
   const contextRef = useRef(context)
@@ -133,7 +136,8 @@ export const MarkdownPreview = memo(function MarkdownPreview({
     })
   }
   const hasMath = useMemo(() => containsMarkdownMath(content), [content])
-  const searchHighlightPlugin = useMemo(() => createSearchHighlightPlugin(searchQuery), [searchQuery])
+  const fallbackSearchQuery = nativeSearchHighlights ? '' : searchQuery
+  const searchHighlightPlugin = useMemo(() => createSearchHighlightPlugin(fallbackSearchQuery), [fallbackSearchQuery])
   const setPreviewRef = useCallback((element: HTMLElement | null) => {
     articleRef.current = element
     assignRef(previewRef, element)
@@ -215,6 +219,17 @@ export const MarkdownPreview = memo(function MarkdownPreview({
 
   useEffect(() => {
     const article = articleRef.current
+    if (nativeSearchHighlights) {
+      const ranges = article ? findPreviewSearchRanges(article, searchQuery) : []
+      searchRangesRef.current = ranges
+      const highlight = new Highlight()
+      for (const range of ranges) highlight.add(range)
+      CSS.highlights.set('mdview-search', highlight)
+      onSearchMatchCountChange?.(ranges.length)
+      return () => {
+        if (CSS.highlights.get('mdview-search') === highlight) CSS.highlights.delete('mdview-search')
+      }
+    }
     if (!article) {
       onSearchMatchCountChange?.(0)
       return
@@ -227,16 +242,29 @@ export const MarkdownPreview = memo(function MarkdownPreview({
     const matches = Array.from(article.querySelectorAll<HTMLElement>('[data-mdview-search-match]'))
     searchMatchesRef.current = matches
     onSearchMatchCountChange?.(matches.length)
-  }, [content, onSearchMatchCountChange, searchQuery])
+  }, [components, content, nativeSearchHighlights, onSearchMatchCountChange, rehypePlugins, remarkPlugins, searchQuery])
 
   useEffect(() => {
+    if (nativeSearchHighlights) {
+      const current = searchRangesRef.current[activeSearchIndex]
+      const highlight = new Highlight()
+      highlight.priority = 1
+      if (current) {
+        highlight.add(current)
+        current.startContainer.parentElement?.scrollIntoView?.({ block: 'center', behavior: 'auto' })
+      }
+      CSS.highlights.set('mdview-search-active', highlight)
+      return () => {
+        if (CSS.highlights.get('mdview-search-active') === highlight) CSS.highlights.delete('mdview-search-active')
+      }
+    }
     activeSearchMatchRef.current?.classList.remove('search-match-active')
     const current = searchMatchesRef.current[activeSearchIndex]
     activeSearchMatchRef.current = current ?? null
     if (!current) return
     current.classList.add('search-match-active')
     current.scrollIntoView?.({ block: 'center', behavior: 'auto' })
-  }, [activeSearchIndex, content, searchQuery])
+  }, [activeSearchIndex, components, content, nativeSearchHighlights, rehypePlugins, remarkPlugins, searchQuery])
 
   return (
     <><article className="markdown-preview" aria-label="Markdown preview" ref={setPreviewRef}>

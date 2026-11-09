@@ -95,6 +95,36 @@ test('opens a markdown file through the file menu', async ({ page }) => {
   await expect(page.getByText('E2E Opened.md', { exact: true })).toBeVisible()
 })
 
+test('searches a long preview without rebuilding its rendered document', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill(Array.from({ length: 500 }, (_, index) => `Paragraph ${index}: needle and needle.`).join('\n\n'))
+  await page.getByRole('button', { name: 'Preview markdown' }).click()
+  const paragraph = page.locator('.markdown-preview p').first()
+  await expect(paragraph).toBeVisible()
+  await paragraph.evaluate((element) => { (window as typeof window & { originalParagraph?: Element }).originalParagraph = element })
+
+  await page.keyboard.press('Control+f')
+  const search = page.getByRole('textbox', { name: 'Find' })
+  await search.fill('needle')
+  await expect(page.locator('.document-search-count')).toHaveText('1/1000')
+  await expect.poll(() => page.evaluate(() => CSS.highlights.get('mdview-search')?.size)).toBe(1000)
+  await page.getByRole('button', { name: 'Next match' }).click()
+  await expect(page.locator('.document-search-count')).toHaveText('2/1000')
+  await search.fill('Paragraph')
+  await expect(page.locator('.document-search-count')).toHaveText('1/500')
+  expect(await paragraph.evaluate((element) => element === (window as typeof window & { originalParagraph?: Element }).originalParagraph)).toBe(true)
+
+  await page.getByRole('button', { name: 'Close find' }).click()
+  await expect.poll(() => page.evaluate(() => CSS.highlights.get('mdview-search')?.size ?? 0)).toBe(0)
+  await page.getByRole('button', { name: 'Edit markdown source' }).click()
+  await editor.fill('Updated needle.')
+  await page.getByRole('button', { name: 'Preview markdown' }).click()
+  await page.keyboard.press('Control+f')
+  await search.fill('needle')
+  await expect(page.locator('.document-search-count')).toHaveText('1/1')
+})
+
 test('saves edited markdown content', async ({ page }) => {
   await openMarkdownFile(page)
   await page.getByRole('button', { name: 'Edit markdown source' }).click()
