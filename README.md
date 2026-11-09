@@ -18,7 +18,7 @@
     &nbsp;
     <a href="docs/USER_GUIDE.zh-CN.md"><img alt="图文使用手册，立即查阅" src="https://img.shields.io/badge/%E5%9B%BE%E6%96%87%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C-%E7%AB%8B%E5%8D%B3%E6%9F%A5%E9%98%85-087f75?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white&amp;labelColor=164b45" /></a>
   </p>
-  <p><strong>Version / 版本：</strong>3.7.3 · <a href="https://www.sunky.net">Sunky</a></p>
+  <p><strong>Version / 版本：</strong>3.8.0 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
 
 ## 界面预览 / Preview
@@ -374,8 +374,8 @@ SignPath signing applies to releases after configuration and approval. Create th
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 3.7.3 |
-| Version | 3.7.3 |
+| 当前版本 | 3.8.0 |
+| Version | 3.8.0 |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [GPL-3.0](LICENSE) |
 
