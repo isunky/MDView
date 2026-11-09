@@ -32,6 +32,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { withShortcutTitle, type ShortcutPlatform } from '../../platform/keyboardShortcuts'
+import { useShortcutSettings } from '../../platform/shortcutSettings'
 
 export type ToolbarFormatCommand =
   | 'bold'
@@ -110,6 +111,7 @@ export function MarkdownEditorToolbar({
   imageBusy?: boolean
   imageBusyLabel?: string
 }) {
+  const shortcuts = useShortcutSettings()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [overflow, setOverflow] = useState<'none' | 'next' | 'previous'>('none')
   const updateOverflow = useCallback(() => {
@@ -151,7 +153,7 @@ export function MarkdownEditorToolbar({
           <div className="editor-toolbar-group">
             <EditorButton
               label={labels.undoLabel}
-              title={withShortcutTitle(labels.undoLabel, { key: 'z' }, platform)}
+              title={shortcuts.isEnabled('undo') ? withShortcutTitle(labels.undoLabel, { key: 'z' }, platform) : labels.undoLabel}
               disabled={!canUndo}
               onClick={onUndo}
             >
@@ -159,11 +161,11 @@ export function MarkdownEditorToolbar({
             </EditorButton>
             <EditorButton
               label={labels.redoLabel}
-              title={withShortcutTitle(
+              title={shortcuts.isEnabled('redo') ? withShortcutTitle(
                 labels.redoLabel,
                 platform === 'macos' ? { key: 'z', shiftKey: true } : { key: 'y' },
                 platform,
-              )}
+              ) : labels.redoLabel}
               disabled={!canRedo}
               onClick={onRedo}
             >
@@ -186,14 +188,14 @@ export function MarkdownEditorToolbar({
           <div className="editor-toolbar-group">
             <EditorButton
               label={labels.boldLabel}
-              title={withShortcutTitle(labels.boldLabel, { key: 'b' }, platform)}
+              title={shortcuts.isEnabled('bold') ? withShortcutTitle(labels.boldLabel, { key: 'b' }, platform) : labels.boldLabel}
               onClick={() => onFormat('bold')}
             >
               <Bold aria-hidden="true" />
             </EditorButton>
             <EditorButton
               label={labels.italicLabel}
-              title={withShortcutTitle(labels.italicLabel, { key: 'i' }, platform)}
+              title={shortcuts.isEnabled('italic') ? withShortcutTitle(labels.italicLabel, { key: 'i' }, platform) : labels.italicLabel}
               onClick={() => onFormat('italic')}
             >
               <Italic aria-hidden="true" />
@@ -205,7 +207,7 @@ export function MarkdownEditorToolbar({
           <div className="editor-toolbar-group">
             <EditorButton
               label={labels.linkLabel}
-              title={withShortcutTitle(labels.linkLabel, { key: 'k' }, platform)}
+              title={shortcuts.isEnabled('link') ? withShortcutTitle(labels.linkLabel, { key: 'k' }, platform) : labels.linkLabel}
               onClick={() => onFormat('link')}
             >
               <Link aria-hidden="true" />
@@ -249,14 +251,14 @@ export function MarkdownEditorToolbar({
           <div className="editor-toolbar-group">
             <EditorButton
               label={labels.unorderedListLabel}
-              title={withShortcutTitle(labels.unorderedListLabel, { key: '8', shiftKey: true }, platform)}
+              title={shortcuts.isEnabled('unorderedList') ? withShortcutTitle(labels.unorderedListLabel, { key: '8', shiftKey: true }, platform) : labels.unorderedListLabel}
               onClick={() => onFormat('unordered-list')}
             >
               <List aria-hidden="true" />
             </EditorButton>
             <EditorButton
               label={labels.orderedListLabel}
-              title={withShortcutTitle(labels.orderedListLabel, { key: '7', shiftKey: true }, platform)}
+              title={shortcuts.isEnabled('orderedList') ? withShortcutTitle(labels.orderedListLabel, { key: '7', shiftKey: true }, platform) : labels.orderedListLabel}
               onClick={() => onFormat('ordered-list')}
             >
               <ListOrdered aria-hidden="true" />

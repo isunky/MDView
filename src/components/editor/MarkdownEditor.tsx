@@ -38,6 +38,7 @@ import { useEditorImageInput } from '../../hooks/useEditorImageInput'
 import { useEditorSearchMarker } from '../../hooks/useEditorSearchMarker'
 import { navigateTable } from '../../domain/tableEditing'
 import { editLines } from '../../domain/lineEditing'
+import { useShortcutSettings, type ShortcutId } from '../../platform/shortcutSettings'
 
 export type MarkdownEditorLabels = MarkdownEditorToolbarLabels & MathEditorDialogLabels & {
   tableHeaderPlaceholder: (column: number) => string
@@ -100,6 +101,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
   searchMatch = null,
 }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const shortcuts = useShortcutSettings()
   const composingRef = useRef(false)
   const searchMarkerRef = useEditorSearchMarker(textareaRef, searchMatch, value)
   const [isSyntaxReferenceOpen, setIsSyntaxReferenceOpen] = useState(false)
@@ -193,18 +195,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     if (event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
       event.preventDefault()
       const direction = event.key === 'ArrowUp' ? 'up' : 'down'
+      const id = `${event.shiftKey ? 'copy' : 'move'}${direction === 'up' ? 'Up' : 'Down'}` as ShortcutId
+      if (!shortcuts.isEnabled(id)) return
       const edit = editLines(value, getTextareaSelection(event.currentTarget), `${event.shiftKey ? 'copy' : 'move'}-${direction}`)
       if (edit) applyEdit(edit)
       return
     }
     if (matchesShortcut(event, { key: 'k', shiftKey: true }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('deleteLine')) return
       const edit = editLines(value, getTextareaSelection(event.currentTarget), 'delete')
       if (edit) applyEdit(edit)
       return
     }
     if (matchesShortcut(event, { key: 'z' }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('undo')) return
       restore('undo')
       return
     }
@@ -215,44 +221,52 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         || matchesShortcut(event, { key: 'z', shiftKey: true }, shortcutPlatform)
     if (matchesPlatformRedo) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('redo')) return
       restore('redo')
       return
     }
 
     if (matchesShortcut(event, { key: 'b' }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('bold')) return
       runCommand('bold')
       return
     }
 
     if (matchesShortcut(event, { key: 'i' }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('italic')) return
       runCommand('italic')
       return
     }
 
     if (matchesShortcut(event, { key: 'k' }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('link')) return
       runCommand('link')
       return
     }
 
     if (matchesShortcut(event, { key: '7', shiftKey: true }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('orderedList')) return
       runCommand('ordered-list')
       return
     }
 
     if (matchesShortcut(event, { key: '8', shiftKey: true }, shortcutPlatform)) {
       event.preventDefault()
+      if (!shortcuts.isEnabled('unorderedList')) return
       runCommand('unordered-list')
       return
     }
 
     if (event.key === 'Tab') {
-      event.preventDefault()
       const selection = getTextareaSelection(event.currentTarget)
       const tableEdit = !event.ctrlKey && !event.altKey && !event.metaKey ? navigateTable(value, selection, event.shiftKey) : null
+      const id = tableEdit ? (event.shiftKey ? 'tablePrevious' : 'tableNext') : (event.shiftKey ? 'outdent' : 'indent')
+      if (!shortcuts.isEnabled(id)) return
+      event.preventDefault()
       if (tableEdit?.value === value) {
         event.currentTarget.setSelectionRange(tableEdit.selection.start, tableEdit.selection.end)
         updateSelection(tableEdit.selection)
@@ -262,7 +276,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       return
     }
 
-    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && shortcuts.isEnabled('listContinue')) {
       const edit = applyListContinuation(value, getTextareaSelection(event.currentTarget))
       if (edit) {
         applyEdit(edit)

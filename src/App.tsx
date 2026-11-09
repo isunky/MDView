@@ -4,6 +4,7 @@ import { UnsavedChangesDialog } from './components/dialogs/UnsavedChangesDialog'
 import { ExportWarningDialog } from './components/dialogs/ExportWarningDialog'
 import {
   Suspense,
+  lazy,
   use,
   useCallback,
   useEffect,
@@ -66,6 +67,9 @@ import { getLineStartOffsets } from './domain/documentStatistics'
 import { createEditorSelectionStore } from './domain/editorSelectionStore'
 import type { ReadingViewMode } from './domain/readingSessions'
 import { nativeWindowFrame, type AppWindowFrame } from './platform/windowFrame'
+import { ShortcutSettingsProvider } from './platform/shortcutSettings'
+
+const ShortcutsDialog = lazy(() => import('./components/dialogs/ShortcutsDialog'))
 
 type ViewMode = ReadingViewMode
 
@@ -96,6 +100,7 @@ function AppWorkspace({
   const splitLayout = useSplitLayout()
   const [recentFilesHidden, setRecentFilesHidden] = useState(false)
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const [isReadingSettingsOpen, setIsReadingSettingsOpen] = useState(false)
   const [isDocxImportOpen, setIsDocxImportOpen] = useState(false)
   const [docxImportPhase, setDocxImportPhase] = useState<'checking' | 'idle' | 'installing' | 'converting'>('idle')
@@ -514,6 +519,11 @@ function AppWorkspace({
         windowFrame={windowFrame}
         onWindowPinError={() => showAppToast(t.windowPinFailed)}
         onAbout={handleOpenAboutFromAppMenu}
+        onShortcuts={() => {
+          closeMenu()
+          menuBarRef.current?.querySelector<HTMLButtonElement>('[data-menu-trigger="app"]')?.focus()
+          setIsShortcutsOpen(true)
+        }}
         onCheckUpdates={() => void handleCheckForUpdates()}
         onClearRecent={handleClearRecentFiles}
         onExportDocx={() => void handleExportDocx()}
@@ -781,6 +791,7 @@ function AppWorkspace({
         onSelectDocxPython={() => void selectDocxPython()}
         onOpenPythonDownload={() => void openExternalLink('https://www.python.org/downloads/')}
       />
+      {isShortcutsOpen ? <Suspense fallback={null}><ShortcutsDialog language={language} onClose={() => setIsShortcutsOpen(false)} /></Suspense> : null}
       <UnsavedChangesDialog open={pendingUnsavedTitle !== null} title={pendingUnsavedTitle ?? markdownDocument.title}
         saving={isSaving} canSave={fileAccess.supportsNativeFiles} onChoose={(choice) => void resolveUnsavedChanges(choice)} t={t} />
       <ExportWarningDialog open={isWordWarningOpen} onClose={dismissWordWarning}
@@ -827,8 +838,8 @@ function LocalizedApp(props: AppProps) {
 
 export default function App(props: AppProps) {
   return (
-    <Suspense fallback={<div className="app-language-loading" role="status" aria-label="MDView"><AppLogo /></div>}>
+    <ShortcutSettingsProvider><Suspense fallback={<div className="app-language-loading" role="status" aria-label="MDView"><AppLogo /></div>}>
       <LocalizedApp {...props} />
-    </Suspense>
+    </Suspense></ShortcutSettingsProvider>
   )
 }

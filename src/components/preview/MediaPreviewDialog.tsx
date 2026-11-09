@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Download, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import type { MarkdownPreviewLabels } from './previewTypes'
 import { PreviewImageSaveError, savePreviewImage } from '../../platform/previewImageSave'
+import { useShortcutSettings } from '../../platform/shortcutSettings'
 
 const MIN_SCALE = 0.1
 const MAX_SCALE = 8
@@ -19,6 +20,9 @@ export function MediaPreviewDialog({ src, alt, title, closeLabel, labels, onClos
   rasterizeSvg: boolean
   navigation?: { index: number; total: number; onNavigate: (direction: -1 | 1) => void }
 }) {
+  const shortcuts = useShortcutSettings()
+  const shortcutsRef = useRef(shortcuts)
+  useLayoutEffect(() => { shortcutsRef.current = shortcuts })
   const dialogRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -90,6 +94,7 @@ export function MediaPreviewDialog({ src, alt, title, closeLabel, labels, onClos
         event.stopImmediatePropagation()
         onCloseRef.current()
       } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        if (!shortcutsRef.current.isEnabled(event.key === 'ArrowLeft' ? 'previewPrevious' : 'previewNext')) return
         event.preventDefault()
         event.stopImmediatePropagation()
         navigateRef.current(event.key === 'ArrowLeft' ? -1 : 1)
@@ -156,9 +161,9 @@ export function MediaPreviewDialog({ src, alt, title, closeLabel, labels, onClos
           if (!buttons.includes(document.activeElement as HTMLButtonElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus() }
           else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
-        } else if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(1.25) }
-        else if (event.key === '-') { event.preventDefault(); zoom(0.8) }
-        else if (event.key === '0') { event.preventDefault(); updateTransform({ scale: 1, x: 0, y: 0 }) }
+        } else if ((event.key === '+' || event.key === '=') && shortcuts.isEnabled('previewZoomIn')) { event.preventDefault(); zoom(1.25) }
+        else if (event.key === '-' && shortcuts.isEnabled('previewZoomOut')) { event.preventDefault(); zoom(0.8) }
+        else if (event.key === '0' && shortcuts.isEnabled('previewReset')) { event.preventDefault(); updateTransform({ scale: 1, x: 0, y: 0 }) }
       }}>
       <div ref={viewportRef} className="image-preview-viewport"
         onClick={(event) => { if (event.currentTarget === event.target) onClose() }}>

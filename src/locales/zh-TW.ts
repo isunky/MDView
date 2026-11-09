@@ -16,7 +16,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
         "id": "bold",
         "name": "粗體",
         "syntax": "**粗體文字**",
-        "description": "使用兩個星號包圍需要強調的內容。"
+        "description": "使用兩個星號包圍文字。選中文字後再次點選粗體按鈕，可取消粗體。"
       },
       {
         "id": "italic",
@@ -58,7 +58,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
         "id": "bulleted-list",
         "name": "無序列表",
         "syntax": "- 第一項\n- 第二項",
-        "description": "每一項以 -、* 或 + 開頭。"
+        "description": "以 -、* 或 + 開頭。按 Enter 延續列表；空白項目按 Enter 可退出或返回上一層。"
       },
       {
         "id": "numbered-list",
@@ -70,13 +70,13 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
         "id": "nested-list",
         "name": "巢狀列表",
         "syntax": "- 父級專案\n  - 子級專案",
-        "description": "縮排子專案即可建立列表層級。"
+        "description": "縮排子項目可建立層級。Alt/Option + ↑/↓ 移動行，加 Shift 複製；Ctrl/⌘ + Shift + K 刪除行。"
       },
       {
         "id": "task-list",
         "name": "任務列表",
         "syntax": "- [ ] 待處理\n- [x] 已完成",
-        "description": "使用 [ ] 表示待處理，[x] 表示已完成。"
+        "description": "使用 [ ] 表示待處理，[x] 表示已完成。已完成項目後按 Enter，新任務會保持未勾選。"
       },
       {
         "id": "quote",
@@ -100,7 +100,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
         "id": "web-link",
         "name": "網頁連結",
         "syntax": "[OpenAI](https://openai.com)",
-        "description": "網頁連結會使用系統預設瀏覽器開啟。"
+        "description": "網頁連結以預設瀏覽器開啟。選取單行文字後貼上 HTTP(S) 網址，可直接建立連結。"
       },
       {
         "id": "auto-link",
@@ -142,7 +142,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
         "id": "table",
         "name": "對齊表格",
         "syntax": "| 名稱 | 狀態 |\n| :--- | ---: |\n| MDView | 可用 |",
-        "description": "在分隔行新增冒號控制列的左對齊、右對齊或居中。"
+        "description": "分隔行的冒號控制對齊。一般表格中按 Tab 跳轉儲存格，最後一格按 Tab 新增一行。"
       }
     ]
   },

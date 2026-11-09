@@ -5,7 +5,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'basic-formatting', title: 'Formato básico', items: [
       { id: 'headings', name: 'Encabezados', syntax: '# Encabezado 1\n## Encabezado 2\n### Encabezado 3', description: 'Usa entre uno y seis signos # para indicar el nivel del encabezado.' },
-      { id: 'bold', name: 'Negrita', syntax: '**Texto en negrita**', description: 'Rodea el texto que quieras destacar con dos asteriscos.' },
+      { id: 'bold', name: 'Negrita', syntax: '**Texto en negrita**', description: 'Rodea el texto con dos asteriscos. Selecciónalo y vuelve a pulsar Negrita para quitar el formato.' },
       { id: 'italic', name: 'Cursiva', syntax: '*Texto en cursiva*', description: 'Rodea el texto con un asterisco.' },
       { id: 'bold-italic', name: 'Negrita y cursiva', syntax: '***Texto en negrita y cursiva***', description: 'Combina ambos tipos de énfasis.' },
       { id: 'strikethrough', name: 'Tachado', syntax: '~~Texto eliminado~~', description: 'Sintaxis GFM para contenido que ya no es válido.' },
@@ -15,17 +15,17 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   },
   {
     id: 'lists-and-blocks', title: 'Listas y bloques', items: [
-      { id: 'bulleted-list', name: 'Lista con viñetas', syntax: '- Primer elemento\n- Segundo elemento', description: 'Empieza cada elemento con -, * o +.' },
+      { id: 'bulleted-list', name: 'Lista con viñetas', syntax: '- Primer elemento\n- Segundo elemento', description: 'Empieza con -, * o +. Enter continúa la lista; en un elemento vacío sale o vuelve al nivel anterior.' },
       { id: 'numbered-list', name: 'Lista numerada', syntax: '1. Primer elemento\n2. Segundo elemento', description: 'Empieza cada elemento con un número seguido de un punto.' },
-      { id: 'nested-list', name: 'Lista anidada', syntax: '- Elemento principal\n  - Subelemento', description: 'Aplica sangría a los subelementos para crear niveles.' },
-      { id: 'task-list', name: 'Lista de tareas', syntax: '- [ ] Tarea pendiente\n- [x] Tarea completada', description: 'Usa [ ] para tareas pendientes y [x] para las completadas.' },
+      { id: 'nested-list', name: 'Lista anidada', syntax: '- Elemento principal\n  - Subelemento', description: 'Aplica sangría a los subelementos. Alt/Option + ↑/↓ mueve líneas; añade Shift para copiar. Ctrl/⌘ + Shift + K las elimina.' },
+      { id: 'task-list', name: 'Lista de tareas', syntax: '- [ ] Tarea pendiente\n- [x] Tarea completada', description: 'Usa [ ] para pendientes y [x] para completadas. Enter tras una tarea completada crea otra sin marcar.' },
       { id: 'quote', name: 'Cita', syntax: '> Texto citado', description: 'Empieza un párrafo con > para crear un bloque de cita.' },
       { id: 'divider', name: 'Separador', syntax: '---', description: 'Escribe tres guiones en una línea independiente.' },
     ],
   },
   {
     id: 'links-and-media', title: 'Enlaces e imágenes', items: [
-      { id: 'web-link', name: 'Enlace web', syntax: '[OpenAI](https://openai.com)', description: 'Los enlaces web se abren en el navegador predeterminado.' },
+      { id: 'web-link', name: 'Enlace web', syntax: '[OpenAI](https://openai.com)', description: 'Se abre en el navegador predeterminado. Selecciona texto de una línea y pega una dirección HTTP(S) para crear un enlace.' },
       { id: 'auto-link', name: 'Enlace automático', syntax: '<https://example.com>', description: 'Rodea una URL con corchetes angulares para convertirla en un enlace.' },
       { id: 'local-link', name: 'Enlace a Markdown local', syntax: '[Guía de instalación](guide.md#installation)', description: 'Abre otro archivo Markdown y, si lo deseas, salta a un encabezado.' },
       { id: 'image', name: 'Imagen con ruta relativa', syntax: '![Texto alternativo](assets/image.png)', description: 'La ruta de la imagen se resuelve desde la carpeta del documento actual.' },
@@ -35,7 +35,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'code-and-tables', title: 'Código y tablas', items: [
       { id: 'code-block', name: 'Bloque de código', syntax: '```js\nconsole.log("Hello, MDView")\n```', description: 'Indica el lenguaje después de los acentos graves iniciales para resaltar la sintaxis.' },
-      { id: 'table', name: 'Tabla alineada', syntax: '| Nombre | Estado |\n| :--- | ---: |\n| MDView | Listo |', description: 'Usa dos puntos en la fila separadora para alinear las columnas.' },
+      { id: 'table', name: 'Tabla alineada', syntax: '| Nombre | Estado |\n| :--- | ---: |\n| MDView | Listo |', description: 'Usa dos puntos para alinear. En tablas normales, Tab cambia de celda y añade una fila al llegar al final.' },
     ],
   },
   {

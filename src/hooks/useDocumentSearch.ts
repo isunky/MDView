@@ -10,6 +10,7 @@ import {
   matchesShortcut,
 } from '../platform/keyboardShortcuts'
 import type { ReadingViewMode } from '../domain/readingSessions'
+import { useShortcutSettings } from '../platform/shortcutSettings'
 
 const SEARCH_QUERY_DEBOUNCE_MS = 120
 
@@ -30,6 +31,7 @@ export function useDocumentSearch({
   onOpen,
   viewMode,
 }: UseDocumentSearchOptions) {
+  const shortcuts = useShortcutSettings()
   const [isOpen, setIsOpen] = useState(false)
   const [isReplaceOpen, setIsReplaceOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -100,12 +102,13 @@ export function useDocumentSearch({
       }
 
       event.preventDefault()
+      if (!shortcuts.isEnabled('find')) return
       open()
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [enabled, open])
+  }, [enabled, open, shortcuts])
 
   const close = useCallback(() => {
     if (focusTimerRef.current) clearTimeout(focusTimerRef.current)

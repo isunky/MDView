@@ -78,4 +78,12 @@ describe('interface languages', () => {
       .toEqual(translations.en.syntaxReferenceSections.map((section) => [section.id, section.items.map((item) => item.id)]))
     expect(getLanguageLocale(language)).toBe(language)
   })
+
+  it.each(['en', 'zh', 'zh-TW', 'ja', 'ko', 'es'] as const)('includes localized editing tips in %s syntax examples', async (language) => {
+    const catalog = await loadTranslation(language)
+    const items = catalog.syntaxReferenceSections.flatMap((section) => section.items)
+    expect(items.find((item) => item.id === 'nested-list')?.description).toMatch(/Alt\/Option.*Shift.*K/)
+    expect(items.find((item) => item.id === 'web-link')?.description).toContain('HTTP(S)')
+    expect(items.find((item) => item.id === 'table')?.description).toContain('Tab')
+  })
 })

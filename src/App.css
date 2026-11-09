@@ -1380,6 +1380,32 @@
   box-shadow: var(--floating-shadow);
 }
 
+.shortcuts-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(600px, 100%);
+  max-height: min(760px, calc(100dvh - 32px));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: var(--floating-shadow);
+  overflow: hidden;
+}
+.shortcuts-header { padding: 24px 50px 16px 24px; border-bottom: 1px solid var(--border); }
+.shortcuts-header h2 { margin: 0; font-size: 19px; color: var(--text-strong); }
+.shortcuts-header p { margin: 8px 0 14px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.shortcuts-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.shortcuts-actions button { padding: 6px 12px; border: 1px solid var(--border); border-radius: 7px; color: var(--text); background: var(--surface-subtle); font: inherit; cursor: pointer; }
+.shortcuts-actions button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.shortcuts-actions button:disabled { opacity: .45; cursor: default; }
+.shortcuts-list { overflow-y: auto; padding: 4px 24px 22px; }
+.shortcuts-list h3 { margin: 18px 0 7px; color: var(--text-muted); font-size: 12px; }
+.shortcuts-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; min-height: 42px; padding: 6px 2px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+.shortcuts-row kbd { color: var(--text-muted); font: inherit; font-size: 12px; text-align: right; }
+.shortcuts-row input { width: 17px; height: 17px; margin: 0 2px; accent-color: var(--accent); cursor: pointer; }
+.shortcuts-navigation p { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+
 .update-dialog {
   position: relative;
   width: min(470px, 100%);

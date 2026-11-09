@@ -5,7 +5,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'basic-formatting', title: '기본 서식', items: [
       { id: 'headings', name: '제목', syntax: '# 제목 1\n## 제목 2\n### 제목 3', description: '#을 1~6개 사용해 제목 수준을 지정합니다.' },
-      { id: 'bold', name: '굵게', syntax: '**굵은 글씨**', description: '강조할 내용을 별표 두 개로 감쌉니다.' },
+      { id: 'bold', name: '굵게', syntax: '**굵은 글씨**', description: '내용을 별표 두 개로 감쌉니다. 텍스트를 선택하고 굵게 버튼을 다시 누르면 해제됩니다.' },
       { id: 'italic', name: '기울임꼴', syntax: '*기울임꼴 글씨*', description: '강조할 내용을 별표 한 개로 감쌉니다.' },
       { id: 'bold-italic', name: '굵은 기울임꼴', syntax: '***굵은 기울임꼴 글씨***', description: '굵게와 기울임꼴을 함께 적용합니다.' },
       { id: 'strikethrough', name: '취소선', syntax: '~~삭제된 내용~~', description: '더 이상 유효하지 않은 내용을 표시하는 GFM 문법입니다.' },
@@ -15,17 +15,17 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   },
   {
     id: 'lists-and-blocks', title: '목록과 블록', items: [
-      { id: 'bulleted-list', name: '글머리 기호 목록', syntax: '- 첫 번째 항목\n- 두 번째 항목', description: '각 항목을 -, *, + 중 하나로 시작합니다.' },
+      { id: 'bulleted-list', name: '글머리 기호 목록', syntax: '- 첫 번째 항목\n- 두 번째 항목', description: '-, *, +로 시작합니다. Enter로 다음 항목을 만들고, 빈 항목에서 Enter를 누르면 종료하거나 상위로 돌아갑니다.' },
       { id: 'numbered-list', name: '번호 매기기 목록', syntax: '1. 첫 번째 항목\n2. 두 번째 항목', description: '각 항목을 숫자와 마침표로 시작합니다.' },
-      { id: 'nested-list', name: '중첩 목록', syntax: '- 상위 항목\n  - 하위 항목', description: '하위 항목을 들여써서 목록의 계층을 만듭니다.' },
-      { id: 'task-list', name: '작업 목록', syntax: '- [ ] 미완료 작업\n- [x] 완료된 작업', description: '미완료 작업은 [ ], 완료된 작업은 [x]로 표시합니다.' },
+      { id: 'nested-list', name: '중첩 목록', syntax: '- 상위 항목\n  - 하위 항목', description: '하위 항목을 들여씁니다. Alt/Option + ↑/↓로 줄 이동, Shift를 더해 복사, Ctrl/⌘ + Shift + K로 삭제합니다.' },
+      { id: 'task-list', name: '작업 목록', syntax: '- [ ] 미완료 작업\n- [x] 완료된 작업', description: '미완료는 [ ], 완료는 [x]로 표시합니다. 완료 항목 뒤에서 Enter를 누르면 새 항목은 미완료로 시작합니다.' },
       { id: 'quote', name: '인용문', syntax: '> 인용할 내용', description: '문단 앞에 >를 붙여 인용 블록을 만듭니다.' },
       { id: 'divider', name: '구분선', syntax: '---', description: '별도의 줄에 하이픈 세 개를 입력합니다.' },
     ],
   },
   {
     id: 'links-and-media', title: '링크와 이미지', items: [
-      { id: 'web-link', name: '웹 링크', syntax: '[OpenAI](https://openai.com)', description: '웹 링크는 기본 브라우저에서 열립니다.' },
+      { id: 'web-link', name: '웹 링크', syntax: '[OpenAI](https://openai.com)', description: '기본 브라우저에서 열립니다. 한 줄의 텍스트를 선택하고 HTTP(S) 주소를 붙여 넣으면 링크가 만들어집니다.' },
       { id: 'auto-link', name: '자동 링크', syntax: '<https://example.com>', description: 'URL을 꺾쇠괄호로 감싸면 클릭할 수 있는 링크가 됩니다.' },
       { id: 'local-link', name: '로컬 Markdown 링크', syntax: '[설치 안내](guide.md#installation)', description: '다른 Markdown 파일을 열고 특정 제목으로 이동할 수 있습니다.' },
       { id: 'image', name: '상대 경로 이미지', syntax: '![대체 텍스트](assets/image.png)', description: '현재 문서가 있는 폴더를 기준으로 이미지를 불러옵니다.' },
@@ -35,7 +35,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'code-and-tables', title: '코드와 표', items: [
       { id: 'code-block', name: '코드 블록', syntax: '```js\nconsole.log("Hello, MDView")\n```', description: '시작 백틱 뒤에 언어 이름을 적으면 구문 강조가 적용됩니다.' },
-      { id: 'table', name: '표 정렬', syntax: '| 이름 | 상태 |\n| :--- | ---: |\n| MDView | 사용 가능 |', description: '구분 행에 콜론을 넣어 열의 왼쪽, 가운데, 오른쪽 정렬을 지정합니다.' },
+      { id: 'table', name: '표 정렬', syntax: '| 이름 | 상태 |\n| :--- | ---: |\n| MDView | 사용 가능 |', description: '콜론으로 열을 정렬합니다. 일반 표에서 Tab은 셀을 이동하며 마지막 셀에서는 새 행을 만듭니다.' },
     ],
   },
   {

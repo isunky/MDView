@@ -301,6 +301,9 @@ Table cell navigation supports standard Markdown tables, but not tables inside b
 行操作会处理当前行或选区覆盖的多行，均可撤销。
 Line commands apply to the current line or the selected lines and can be undone.
 
+在 **应用 → 快捷键** 中可查看、逐项启用或关闭快捷键，也可以全部开启或关闭。菜单、按钮及基本键盘导航仍可使用。
+Use **App → Keyboard shortcuts** to view, enable, or disable shortcuts individually or all at once. Menus, buttons, and basic keyboard navigation remain available.
+
 </details>
 
 <details>

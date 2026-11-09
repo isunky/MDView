@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Replace, Search, X } from 'lucide-react'
 import { useEffect, type KeyboardEvent, type RefObject } from 'react'
+import { useShortcutSettings } from '../../platform/shortcutSettings'
 
 export type DocumentSearchLabels = {
   clear: string
@@ -58,6 +59,7 @@ export function DocumentSearchBar({
   query,
   replacement,
 }: DocumentSearchBarProps) {
+  const shortcuts = useShortcutSettings()
   useEffect(() => {
     if (!isOpen) {
       return
@@ -82,6 +84,8 @@ export function DocumentSearchBar({
     if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
       return
     }
+
+    if (!shortcuts.isEnabled(event.shiftKey ? 'findPrevious' : 'findNext')) return
 
     event.preventDefault()
     onMove(event.shiftKey ? -1 : 1)
@@ -131,7 +135,7 @@ export function DocumentSearchBar({
             value={replacement}
             onChange={(event) => onReplacementChange(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+              if (event.key === 'Enter' && !event.nativeEvent.isComposing && shortcuts.isEnabled('replaceCurrent')) {
                 event.preventDefault()
                 onReplaceCurrent()
               }

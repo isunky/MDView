@@ -430,6 +430,24 @@ describe('MarkdownEditor', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows editing tips while keeping syntax examples copyable', async () => {
+    const user = userEvent.setup()
+    render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown 源码" t={translations.zh} />)
+    await user.click(screen.getByRole('button', { name: 'Markdown 语法参考' }))
+    expect(screen.getByText(/再次点击粗体按钮/)).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: '列表与区块' }))
+    expect(screen.getByText(/空项按回车可退出/)).toBeInTheDocument()
+    expect(screen.getByText(/Shift \+ K 删除行/)).toBeInTheDocument()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    fireEvent.click(screen.getByRole('button', { name: '复制无序列表语法' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('- 第一项\n- 第二项'))
+    await user.click(screen.getByRole('tab', { name: '链接与媒体' }))
+    expect(screen.getByText(/粘贴 HTTP\(S\) 网址/)).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: '代码与表格' }))
+    expect(screen.getByText(/最后一格按 Tab 新增行/)).toBeInTheDocument()
+  })
+
   it('supports keyboard navigation between syntax category tabs', async () => {
     const user = userEvent.setup()
     render(<MarkdownEditor value="" onChange={vi.fn()} label="Markdown source" t={labels} />)

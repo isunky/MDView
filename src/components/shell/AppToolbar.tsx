@@ -9,6 +9,7 @@ import { AppLogo } from './AppLogo'
 import { WindowControls } from './WindowControls'
 import { WindowPin } from './WindowPin'
 import { formatShortcut } from '../../platform/keyboardShortcuts'
+import { useShortcutSettings } from '../../platform/shortcutSettings'
 
 type ViewMode = 'preview' | 'edit' | 'split'
 
@@ -18,7 +19,7 @@ export function AppToolbar({
   language, menuBarRef, nativeFileTitle, recentFiles, supportsAppUpdates, t, updatePhase,
   updateActionTitle, viewMode, newTitle, openTitle, saveTitle, saveAsTitle,
   windowFrame,
-  onAbout, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
+  onAbout, onShortcuts, onCheckUpdates, onClearRecent, onExportDocx, onExportHtml, onExportPdf, onImportDocx,
   onLanguage, onNew, onOpen, onOpenRecent, onOpenReadingSettings, onReveal,
   onSave, onSaveAs, onToggleMenu, onViewMode, onMenuKeyDown, onFind, findTitle, isFindOpen,
   onWindowPinError,
@@ -52,6 +53,7 @@ export function AppToolbar({
   saveTitle: string
   saveAsTitle: string
   onAbout: () => void
+  onShortcuts?: () => void
   onCheckUpdates: () => void
   onClearRecent: () => void
   onExportDocx: () => void
@@ -74,6 +76,7 @@ export function AppToolbar({
   isFindOpen?: boolean
   onWindowPinError?: () => void
 }) {
+  const shortcuts = useShortcutSettings()
   const nativeFilesEnabled = nativeFileTitle === undefined
   const exportOptions = [
     { format: 'HTML', label: t.exportAsHtml, hint: t.exportHtmlSummary, description: t.exportHtmlHint, onClick: onExportHtml },
@@ -106,11 +109,11 @@ export function AppToolbar({
           <FolderOpen aria-hidden="true" /><span>{t.fileMenu}</span><ChevronDown aria-hidden="true" />
         </button>
         {activeMenu === 'file' ? <div className="action-menu-panel" id="file-menu-panel" role="menu" aria-labelledby="file-menu-trigger">
-          <button type="button" className="action-menu-item" aria-label={t.createNew} onClick={onNew} title={newTitle} role="menuitem"><FilePlus2 aria-hidden="true" /><span>{t.createNew}</span><kbd aria-hidden="true">{formatShortcut({ key: 'n' })}</kbd></button>
-          <button type="button" className="action-menu-item" aria-label={t.openMarkdownFile} onClick={onOpen} disabled={!nativeFilesEnabled} title={nativeFileTitle ?? openTitle} role="menuitem"><FolderOpen aria-hidden="true" /><span>{t.openMarkdownFile}</span><kbd aria-hidden="true">{formatShortcut({ key: 'o' })}</kbd></button>
+          <button type="button" className="action-menu-item" aria-label={t.createNew} onClick={onNew} title={shortcuts.isEnabled('new') ? newTitle : t.createNew} role="menuitem"><FilePlus2 aria-hidden="true" /><span>{t.createNew}</span>{shortcuts.isEnabled('new') ? <kbd aria-hidden="true">{formatShortcut({ key: 'n' })}</kbd> : null}</button>
+          <button type="button" className="action-menu-item" aria-label={t.openMarkdownFile} onClick={onOpen} disabled={!nativeFilesEnabled} title={nativeFileTitle ?? (shortcuts.isEnabled('open') ? openTitle : t.openMarkdownFile)} role="menuitem"><FolderOpen aria-hidden="true" /><span>{t.openMarkdownFile}</span>{shortcuts.isEnabled('open') ? <kbd aria-hidden="true">{formatShortcut({ key: 'o' })}</kbd> : null}</button>
           {onImportDocx ? <button type="button" className="action-menu-item" onClick={onImportDocx} disabled={!nativeFilesEnabled} title={nativeFileTitle} role="menuitem"><FileInput aria-hidden="true" />{t.importDocx}</button> : null}
-          <button type="button" className="action-menu-item" aria-label={t.save} onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveTitle} role="menuitem"><Save aria-hidden="true" /><span>{t.save}</span><kbd aria-hidden="true">{formatShortcut({ key: 's' })}</kbd></button>
-          <button type="button" className="action-menu-item" aria-label={t.saveAs} onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? saveAsTitle} role="menuitem"><Save aria-hidden="true" /><span>{t.saveAs}</span><kbd aria-hidden="true">{formatShortcut({ key: 's', shiftKey: true })}</kbd></button>
+          <button type="button" className="action-menu-item" aria-label={t.save} onClick={onSave} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? (shortcuts.isEnabled('save') ? saveTitle : t.save)} role="menuitem"><Save aria-hidden="true" /><span>{t.save}</span>{shortcuts.isEnabled('save') ? <kbd aria-hidden="true">{formatShortcut({ key: 's' })}</kbd> : null}</button>
+          <button type="button" className="action-menu-item" aria-label={t.saveAs} onClick={onSaveAs} disabled={isWelcomeVisible || !nativeFilesEnabled || isSaving} title={nativeFileTitle ?? (shortcuts.isEnabled('saveAs') ? saveAsTitle : t.saveAs)} role="menuitem"><Save aria-hidden="true" /><span>{t.saveAs}</span>{shortcuts.isEnabled('saveAs') ? <kbd aria-hidden="true">{formatShortcut({ key: 's', shiftKey: true })}</kbd> : null}</button>
           {!isWelcomeVisible ? <>
             <div className="action-menu-divider" />
             <div className="menu-export-heading"><Download aria-hidden="true" /><span>{t.exportMenu}</span>{isExporting ? <small role="status">{t.exportBusy}</small> : null}</div>
@@ -138,7 +141,7 @@ export function AppToolbar({
       <div className="action-menu">
         <button type="button" id="reading-menu-trigger" data-menu-trigger="reading" onClick={() => onToggleMenu('reading')} aria-label={t.readingMenu} title={t.readingMenu} aria-haspopup="menu" aria-controls="reading-menu-panel" aria-expanded={activeMenu === 'reading'}><BookOpen aria-hidden="true" /><span>{t.readingMenu}</span><ChevronDown aria-hidden="true" /></button>
         {activeMenu === 'reading' ? <div className="action-menu-panel action-menu-panel-compact" id="reading-menu-panel" role="menu" aria-labelledby="reading-menu-trigger">
-          {onFind ? <button type="button" className={`action-menu-item${isFindOpen ? ' active' : ''}`} role="menuitem" onClick={onFind} disabled={isWelcomeVisible} aria-label={t.find} aria-expanded={isFindOpen} aria-controls="document-search-panel" title={findTitle ?? t.find}><Search aria-hidden="true" /><span>{t.find}</span><kbd aria-hidden="true">{formatShortcut({ key: 'f' })}</kbd></button> : null}
+          {onFind ? <button type="button" className={`action-menu-item${isFindOpen ? ' active' : ''}`} role="menuitem" onClick={onFind} disabled={isWelcomeVisible} aria-label={t.find} aria-expanded={isFindOpen} aria-controls="document-search-panel" title={shortcuts.isEnabled('find') ? findTitle ?? t.find : t.find}><Search aria-hidden="true" /><span>{t.find}</span>{shortcuts.isEnabled('find') ? <kbd aria-hidden="true">{formatShortcut({ key: 'f' })}</kbd> : null}</button> : null}
           <button type="button" className="action-menu-item" role="menuitem" onClick={onOpenReadingSettings} aria-haspopup="dialog"><SlidersHorizontal aria-hidden="true" /><span>{t.readingSettings}</span></button>
         </div> : null}
       </div>
@@ -149,6 +152,7 @@ export function AppToolbar({
           {supportedLanguages.map((option) => <button key={option.id} type="button" lang={option.locale} className={`action-menu-item ${language === option.id ? 'active' : ''}`} onClick={() => onLanguage(option.id)} role="menuitem" aria-current={language === option.id ? 'true' : undefined}><span>{option.name}</span>{language === option.id ? <Check className="menu-selection-check" aria-hidden="true" /> : null}</button>)}
           <div className="action-menu-divider" />
           {supportsAppUpdates ? <button type="button" className="action-menu-item" onClick={onCheckUpdates} disabled={updateActionTitle !== undefined || updatePhase === 'checking'} title={updateActionTitle} role="menuitem">{updatePhase === 'checking' ? t.updateChecking : t.checkForUpdates}</button> : null}
+          {onShortcuts ? <button type="button" className="action-menu-item" onClick={onShortcuts} role="menuitem" aria-haspopup="dialog">{{ zh: '快捷键', 'zh-TW': '快捷鍵', en: 'Keyboard shortcuts', ja: 'キーボードショートカット', ko: '키보드 단축키', es: 'Atajos de teclado' }[language]}</button> : null}
           <button type="button" className="action-menu-item" onClick={onAbout} role="menuitem">{t.about}</button>
         </div> : null}
       </div>

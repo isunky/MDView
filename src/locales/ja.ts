@@ -5,7 +5,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'basic-formatting', title: '基本の書式', items: [
       { id: 'headings', name: '見出し', syntax: '# 見出し 1\n## 見出し 2\n### 見出し 3', description: '# の数を 1〜6 個にして見出しのレベルを指定します。' },
-      { id: 'bold', name: '太字', syntax: '**太字のテキスト**', description: '強調するテキストを 2 個のアスタリスクで囲みます。' },
+      { id: 'bold', name: '太字', syntax: '**太字のテキスト**', description: '文字を 2 個のアスタリスクで囲みます。文字を選び、太字ボタンを再度押すと解除できます。' },
       { id: 'italic', name: '斜体', syntax: '*斜体のテキスト*', description: 'テキストを 1 個のアスタリスクで囲みます。' },
       { id: 'bold-italic', name: '太字と斜体', syntax: '***太字と斜体のテキスト***', description: '太字と斜体を同時に適用します。' },
       { id: 'strikethrough', name: '取り消し線', syntax: '~~削除したテキスト~~', description: '無効になった内容を示す GFM の書式です。' },
@@ -15,17 +15,17 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   },
   {
     id: 'lists-and-blocks', title: 'リストとブロック', items: [
-      { id: 'bulleted-list', name: '箇条書き', syntax: '- 項目 1\n- 項目 2', description: '各項目を -、*、+ のいずれかで始めます。' },
+      { id: 'bulleted-list', name: '箇条書き', syntax: '- 項目 1\n- 項目 2', description: '-、*、+ で始めます。Enter で次の項目へ、空の項目で Enter を押すと終了または親の階層に戻ります。' },
       { id: 'numbered-list', name: '番号付きリスト', syntax: '1. 項目 1\n2. 項目 2', description: '各項目を数字とピリオドで始めます。' },
-      { id: 'nested-list', name: '入れ子のリスト', syntax: '- 親項目\n  - 子項目', description: '子項目を字下げして階層を作ります。' },
-      { id: 'task-list', name: 'タスクリスト', syntax: '- [ ] 未完了のタスク\n- [x] 完了したタスク', description: '未完了には [ ]、完了には [x] を使います。' },
+      { id: 'nested-list', name: '入れ子のリスト', syntax: '- 親項目\n  - 子項目', description: '子項目を字下げします。Alt/Option + ↑/↓ で行を移動、Shift を加えて複製、Ctrl/⌘ + Shift + K で削除します。' },
+      { id: 'task-list', name: 'タスクリスト', syntax: '- [ ] 未完了のタスク\n- [x] 完了したタスク', description: '未完了には [ ]、完了には [x] を使います。完了項目の後に Enter を押すと未完了の項目ができます。' },
       { id: 'quote', name: '引用', syntax: '> 引用文', description: '段落の先頭に > を付けます。' },
       { id: 'divider', name: '区切り線', syntax: '---', description: 'ハイフンを 3 個、独立した行に書きます。' },
     ],
   },
   {
     id: 'links-and-media', title: 'リンクと画像', items: [
-      { id: 'web-link', name: 'Web リンク', syntax: '[OpenAI](https://openai.com)', description: 'Web リンクは既定のブラウザーで開きます。' },
+      { id: 'web-link', name: 'Web リンク', syntax: '[OpenAI](https://openai.com)', description: '既定のブラウザーで開きます。1 行の文字を選び HTTP(S) の URL を貼り付けるとリンクを作成できます。' },
       { id: 'auto-link', name: '自動リンク', syntax: '<https://example.com>', description: 'URL を山括弧で囲むとリンクになります。' },
       { id: 'local-link', name: 'Markdown ファイルへのリンク', syntax: '[インストールガイド](guide.md#installation)', description: '別の Markdown ファイルを開き、見出しへ移動することもできます。' },
       { id: 'image', name: '相対パスの画像', syntax: '![代替テキスト](assets/image.png)', description: '現在の文書があるフォルダーを基準に画像を読み込みます。' },
@@ -35,7 +35,7 @@ const syntaxReferenceSections: MarkdownSyntaxSection[] = [
   {
     id: 'code-and-tables', title: 'コードと表', items: [
       { id: 'code-block', name: 'コードブロック', syntax: '```js\nconsole.log("Hello, MDView")\n```', description: '開始のバッククォートの後に言語名を書くと構文が強調表示されます。' },
-      { id: 'table', name: '表の配置', syntax: '| 名前 | 状態 |\n| :--- | ---: |\n| MDView | 利用可能 |', description: '区切り行のコロンで列の左寄せ・中央揃え・右寄せを指定します。' },
+      { id: 'table', name: '表の配置', syntax: '| 名前 | 状態 |\n| :--- | ---: |\n| MDView | 利用可能 |', description: 'コロンで列を揃えます。通常の表では Tab でセルを移動し、最後のセルで押すと行が追加されます。' },
     ],
   },
   {

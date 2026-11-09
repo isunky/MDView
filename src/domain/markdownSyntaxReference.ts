@@ -45,7 +45,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       title: 'Basic formatting',
       items: [
         { id: 'headings', name: 'Headings', syntax: sharedSyntax.headings, description: 'Use one to six # characters for heading levels 1 through 6.' },
-        { id: 'bold', name: 'Bold', syntax: sharedSyntax.bold, description: 'Use two asterisks around important text.' },
+        { id: 'bold', name: 'Bold', syntax: sharedSyntax.bold, description: 'Use two asterisks around important text. Select the text and choose Bold again to remove it.' },
         { id: 'italic', name: 'Italic', syntax: sharedSyntax.italic, description: 'Use one asterisk around emphasized text.' },
         { id: 'bold-italic', name: 'Bold italic', syntax: sharedSyntax.boldItalic, description: 'Combine bold and italic emphasis.' },
         { id: 'strikethrough', name: 'Strikethrough', syntax: sharedSyntax.strikethrough, description: 'GFM syntax for text that is no longer applicable.' },
@@ -57,10 +57,10 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       id: 'lists-and-blocks',
       title: 'Lists and blocks',
       items: [
-        { id: 'bulleted-list', name: 'Bulleted list', syntax: sharedSyntax.bulletedList, description: 'Start each item with -, * or +.' },
+        { id: 'bulleted-list', name: 'Bulleted list', syntax: sharedSyntax.bulletedList, description: 'Start each item with -, * or +. Enter continues the list; Enter on an empty item exits or returns to its parent.' },
         { id: 'numbered-list', name: 'Numbered list', syntax: sharedSyntax.numberedList, description: 'Start each item with a number and a period.' },
-        { id: 'nested-list', name: 'Nested list', syntax: sharedSyntax.nestedList, description: 'Indent child items beneath their parent.' },
-        { id: 'task-list', name: 'Task list', syntax: sharedSyntax.taskList, description: 'Use [ ] for pending and [x] for completed tasks.' },
+        { id: 'nested-list', name: 'Nested list', syntax: sharedSyntax.nestedList, description: 'Indent child items. Alt/Option + ↑/↓ moves lines; add Shift to copy. Ctrl/⌘ + Shift + K deletes lines.' },
+        { id: 'task-list', name: 'Task list', syntax: sharedSyntax.taskList, description: 'Use [ ] for pending and [x] for completed tasks. Enter after a completed task starts an unchecked one.' },
         { id: 'quote', name: 'Blockquote', syntax: sharedSyntax.quote, description: 'Start a paragraph with > to create a quote.' },
         { id: 'divider', name: 'Divider', syntax: sharedSyntax.divider, description: 'Place three hyphens on their own line.' },
       ],
@@ -69,7 +69,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       id: 'links-and-media',
       title: 'Links and media',
       items: [
-        { id: 'web-link', name: 'Web link', syntax: sharedSyntax.webLink, description: 'Web links open in the default browser.' },
+        { id: 'web-link', name: 'Web link', syntax: sharedSyntax.webLink, description: 'Web links open in the default browser. Select text on one line and paste an HTTP(S) address to create a link.' },
         { id: 'auto-link', name: 'Automatic link', syntax: sharedSyntax.autoLink, description: 'Angle brackets turn a URL into a clickable link.' },
         { id: 'local-link', name: 'Local Markdown link', syntax: sharedSyntax.localLink, description: 'Open another Markdown file and optionally jump to a heading.' },
         { id: 'image', name: 'Relative image', syntax: sharedSyntax.image, description: 'Resolve an image path relative to the current document.' },
@@ -81,7 +81,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       title: 'Code and tables',
       items: [
         { id: 'code-block', name: 'Fenced code block', syntax: sharedSyntax.codeBlock, description: 'Add a language after the opening fence for syntax highlighting.' },
-        { id: 'table', name: 'Aligned table', syntax: sharedSyntax.table, description: 'Use colons in the separator row to align a column.' },
+        { id: 'table', name: 'Aligned table', syntax: sharedSyntax.table, description: 'Use colons to align columns. In standard tables, Tab moves between cells and adds a row at the end.' },
       ],
     },
     {
@@ -110,7 +110,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       title: '基础排版',
       items: [
         { id: 'headings', name: '标题', syntax: '# 一级标题\n## 二级标题\n### 三级标题', description: '使用 1 至 6 个 # 表示一级到六级标题。' },
-        { id: 'bold', name: '粗体', syntax: '**粗体文字**', description: '使用两个星号包围需要强调的内容。' },
+        { id: 'bold', name: '粗体', syntax: '**粗体文字**', description: '使用两个星号包围文字。选中文字后再次点击粗体按钮，可取消粗体。' },
         { id: 'italic', name: '斜体', syntax: '*斜体文字*', description: '使用一个星号包围需要强调的内容。' },
         { id: 'bold-italic', name: '粗斜体', syntax: '***粗斜体文字***', description: '同时使用粗体和斜体效果。' },
         { id: 'strikethrough', name: '删除线', syntax: '~~已删除文字~~', description: '用于表示已经失效或不再适用的内容。' },
@@ -122,10 +122,10 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       id: 'lists-and-blocks',
       title: '列表与区块',
       items: [
-        { id: 'bulleted-list', name: '无序列表', syntax: '- 第一项\n- 第二项', description: '每一项以 -、* 或 + 开头。' },
+        { id: 'bulleted-list', name: '无序列表', syntax: '- 第一项\n- 第二项', description: '以 -、* 或 + 开头。按回车续行；空项按回车可退出或返回上一级。' },
         { id: 'numbered-list', name: '有序列表', syntax: '1. 第一项\n2. 第二项', description: '每一项以数字和句点开头。' },
-        { id: 'nested-list', name: '嵌套列表', syntax: '- 父级项目\n  - 子级项目', description: '缩进子项目即可创建列表层级。' },
-        { id: 'task-list', name: '任务列表', syntax: '- [ ] 待处理\n- [x] 已完成', description: '使用 [ ] 表示待处理，[x] 表示已完成。' },
+        { id: 'nested-list', name: '嵌套列表', syntax: '- 父级项目\n  - 子级项目', description: '缩进子项可创建层级。Alt/Option + ↑/↓ 移动行，加 Shift 复制；Ctrl/⌘ + Shift + K 删除行。' },
+        { id: 'task-list', name: '任务列表', syntax: '- [ ] 待处理\n- [x] 已完成', description: '使用 [ ] 表示待处理，[x] 表示已完成。已完成项后按回车，新任务会保持未勾选。' },
         { id: 'quote', name: '引用', syntax: '> 引用内容', description: '在段落开头添加 > 创建引用区块。' },
         { id: 'divider', name: '分隔线', syntax: sharedSyntax.divider, description: '单独一行输入三个连字符。' },
       ],
@@ -134,7 +134,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       id: 'links-and-media',
       title: '链接与媒体',
       items: [
-        { id: 'web-link', name: '网页链接', syntax: '[OpenAI](https://openai.com)', description: '网页链接会使用系统默认浏览器打开。' },
+        { id: 'web-link', name: '网页链接', syntax: '[OpenAI](https://openai.com)', description: '网页链接用默认浏览器打开。选中单行文字后粘贴 HTTP(S) 网址，可直接生成链接。' },
         { id: 'auto-link', name: '自动链接', syntax: sharedSyntax.autoLink, description: '使用尖括号包围网址即可生成可点击链接。' },
         { id: 'local-link', name: '本地 Markdown 链接', syntax: '[安装指南](guide.md#安装)', description: '打开其他 Markdown 文件，并可跳转到指定标题。' },
         { id: 'image', name: '相对路径图片', syntax: '![替代文本](assets/image.png)', description: '图片路径以当前 Markdown 文件所在目录为基准。' },
@@ -146,7 +146,7 @@ export const markdownSyntaxReference: Record<'en' | 'zh', MarkdownSyntaxSection[
       title: '代码与表格',
       items: [
         { id: 'code-block', name: '围栏代码块', syntax: sharedSyntax.codeBlock, description: '在开始标记后注明语言即可启用语法高亮。' },
-        { id: 'table', name: '对齐表格', syntax: '| 名称 | 状态 |\n| :--- | ---: |\n| MDView | 可用 |', description: '在分隔行添加冒号控制列的左对齐、右对齐或居中。' },
+        { id: 'table', name: '对齐表格', syntax: '| 名称 | 状态 |\n| :--- | ---: |\n| MDView | 可用 |', description: '分隔行的冒号控制对齐。普通表格中按 Tab 跳转单元格，最后一格按 Tab 新增行。' },
       ],
     },
     {

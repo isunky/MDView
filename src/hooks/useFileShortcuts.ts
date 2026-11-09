@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useMemo } from 'react'
+import { useShortcutSettings } from '../platform/shortcutSettings'
 import {
   detectShortcutPlatform,
   matchesShortcut,
@@ -17,6 +18,7 @@ type UseFileShortcutsOptions = {
 
 export function useFileShortcuts(options: UseFileShortcutsOptions): ShortcutPlatform {
   const platform = useMemo(() => detectShortcutPlatform(), [])
+  const shortcuts = useShortcutSettings()
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     const isNewShortcut = matchesShortcut(event, { key: 'n' }, platform)
     const isOpenShortcut = matchesShortcut(event, { key: 'o' }, platform)
@@ -28,6 +30,7 @@ export function useFileShortcuts(options: UseFileShortcutsOptions): ShortcutPlat
     }
 
     event.preventDefault()
+    if (!shortcuts.isEnabled(isNewShortcut ? 'new' : isOpenShortcut ? 'open' : isSaveAsShortcut ? 'saveAs' : 'save')) return
     options.onCloseMenu()
 
     if (isNewShortcut) {

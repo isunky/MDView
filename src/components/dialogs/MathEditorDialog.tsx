@@ -1,4 +1,5 @@
 import { useDialogFocus } from '../../hooks/useDialogFocus'
+import { useShortcutSettings } from '../../platform/shortcutSettings'
 import { Check, Sigma, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { MathDisplayMode } from '../../domain/markdownMath'
@@ -47,6 +48,7 @@ export function MathEditorDialog({
   onClose: () => void
   onConfirm: (latex: string, mode: MathDisplayMode) => void
 }) {
+  const shortcuts = useShortcutSettings()
   const dialogRef = useDialogFocus(open, onClose)
   const [latex, setLatex] = useState(initialLatex)
   const [mode, setMode] = useState(initialMode)
@@ -95,7 +97,7 @@ export function MathEditorDialog({
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
-    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && canConfirm) {
+    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && canConfirm && !event.nativeEvent.isComposing && shortcuts.isEnabled('mathConfirm')) {
       event.preventDefault()
       onConfirm(latex, mode)
     }
