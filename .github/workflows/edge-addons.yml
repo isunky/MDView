@@ -114,13 +114,26 @@ jobs:
             done
           }
 
-          curl --fail-with-body --request POST \
+          if ! upload_status="$(curl --silent --show-error --request POST \
             "${headers[@]}" \
             -H 'Content-Type: application/zip' \
             --dump-header "$upload_headers" \
             --output /dev/null \
+            --write-out '%{http_code}' \
             --upload-file dist/MDView-edge.zip \
-            "${base_url}/draft/package"
+            "${base_url}/draft/package")"; then
+            echo '::error::Could not connect to Edge Add-ons to upload the package.'
+            exit 1
+          fi
+
+          if [[ "$upload_status" == 401 ]]; then
+            echo '::error::Edge Add-ons returned HTTP 401. Check that EDGE_ADDONS_API_KEY is valid and matches EDGE_ADDONS_CLIENT_ID in Microsoft Partner Center.'
+            exit 1
+          fi
+          if [[ ! "$upload_status" =~ ^2[0-9][0-9]$ ]]; then
+            echo "::error::Edge Add-ons package upload returned HTTP ${upload_status}."
+            exit 1
+          fi
 
           upload_operation_id="$(read_operation_id "$upload_headers")"
           if [[ -z "$upload_operation_id" ]]; then
