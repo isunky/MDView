@@ -17,7 +17,7 @@
   "license": "GPL-3.0",
   "type": "module",
   "engines": {
-    "node": "24.x"
+    "node": "26.x"
   },
   "scripts": {
     "dev": "vite",
@@ -71,7 +71,7 @@
     "@testing-library/user-event": "^14.6.8",
     "@types/katex": "^0.16.8",
     "@types/mdast": "^4.0.4",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@~7.0.2",
