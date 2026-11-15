@@ -18,7 +18,7 @@
     &nbsp;
     <a href="docs/USER_GUIDE.zh-CN.md"><img alt="图文使用手册，立即查阅" src="https://img.shields.io/badge/%E5%9B%BE%E6%96%87%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C-%E7%AB%8B%E5%8D%B3%E6%9F%A5%E9%98%85-087f75?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white&amp;labelColor=164b45" /></a>
   </p>
-  <p><strong>Version / 版本：</strong>3.8.0 · <a href="https://www.sunky.net">Sunky</a></p>
+  <p><strong>Version / 版本：</strong>3.8.1 · <a href="https://www.sunky.net">Sunky</a></p>
 </div>
 
 ## 界面预览 / Preview
@@ -245,9 +245,9 @@ If the build cannot finish, explain the specific blocker.
 <details>
 <summary>Mac 环境、手动命令与签名 / Mac prerequisites, commands, and signing</summary>
 
-准备 [Node.js 24](https://nodejs.org/en/download)、[Rust/Cargo 1.90 或更新的 stable 版本](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
+准备 [Node.js 26](https://nodejs.org/en/download)、[Rust/Cargo 1.90 或更新的 stable 版本](https://rustup.rs/) 和 Xcode Command Line Tools；详见 [Tauri 环境要求](https://v2.tauri.app/start/prerequisites/)。
 
-Install Node.js 24, Rust/Cargo 1.90 or newer (stable recommended), and Xcode Command Line Tools. See the Tauri prerequisites linked above.
+Install Node.js 26, Rust/Cargo 1.90 or newer (stable recommended), and Xcode Command Line Tools. See the Tauri prerequisites linked above.
 
 ```bash
 # 仅在缺少 Apple 编译工具时执行 / Only if Apple's build tools are missing
@@ -329,7 +329,7 @@ Use `$...$` for inline math and `$$` on separate lines for display math. Click `
 
 技术栈 / Stack：Tauri 2 · React 19 · TypeScript · Vite。
 
-准备 Node.js 24、Rust/Cargo 1.90 或更新版本和[对应平台构建工具](https://v2.tauri.app/start/prerequisites/)，在源码目录运行： / Install Node.js 24, Rust/Cargo 1.90 or newer, and platform build tools, then run from the source directory:
+准备 Node.js 26、Rust/Cargo 1.90 或更新版本和[对应平台构建工具](https://v2.tauri.app/start/prerequisites/)，在源码目录运行： / Install Node.js 26, Rust/Cargo 1.90 or newer, and platform build tools, then run from the source directory:
 
 ```bash
 npm ci
@@ -374,8 +374,8 @@ SignPath signing applies to releases after configuration and approval. Create th
 
 | 项目 / Item | 内容 / Value |
 | --- | --- |
-| 当前版本 | 3.8.0 |
-| Version | 3.8.0 |
+| 当前版本 | 3.8.1 |
+| Version | 3.8.1 |
 | 作者 / Author | [Sunky](https://www.sunky.net) |
 | 许可证 / License | [GPL-3.0](LICENSE) |
 
