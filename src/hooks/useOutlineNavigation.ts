@@ -60,6 +60,7 @@ export function useOutlineNavigation({
   const [activeOutlineId, setActiveOutlineId] = useState<string | null>(null)
   const headingPositionsRef = useRef<OutlineHeadingPosition[]>([])
   const jumpLockRef = useRef<string | null>(null)
+  const clampedScrollTopRef = useRef<number | null>(null)
   const jumpSettleTimeoutRef = useRef<number | null>(null)
   const allItems = useMemo(
     () => isPreview
@@ -128,6 +129,9 @@ export function useOutlineNavigation({
       return
     }
 
+    if (jumpLockRef.current || previewPanel.scrollTop === clampedScrollTopRef.current) return
+    clampedScrollTopRef.current = null
+
     const nextActiveId = findActiveOutlineId(
       headingPositionsRef.current,
       previewPanel.scrollTop,
@@ -142,9 +146,15 @@ export function useOutlineNavigation({
       jumpSettleTimeoutRef.current = null
     }
 
+    const position = headingPositionsRef.current.find((item) => item.id === jumpLockRef.current)
     jumpLockRef.current = null
+    const previewPanel = previewPanelRef.current
+    if (previewPanel?.clientHeight && position && position.top > previewPanel.scrollTop + PREVIEW_HEADING_ACTIVE_OFFSET) {
+      clampedScrollTopRef.current = previewPanel.scrollTop
+      return
+    }
     updateActiveOutlineFromPreview()
-  }, [updateActiveOutlineFromPreview])
+  }, [previewPanelRef, updateActiveOutlineFromPreview])
 
   const scheduleJumpRelease = useCallback(() => {
     if (jumpSettleTimeoutRef.current !== null) {
@@ -166,12 +176,15 @@ export function useOutlineNavigation({
   }, [isOutlineOpen, outlineDepth, outlineWidth])
 
   useEffect(() => {
+    jumpLockRef.current = null
+    clampedScrollTopRef.current = null
     return () => {
       if (jumpSettleTimeoutRef.current !== null) {
         window.clearTimeout(jumpSettleTimeoutRef.current)
+        jumpSettleTimeoutRef.current = null
       }
     }
-  }, [])
+  }, [content, documentSessionId, isPreview])
 
   useEffect(() => {
     if (!pendingHeadingId) {
@@ -183,6 +196,7 @@ export function useOutlineNavigation({
       const previewPanel = previewPanelRef.current
       if (outlineIds.includes(headingId)) {
         setActiveOutlineId(headingId)
+        clampedScrollTopRef.current = null
         jumpLockRef.current = headingId
         scheduleJumpRelease()
       }
@@ -338,6 +352,7 @@ export function useOutlineNavigation({
   const handleOutlineJump = useCallback((id: string) => {
     const previewPanel = previewPanelRef.current
     setActiveOutlineId(id)
+    clampedScrollTopRef.current = null
     jumpLockRef.current = id
     scheduleJumpRelease()
 

@@ -95,6 +95,40 @@ test('opens a markdown file through the file menu', async ({ page }) => {
   await expect(page.getByText('E2E Opened.md', { exact: true })).toBeVisible()
 })
 
+test('keeps the chosen outline item selected in a document that cannot scroll', async ({ page }) => {
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  await page.getByRole('textbox', { name: 'Markdown source' }).fill('# Intro\n\n## First\n\n## Second\n\n## Third')
+  await page.getByRole('button', { name: 'Preview markdown' }).click()
+  const preview = page.getByLabel('Preview panel')
+  await expect(page.getByRole('heading', { name: 'Third', exact: true })).toBeVisible()
+  expect(await preview.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  for (const name of ['Second', 'Third']) {
+    const item = page.getByRole('button', { name: `Jump to ${name}` })
+    await item.click()
+    await page.waitForTimeout(350)
+    await expect(item).toHaveAttribute('aria-current', 'location')
+  }
+})
+
+test('keeps a bottom-clamped outline selection until the reader scrolls again', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 650 })
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const paragraphs = Array.from({ length: 12 }, () => 'A paragraph with enough text to make the document scroll.').join('\n\n')
+  await page.getByRole('textbox', { name: 'Markdown source' }).fill(`# Intro\n\n${paragraphs}\n\n## First ending\n\nText.\n\n## Second ending\n\nText.`)
+  await page.getByRole('button', { name: 'Preview markdown' }).click()
+  const panel = page.getByLabel('Preview panel')
+  const second = page.getByRole('button', { name: 'Jump to Second ending' })
+  await expect(second).toBeVisible()
+  await second.click()
+  await expect.poll(() => panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  await page.waitForTimeout(700)
+  await expect(second).toHaveAttribute('aria-current', 'location')
+  await panel.hover()
+  await page.mouse.wheel(0, -1200)
+  await expect.poll(() => panel.evaluate((element) => element.scrollTop)).toBeLessThan(10)
+  await expect(page.getByRole('button', { name: 'Jump to Intro' })).toHaveAttribute('aria-current', 'location')
+})
+
 test('searches a long preview without rebuilding its rendered document', async ({ page }) => {
   await page.getByRole('button', { name: 'Create new markdown file' }).click()
   const editor = page.getByRole('textbox', { name: 'Markdown source' })

@@ -413,6 +413,32 @@ describe('App', () => {
     )
   })
 
+  it('keeps a clicked heading selected when it cannot reach the top, until the reader scrolls', async () => {
+    const user = userEvent.setup()
+    renderApp({ fileAccess: createFileAccess({ startupFile: file('/tmp/short.md', '# Intro\n\n## First\n\n## Second') }) })
+    const panel = await screen.findByLabelText('Preview panel')
+    const first = await screen.findByRole('heading', { name: 'First' })
+    const second = await screen.findByRole('heading', { name: 'Second' })
+    Object.defineProperty(panel, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(panel, 'scrollHeight', { configurable: true, value: 600 })
+    panel.scrollTop = 100
+    panel.scrollTo = vi.fn()
+    mockElementTop(panel, 100)
+    mockElementTop(first, 70)
+    mockElementTop(second, 350)
+    fireEvent(window, new Event('resize'))
+    await user.click(screen.getByRole('button', { name: 'Jump to Second' }))
+    await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 200)) })
+    expect(screen.getByRole('button', { name: 'Jump to Second' })).toHaveAttribute('aria-current', 'location')
+    fireEvent(window, new Event('resize'))
+    await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 30)) })
+    expect(screen.getByRole('button', { name: 'Jump to Second' })).toHaveAttribute('aria-current', 'location')
+    fireEvent.wheel(panel, { deltaY: -100 })
+    panel.scrollTop = 70
+    fireEvent.scroll(panel)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Jump to First' })).toHaveAttribute('aria-current', 'location'))
+  })
+
 })
 
 function renderApp(props: ComponentProps<typeof App>) {

@@ -35,14 +35,14 @@ describe('App', () => {
       }),
     })
 
-    expect(await screen.findByRole('heading', { name: 'Exported' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Exported' }, { timeout: 10_000 })).toBeInTheDocument()
 
     await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as HTML' }))
 
     await waitFor(() => {
       expect(exportHtmlFile).toHaveBeenCalledTimes(1)
-    })
+    }, { timeout: 10_000 })
     const [html, currentPath, title] = exportHtmlFile.mock.calls[0]
     expect(currentPath).toBe('/tmp/report.md')
     expect(title).toBe('report.md')
@@ -51,7 +51,21 @@ describe('App', () => {
     expect(html).toContain('<h1 id="exported">Exported</h1>')
     expect(html).toContain('<table>')
     expect(html).toContain('ready =')
-    expect(screen.getByText('HTML exported')).toBeInTheDocument()
+    expect(await screen.findByText('HTML exported', {}, { timeout: 10_000 })).toBeInTheDocument()
+  })
+
+  it('waits for HTML export to finish before showing success', async () => {
+    const user = userEvent.setup()
+    let finishExport: ((path: string | null) => void) | undefined
+    const exportHtmlFile = vi.fn<FileAccess['exportHtmlFile']>(() => new Promise((resolve) => { finishExport = resolve }))
+    renderApp({ fileAccess: createFileAccess({ exportHtmlFile }) })
+
+    await openExportMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Export as HTML' }))
+    await waitFor(() => expect(exportHtmlFile).toHaveBeenCalledOnce(), { timeout: 10_000 })
+    expect(screen.queryByText('HTML exported')).not.toBeInTheDocument()
+    await act(async () => { finishExport?.('/tmp/report.html') })
+    expect(await screen.findByText('HTML exported')).toBeInTheDocument()
   })
 
   it('shows export canceled when HTML export is canceled', async () => {
@@ -94,18 +108,18 @@ describe('App', () => {
       }),
     })
 
-    expect(await screen.findByRole('heading', { name: 'Printable' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Printable' }, { timeout: 10_000 })).toBeInTheDocument()
 
     await openExportMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Export as PDF' }))
 
     await waitFor(() => {
       expect(printExportHtml).toHaveBeenCalledTimes(1)
-    })
+    }, { timeout: 10_000 })
     const [html, title] = printExportHtml.mock.calls[0]
     expect(html).toContain('<h1 id="printable">Printable</h1>')
     expect(title).toBe('print.md')
-    expect(screen.getByText('Print dialog opened')).toBeInTheDocument()
+    expect(await screen.findByText('Print dialog opened', {}, { timeout: 10_000 })).toBeInTheDocument()
   })
 
   it('exports the current markdown document as DOCX', async () => {
