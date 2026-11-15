@@ -4,6 +4,9 @@
   --editor-bg: #ffffff;
   --preview-bg: #f8fafb;
   --preview-paper: #ffffff;
+  --outline-bg: var(--preview-bg);
+  --outline-divider: var(--border);
+  --outline-grip: rgba(100, 116, 139, 0.5);
   --preview-paper-border: rgba(148, 163, 184, 0.22);
   --preview-paper-shadow: 0 18px 54px rgba(31, 41, 55, 0.08);
   --segmented-bg: #eef2f4;
@@ -66,6 +69,14 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  :root {
+    --outline-bg: color-mix(in srgb, var(--preview-bg) 80%, var(--preview-paper));
+    --outline-divider: color-mix(in srgb, var(--outline-bg) 82%, var(--text-muted));
+    --outline-grip: color-mix(in srgb, var(--outline-bg) 55%, var(--text-muted));
+  }
 }
 
 :root[data-mdview-color-theme='dark'] {

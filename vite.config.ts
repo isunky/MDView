@@ -9,6 +9,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Reuse the environment per worker while keeping a separate VM for each test file.
+    pool: 'vmThreads',
     exclude: [...configDefaults.exclude, 'tests/e2e/**'],
     setupFiles: './src/test/setup.ts',
     testTimeout: 15_000,

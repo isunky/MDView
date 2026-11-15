@@ -938,7 +938,7 @@
   scrollbar-color: rgba(100, 116, 139, 0.42) transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  background: var(--toolbar-bg);
+  background: var(--outline-bg);
 }
 
 .outline-panel::-webkit-scrollbar {
@@ -1043,8 +1043,8 @@
   gap: 10px;
   margin-bottom: 10px;
   padding: 6px 4px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--outline-divider);
+  background: var(--outline-bg);
 }
 
 .outline-heading {
@@ -1190,11 +1190,11 @@
 .outline-resizer {
   width: 8px;
   min-width: 8px;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--outline-divider);
+  border-right: 1px solid var(--outline-divider);
   background:
-    linear-gradient(to right, transparent 0 3px, rgba(100, 116, 139, 0.5) 3px 5px, transparent 5px),
-    var(--toolbar-bg);
+    linear-gradient(to right, transparent 0 3px, var(--outline-grip) 3px 5px, transparent 5px),
+    var(--outline-bg);
   cursor: col-resize;
 }
 
@@ -1210,8 +1210,8 @@
   min-width: 44px;
   height: 100%;
   border-radius: 0;
-  border-right: 1px solid var(--border);
-  background: var(--toolbar-bg);
+  border-right: 1px solid var(--outline-divider);
+  background: var(--outline-bg);
 }
 
 .outline-list {
