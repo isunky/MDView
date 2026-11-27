@@ -359,6 +359,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         aria-label={label}
         spellCheck={false}
         value={value}
+        onPointerDown={(event) => { event.currentTarget.dataset.pointerFocus = 'true' }}
+        onBlur={(event) => { delete event.currentTarget.dataset.pointerFocus }}
         onChange={(event) => {
           const selection = getTextareaSelection(event.currentTarget)
           const input = event.nativeEvent as InputEvent

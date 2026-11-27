@@ -180,7 +180,6 @@
 .editor-toolbar button:focus-visible,
 .code-block button:focus-visible,
 .table-scroll:focus-visible,
-.markdown-editor:focus-visible,
 .welcome-action:focus-visible,
 .welcome-recent-item:focus-visible,
 .welcome-clear:focus-visible,
@@ -972,6 +971,10 @@
 .preview-panel {
   overflow: auto;
   background: var(--preview-panel-bg);
+}
+
+.view-split .preview-panel {
+  container: split-preview / inline-size;
 }
 
 .search-match {
@@ -2106,6 +2109,33 @@
   background: var(--accent-soft);
 }
 
+.split-scroll-icon {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  color: inherit;
+}
+
+.split-scroll-icon::before,
+.split-scroll-control.active .split-scroll-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+}
+
+.split-scroll-icon::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18v14H3zM12 5v14' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.split-scroll-control.active .split-scroll-icon::after {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.5 15V9l-2 2m2-2 2 2M16.5 9v6l-2-2m2 2 2-2' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@media (forced-colors: active) {
+  .split-scroll-icon { color: ButtonText; forced-color-adjust: none; }
+}
+
 .split-scroll-tooltip {
   position: absolute;
   top: calc(100% + 8px);
@@ -2143,6 +2173,16 @@
   background: transparent;
   font: 14px/1.65 var(--mono-font);
   tab-size: 2;
+}
+
+.markdown-editor:focus {
+  outline: 1px solid color-mix(in srgb, var(--focus) 40%, var(--border));
+  outline-offset: -1px;
+}
+
+.markdown-editor:focus-visible:not([data-pointer-focus]) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
 .editor-search-marker-viewport { position: absolute; z-index: 2; left: 0; overflow: hidden; pointer-events: none; }
@@ -2388,6 +2428,15 @@
   font: var(--reader-font-size)/var(--reader-line-height) var(--reader-font-family);
   letter-spacing: 0.005em;
   overflow-wrap: break-word;
+}
+
+@container split-preview (max-width: 720px) {
+  .markdown-preview {
+    max-width: calc(100% - clamp(16px, 4cqi, 32px));
+    margin-top: clamp(8px, 2.5cqi, 20px);
+    padding: clamp(14px, 4cqi, 28px) clamp(12px, 4cqi, 28px) 40px;
+    border-radius: 10px;
+  }
 }
 
 .markdown-preview > :first-child {
@@ -3324,7 +3373,7 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .markdown-preview {
+  .view-preview .markdown-preview {
     width: var(--reader-content-width);
     max-width: calc(100% - 28px);
     margin-top: 14px;

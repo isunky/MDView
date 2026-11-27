@@ -684,6 +684,7 @@ function AppWorkspace({
                 disableLabel={t.disableSplitScrollSync}
                 enableLabel={t.enableSplitScrollSync}
                 enabled={isSplitScrollSyncEnabled}
+                statusLabel={isSplitScrollSyncEnabled ? t.splitScrollSyncEnabled : t.splitScrollSyncDisabled}
                 onToggle={handleToggleSplitScrollSync}
               />
             ) : undefined}

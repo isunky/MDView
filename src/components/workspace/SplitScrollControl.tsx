@@ -1,10 +1,10 @@
 import { useId } from 'react'
-import { Link2, Unlink2 } from 'lucide-react'
 
 type SplitScrollControlProps = {
   disableLabel: string
   enableLabel: string
   enabled: boolean
+  statusLabel: string
   onToggle: () => void
 }
 
@@ -12,6 +12,7 @@ export function SplitScrollControl({
   disableLabel,
   enableLabel,
   enabled,
+  statusLabel,
   onToggle,
 }: SplitScrollControlProps) {
   const tooltipId = useId()
@@ -27,10 +28,10 @@ export function SplitScrollControl({
         aria-label={actionLabel}
         aria-pressed={enabled}
       >
-        {enabled ? <Link2 aria-hidden="true" /> : <Unlink2 aria-hidden="true" />}
+        <span className="split-scroll-icon" aria-hidden="true" />
       </button>
       <span className="split-scroll-tooltip" id={tooltipId} role="tooltip">
-        {actionLabel}
+        {statusLabel}
       </span>
     </div>
   )

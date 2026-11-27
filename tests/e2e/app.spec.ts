@@ -317,6 +317,34 @@ test('configures individual shortcuts from the App menu', async ({ page }) => {
   await page.screenshot({ path: 'output/playwright/shortcut-settings-dark.png' })
 })
 
+test('adapts split preview padding to the pane and distinguishes editor focus', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  const editor = page.getByRole('textbox', { name: 'Markdown source' })
+  await editor.fill('# Preview\n\nA paragraph for checking split layout.')
+  await page.getByRole('button', { name: 'Split preview and source' }).click()
+
+  const paper = page.getByLabel('Preview panel').locator('.markdown-preview')
+  const divider = page.locator('.split-resizer')
+  const bounds = (await divider.boundingBox())!
+  const widePadding = await paper.evaluate(el => parseFloat(getComputedStyle(el).paddingLeft))
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 40)
+  await page.mouse.down()
+  await page.mouse.move(bounds.x + 250, bounds.y + 40, { steps: 5 })
+  await page.mouse.up()
+  await expect.poll(() => paper.evaluate(el => parseFloat(getComputedStyle(el).paddingLeft))).toBeLessThan(widePadding)
+
+  const sync = page.getByRole('button', { name: 'Disable synchronized scrolling' })
+  await sync.hover()
+  await expect(page.getByRole('tooltip', { name: 'Synchronized scrolling enabled' })).toBeVisible()
+  await editor.click()
+  await expect(editor).toHaveCSS('outline-width', '1px')
+  await sync.focus()
+  await page.keyboard.press('Tab')
+  await expect(editor).toBeFocused()
+  await expect(editor).toHaveCSS('outline-width', '2px')
+})
+
 test('synchronizes split editor and preview scrolling in both directions', async ({ page }) => {
   await page.getByRole('button', { name: 'Create new markdown file' }).click()
   const editor = page.getByRole('textbox', { name: 'Markdown source' })
