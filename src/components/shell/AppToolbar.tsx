@@ -6,6 +6,7 @@ import { supportedLanguages, type AppLanguage, type Translation } from '../../i1
 import type { AppUpdatePhase } from '../../hooks/useAppUpdater'
 import type { AppWindowFrame } from '../../platform/windowFrame'
 import { AppLogo } from './AppLogo'
+import { RecentFileName } from '../workspace/RecentFileName'
 import { WindowControls } from './WindowControls'
 import { WindowPin } from './WindowPin'
 import { formatShortcut } from '../../platform/keyboardShortcuts'
@@ -131,7 +132,7 @@ export function AppToolbar({
           <div className="action-menu-divider" /><div className="action-menu-section-label">{t.recentFiles}</div>
           {recentFiles.length > 0 && onToggleRecentVisibility ? <button type="button" className="action-menu-item" role="menuitem" onClick={onToggleRecentVisibility}>{recentFilesHidden ? <Eye /> : <EyeOff />}{recentFilesHidden ? t.showRecentFiles : t.hideRecentFiles}</button> : null}
           {recentFilesHidden ? <div className="action-menu-empty">{t.recentFilesHidden}</div> : recentFiles.length > 0 ? recentFiles.map((file) => <div className="recent-file-menu-row" key={file.path}>
-            <button type="button" className="action-menu-item recent-file-item" aria-label={file.title} aria-description={failedRecentPaths.includes(file.path) ? t.recentFileUnavailable : undefined} onClick={() => onOpenRecent(file.path)} disabled={!nativeFilesEnabled} title={file.path} role="menuitem"><span className="recent-file-title">{file.title}{failedRecentPaths.includes(file.path) ? <small className="recent-file-warning">{t.recentFileUnavailable}</small> : null}</span></button>
+            <button type="button" className="action-menu-item recent-file-item" aria-label={file.title} aria-description={failedRecentPaths.includes(file.path) ? `${t.recentFileUnavailable} ${file.path}` : file.path} onClick={() => onOpenRecent(file.path)} disabled={!nativeFilesEnabled} title={file.path} role="menuitem"><span className="recent-file-title"><RecentFileName title={file.title} />{failedRecentPaths.includes(file.path) ? <small className="recent-file-warning">{t.recentFileUnavailable}</small> : null}</span></button>
             {canRevealFiles ? <button type="button" className="recent-file-reveal" onClick={() => failedRecentPaths.includes(file.path) && onLocateRecent ? onLocateRecent(file.path) : onReveal(file.path)} title={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.reveal} aria-label={failedRecentPaths.includes(file.path) ? t.locateRecentFile(file.title) : t.revealInFolder(file.title)} role="menuitem"><FolderSearch aria-hidden="true" /></button> : null}
             {onRemoveRecent ? <button type="button" className="recent-file-remove" onClick={() => onRemoveRecent(file.path)} aria-label={t.removeRecentFile(file.title)} title={t.removeRecentFile(file.title)} role="menuitem"><X aria-hidden="true" /></button> : null}
           </div>) : <div className="action-menu-empty">{t.noRecentFiles}</div>}

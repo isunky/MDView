@@ -112,7 +112,6 @@ function AppWorkspace({
   const {
     effectiveTheme,
     preferences: readingPreferences,
-    resetPreferences: resetReadingPreferences,
     updatePreferences: updateReadingPreferences,
   } = useReadingPreferences()
   const readingFontKey = `${readingPreferences.fontFamily}:${readingPreferences.customFontFamily ?? ''}`
@@ -157,6 +156,7 @@ function AppWorkspace({
     discardPendingDraft,
     documentSessionId,
     externalFileState,
+    saveError,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,
@@ -753,9 +753,9 @@ function AppWorkspace({
           {toast.message}
         </Toast>
       ) : null}
-      {!isWelcomeVisible && visibleOperationStatus ? (
-        <div className="app-operation-status" role="status">{visibleOperationStatus}
-          {lastExportPath && fileAccess.openExportResult ? <span className="export-result-actions">
+      {!isWelcomeVisible && (saveError || visibleOperationStatus) ? (
+        <div className={`app-operation-status${saveError ? ' save-error' : ''}`} role={saveError ? 'alert' : 'status'}>{saveError || visibleOperationStatus}
+          {!saveError && lastExportPath && fileAccess.openExportResult ? <span className="export-result-actions">
             <button type="button" onClick={() => void fileAccess.openExportResult!(lastExportPath, false).catch((error) => setStatusMessage(getErrorMessage(error)))}>{t.openExportFile}</button>
             <button type="button" onClick={() => void fileAccess.openExportResult!(lastExportPath, true).catch((error) => setStatusMessage(getErrorMessage(error)))}>{t.openExportFolder}</button>
           </span> : null}
@@ -782,7 +782,6 @@ function AppWorkspace({
         onDiscardDraft={discardPendingDraft}
         onInstallUpdate={() => void handleInstallUpdate()}
         onOpenPortableDownload={() => void openPortableDownload()}
-        onResetReadingPreferences={resetReadingPreferences}
         onRestoreDraft={() => void restorePendingDraft()}
         onUpdateReadingPreferences={updateReadingPreferences}
         onCloseDocxImport={closeDocxImport}

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  DEFAULT_READING_PREFERENCES,
   loadReadingPreferences,
   normalizeReadingPreferences,
   resolveEffectiveReadingTheme,
@@ -40,14 +39,9 @@ export function useReadingPreferences() {
     setPreferences((current) => normalizeReadingPreferences({ ...current, ...changes }))
   }, [])
 
-  const resetPreferences = useCallback(() => {
-    setPreferences(DEFAULT_READING_PREFERENCES)
-  }, [])
-
   return {
     effectiveTheme,
     preferences,
-    resetPreferences,
     updatePreferences,
   }
 }

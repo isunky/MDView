@@ -317,6 +317,24 @@ test('configures individual shortcuts from the App menu', async ({ page }) => {
   await page.screenshot({ path: 'output/playwright/shortcut-settings-dark.png' })
 })
 
+test('keeps key editor controls visible at narrow widths', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.getByRole('button', { name: 'Create new markdown file' }).click()
+  await page.getByRole('textbox', { name: 'Markdown source' }).fill('# Draft')
+  const status = page.locator('.editor-status-bar')
+  await expect(status.locator('.editor-save-state')).toBeVisible()
+  await expect(status.locator('.editor-status-position')).toBeVisible()
+  await expect(status.locator('.editor-status-reading')).toBeHidden()
+  const reading = page.getByRole('button', { name: 'Reading', exact: true })
+  await expect(reading.locator('span')).toBeHidden()
+  await reading.click()
+  await page.getByRole('menuitem', { name: 'Reading Settings' }).click()
+  const settings = page.getByRole('dialog', { name: 'Reading Settings' })
+  await expect(settings.locator('.reading-sample')).toBeInViewport()
+  await expect(settings.getByRole('button', { name: 'Reset layout' })).toBeVisible()
+  await expect(settings.getByRole('button', { name: 'Reset appearance' })).toBeVisible()
+})
+
 test('adapts split preview padding to the pane and distinguishes editor focus', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await page.getByRole('button', { name: 'Create new markdown file' }).click()

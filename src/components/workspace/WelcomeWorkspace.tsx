@@ -8,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { RecentFile } from '../../domain/recentFiles'
+import { RecentFileName } from './RecentFileName'
 import type { Translation } from '../../i18n'
 import { AppLogo } from '../shell/AppLogo'
 
@@ -120,12 +121,12 @@ export function WelcomeWorkspace({
                     onClick={() => void onOpenRecent(file.path)}
                     disabled={!canOpenFiles}
                     aria-label={t.openRecentFile(file.title)}
-                    aria-description={failedRecentPaths.includes(file.path) ? t.recentFileUnavailable : undefined}
+                    aria-description={failedRecentPaths.includes(file.path) ? `${t.recentFileUnavailable} ${file.path}` : file.path}
                     title={file.path}
                   >
                     <FileText aria-hidden="true" />
                     <span className="welcome-recent-meta">
-                      <strong>{file.title}</strong>
+                      <strong><RecentFileName title={file.title} /></strong>
                       <span>{getParentPath(file.path)}</span>
                       {failedRecentPaths.includes(file.path) ? <small className="recent-file-warning">{t.recentFileUnavailable}</small> : null}
                     </span>

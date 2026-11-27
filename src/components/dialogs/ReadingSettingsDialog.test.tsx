@@ -22,7 +22,7 @@ describe('ReadingSettingsDialog', () => {
     const user = userEvent.setup()
     const onUpdate = vi.fn()
     render(<ReadingSettingsDialog open preferences={DEFAULT_READING_PREFERENCES} onClose={vi.fn()}
-      onReset={vi.fn()} onUpdate={onUpdate} t={translations.en} />)
+      onUpdate={onUpdate} t={translations.en} />)
     expect(screen.getByRole('button', { name: 'Jade' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: 'Ocean' }))
     expect(onUpdate).toHaveBeenCalledWith({ colorScheme: 'ocean' })
@@ -31,7 +31,7 @@ describe('ReadingSettingsDialog', () => {
     const user = userEvent.setup()
     function Settings() {
       const [preferences, setPreferences] = useState(DEFAULT_READING_PREFERENCES)
-      return <ReadingSettingsDialog open preferences={preferences} onClose={vi.fn()} onReset={vi.fn()}
+      return <ReadingSettingsDialog open preferences={preferences} onClose={vi.fn()}
         onUpdate={(changes) => setPreferences((current) => ({ ...current, ...changes }))} t={translations.en} />
     }
     render(<Settings />)
@@ -51,7 +51,7 @@ describe('ReadingSettingsDialog', () => {
     { fontSize: 24, lineHeight: 2.5, contentWidth: 100, action: 'Increase' },
   ])('disables adjustments at the $action limit', ({ action, ...values }) => {
     render(<ReadingSettingsDialog open preferences={{ ...DEFAULT_READING_PREFERENCES, ...values }}
-      onClose={vi.fn()} onReset={vi.fn()} onUpdate={vi.fn()} t={translations.en} />)
+      onClose={vi.fn()} onUpdate={vi.fn()} t={translations.en} />)
     expect(screen.getByRole('button', { name: `${action}: ${translations.en.fontSize(values.fontSize)}` })).toBeDisabled()
     expect(screen.getByRole('button', { name: `${action}: ${translations.en.lineHeight(values.lineHeight)}` })).toBeDisabled()
     expect(screen.getByRole('button', { name: `${action}: ${translations.en.contentWidth(values.contentWidth)}` })).toBeDisabled()
@@ -66,7 +66,6 @@ describe('ReadingSettingsDialog', () => {
         open
         preferences={DEFAULT_READING_PREFERENCES}
         onClose={vi.fn()}
-        onReset={vi.fn()}
         onUpdate={onUpdate}
         t={translations.en}
       />,
@@ -83,5 +82,19 @@ describe('ReadingSettingsDialog', () => {
       fontFamily: 'custom',
       customFontFamily: 'Aptos',
     })
+  })
+
+  it('resets layout and appearance independently', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+    render(<ReadingSettingsDialog open preferences={{ ...DEFAULT_READING_PREFERENCES, fontSize: 20, colorScheme: 'rose' }}
+      onClose={vi.fn()} onUpdate={onUpdate} t={translations.en} />)
+
+    await user.click(screen.getByRole('button', { name: 'Reset layout' }))
+    expect(onUpdate).toHaveBeenLastCalledWith({
+      fontFamily: 'sans', customFontFamily: null, fontSize: 16, lineHeight: 1.8, contentWidth: 80,
+    })
+    await user.click(screen.getByRole('button', { name: 'Reset appearance' }))
+    expect(onUpdate).toHaveBeenLastCalledWith({ colorScheme: 'jade', themeMode: 'system' })
   })
 })

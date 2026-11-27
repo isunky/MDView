@@ -35,7 +35,6 @@ export function DocumentOutline({
   t,
 }: DocumentOutlineProps) {
   const depthPickerRef = useRef<HTMLDetailsElement>(null)
-  const activeItemRef = useRef<HTMLButtonElement>(null)
   const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const menuTrigger = useRef<HTMLButtonElement | null>(null)
@@ -68,19 +67,6 @@ export function DocumentOutline({
     parents.push(item)
     return hidden ? [] : [{ item, hasChildren: items[index + 1]?.level > item.level }]
   })
-
-  useEffect(() => {
-    const activeItem = activeItemRef.current
-    if (typeof activeItem?.scrollIntoView !== 'function') {
-      return
-    }
-
-    activeItem.scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest',
-      behavior: 'auto',
-    })
-  }, [activeId, collapsedIds, maxDepth])
 
   function handleDepthChange(depth: OutlineDepth) {
     onMaxDepthChange(depth)
@@ -180,7 +166,6 @@ export function DocumentOutline({
                   aria-label={t.jumpTo(item.text)}
                   title={item.text}
                   aria-current={isActive ? 'location' : undefined}
-                  ref={isActive ? activeItemRef : undefined}
                 >
                   {item.text}
                 </button>

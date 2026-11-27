@@ -78,7 +78,7 @@ describe('DocumentOutline', () => {
     expect(screen.queryByText('2 headings')).not.toBeInTheDocument()
   })
 
-  it('keeps the active heading visible when the current reading heading changes', () => {
+  it('updates the current heading without moving the directory viewport', () => {
     const scrollIntoView = vi.fn()
     const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
     window.HTMLElement.prototype.scrollIntoView = scrollIntoView
@@ -98,21 +98,9 @@ describe('DocumentOutline', () => {
       }
       const { rerender } = render(<DocumentOutline {...props} activeId="intro" />)
 
-      expect(scrollIntoView).toHaveBeenLastCalledWith({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: 'auto',
-      })
-
-      scrollIntoView.mockClear()
       rerender(<DocumentOutline {...props} activeId="details" />)
 
-      expect(scrollIntoView).toHaveBeenCalledTimes(1)
-      expect(scrollIntoView).toHaveBeenCalledWith({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: 'auto',
-      })
+      expect(scrollIntoView).not.toHaveBeenCalled()
       expect(screen.getByRole('button', { name: 'Jump to Details' })).toHaveAttribute(
         'aria-current',
         'location',

@@ -59,11 +59,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(scrollTo).toHaveBeenCalledWith({ top: 404, behavior: 'smooth' })
     })
-    expect(scrollIntoView).toHaveBeenLastCalledWith({
-      block: 'nearest',
-      inline: 'nearest',
-      behavior: 'auto',
-    })
+    expect(scrollIntoView).not.toHaveBeenCalled()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Jump to Scope' })).toHaveAttribute(
         'aria-current',

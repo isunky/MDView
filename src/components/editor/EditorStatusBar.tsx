@@ -50,9 +50,9 @@ export function EditorStatusBar({
       <span className={`editor-save-state ${isSaving ? 'saving' : isDirty || !hasFile ? 'dirty' : 'saved'}`}>
         {saveState}
       </span>
-      <span>{labels.wordCount(statistics.wordCount)}</span>
-      <span>{labels.characterCount(statistics.characterCount)}</span>
-      <span>{labels.readingTime(statistics.readingMinutes)}</span>
+      <span className="editor-status-words">{labels.wordCount(statistics.wordCount)}</span>
+      <span className="editor-status-characters">{labels.characterCount(statistics.characterCount)}</span>
+      <span className="editor-status-reading">{labels.readingTime(statistics.readingMinutes)}</span>
       <span className="editor-status-position">
         {labels.cursorPosition(cursorPosition.line, cursorPosition.column)}
       </span>

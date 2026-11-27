@@ -2,6 +2,7 @@ import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { Minus, Monitor, Moon, Plus, RotateCcw, Sun, X } from 'lucide-react'
 import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
+  DEFAULT_READING_PREFERENCES,
   READING_CONTENT_WIDTH_RANGE,
   READING_COLOR_SCHEMES,
   READING_FONT_SIZE_RANGE,
@@ -16,7 +17,6 @@ type ReadingSettingsDialogProps = {
   open: boolean
   preferences: ReadingPreferences
   onClose: () => void
-  onReset: () => void
   onUpdate: (changes: Partial<ReadingPreferences>) => void
   t: Translation
 }
@@ -27,7 +27,6 @@ export function ReadingSettingsDialog({
   open,
   preferences,
   onClose,
-  onReset,
   onUpdate,
   t,
 }: ReadingSettingsDialogProps) {
@@ -77,7 +76,7 @@ export function ReadingSettingsDialog({
   }
 
   return (
-    <div ref={dialogRef} className="dialog-backdrop" onMouseDown={(event) => {
+    <div ref={dialogRef} className="dialog-backdrop reading-settings-backdrop" onMouseDown={(event) => {
       if (event.currentTarget === event.target) {
         onClose()
       }
@@ -181,6 +180,7 @@ export function ReadingSettingsDialog({
           <h3>{t.readingSampleTitle}</h3>
           <div className="reading-sample-stage">
             <div className="reading-sample" style={{ width: `${preferences.contentWidth}%` }}>
+              <h4>Markdown</h4>
               <p>{t.readingSampleText}</p>
               <code>const theme = "MDView"</code>
               <table><tbody><tr><th>Markdown</th><td>{t.readingSampleCode}</td></tr></tbody></table>
@@ -188,9 +188,20 @@ export function ReadingSettingsDialog({
           </div>
         </section>
         <footer className="reading-settings-actions">
-          <button type="button" className="reading-settings-reset" onClick={onReset}>
+          <button type="button" className="reading-settings-reset" onClick={() => {
+            const { fontFamily, customFontFamily, fontSize, lineHeight, contentWidth } = DEFAULT_READING_PREFERENCES
+            setIsFontPickerOpen(false)
+            onUpdate({ fontFamily, customFontFamily, fontSize, lineHeight, contentWidth })
+          }}>
             <RotateCcw aria-hidden="true" />
-            {t.resetReadingSettings}
+            {t.resetReadingLayout}
+          </button>
+          <button type="button" className="reading-settings-reset" onClick={() => {
+            const { themeMode, colorScheme } = DEFAULT_READING_PREFERENCES
+            onUpdate({ themeMode, colorScheme })
+          }}>
+            <RotateCcw aria-hidden="true" />
+            {t.resetReadingAppearance}
           </button>
         </footer>
       </section>

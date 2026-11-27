@@ -59,6 +59,7 @@ export function useDocumentController({
 }: UseDocumentControllerOptions) {
   const [markdownDocument, setMarkdownDocument] = useState(createInitialDocument)
   const [statusMessage, setStatusMessage] = useState<'saved' | 'opened' | string>('saved')
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [recentFiles, setRecentFiles] = useState(loadRecentFiles)
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -106,6 +107,7 @@ export function useDocumentController({
   }, [])
 
   const startDraftSession = useCallback((id = createDocumentDraftId()) => {
+    setSaveError(null)
     sessionIdRef.current = id
     setDocumentSessionId(id)
     backupFailureNotifiedRef.current = false
@@ -368,6 +370,7 @@ export function useDocumentController({
             : await fileAccess.saveMarkdownFile(currentPath, contentToSave)
 
         if (typeof savedResult === 'string') {
+          setSaveError(null)
           clearCurrentDraft()
           setMarkdownDocument((current) => markDocumentSaved(current, savedResult, contentToSave, current.savedRevision))
           setExternalFileState(null)
@@ -378,6 +381,7 @@ export function useDocumentController({
 
         const structuredResult = savedResult as Exclude<typeof savedResult, string | null>
         if (structuredResult && ((isSaveAs && 'revision' in structuredResult) || (!isSaveAs && 'status' in structuredResult && (structuredResult as import('../platform/fileAccess').MarkdownFileSaveResult).status === 'saved'))) {
+          setSaveError(null)
           const completed = structuredResult as { path: string; revision: string }
           const savedPath = completed.path
           const savedRevision = completed.revision
@@ -400,7 +404,7 @@ export function useDocumentController({
           }
         }
       } catch (error) {
-        setStatusMessage(getErrorMessage(error, fileOperationFailedMessage))
+        setSaveError(getErrorMessage(error, fileOperationFailedMessage))
       }
 
       return null
@@ -562,6 +566,7 @@ export function useDocumentController({
     recentFiles,
     restorePendingDraft,
     retryExternalFile: checkCurrentFile,
+    saveError,
     setStatusMessage,
     statusMessage,
     transformDocumentContent,

@@ -285,6 +285,10 @@
   gap: 4px;
 }
 
+.recent-file-name { display: flex; min-width: 0; white-space: nowrap; }
+.recent-file-name > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.recent-file-name > span:last-child { display: flex; justify-content: end; flex: 0 0 auto; max-width: 65%; overflow: hidden; }
+
 .toolbar .recent-file-reveal {
   width: 30px;
   height: 26px;
@@ -513,11 +517,19 @@
 
 .app-operation-status {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  left: 50%;
+  translate: -50% 0;
+  bottom: 48px;
   z-index: 39;
   max-width: min(360px, calc(100vw - 48px));
   font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.app-operation-status.save-error {
+  color: var(--error-text);
+  background: var(--surface-raised);
+  border-color: var(--error-text);
 }
 
 .workspace {
@@ -733,6 +745,10 @@
   background: var(--accent);
 }
 
+.welcome-action:not(.primary):not(:disabled) {
+  background: transparent;
+}
+
 .welcome-action:hover:not(:disabled) {
   border-color: #8aa9a6;
   background: var(--control-hover);
@@ -859,7 +875,7 @@
 }
 
 .welcome-recent-meta strong,
-.welcome-recent-meta span {
+.welcome-recent-meta > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -872,7 +888,7 @@
   font-weight: 680;
 }
 
-.welcome-recent-meta span {
+.welcome-recent-meta > span {
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.3;
@@ -962,6 +978,7 @@
 }
 
 .editor-panel {
+  container: editor-pane / inline-size;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -1309,7 +1326,6 @@
 }
 
 .outline-link:hover {
-  border-color: var(--border);
   background: var(--control-hover);
 }
 
@@ -1346,8 +1362,12 @@
 .outline-link.active {
   border-left-color: var(--accent);
   color: var(--accent);
-  background: var(--accent-soft);
   font-weight: 650;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .outline-empty {
@@ -1910,6 +1930,19 @@
 
 .editor-status-position {
   margin-left: auto;
+}
+
+@container editor-pane (max-width: 530px) {
+  .editor-status-reading { display: none; }
+}
+
+@container editor-pane (max-width: 400px) {
+  .editor-status-bar { gap: 8px; }
+  .editor-status-characters { display: none; }
+}
+
+@container editor-pane (max-width: 320px) {
+  .editor-status-words { display: none; }
 }
 
 .editor-toolbar {
@@ -3240,6 +3273,8 @@
 .reading-settings-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 22px;
 }
 
@@ -3280,6 +3315,25 @@
   .reading-sample-section { grid-column: 2; grid-row: 2 / 5; margin: 0; padding: 0 0 0 18px; border-top: 0; border-left: 1px solid var(--border); }
   .reading-sample { min-height: 280px; max-height: 400px; }
   .reading-settings-actions { margin-top: 0; }
+}
+
+.reading-sample h4 { margin: 0 0 8px; color: var(--text-strong); }
+
+@media (max-width: 759px) {
+  .reading-sample-section { position: sticky; bottom: 0; background: var(--surface-raised); }
+  .reading-sample { max-height: min(150px, 23dvh); }
+}
+
+@media (min-width: 1120px) {
+  .view-preview:not(.welcome-open) .reading-settings-backdrop {
+    justify-items: end;
+    background: color-mix(in srgb, var(--text-strong) 10%, transparent);
+  }
+  .view-preview:not(.welcome-open) .reading-settings-dialog {
+    width: min(480px, 100%);
+    display: block;
+  }
+  .view-preview:not(.welcome-open) .reading-sample-section { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -3531,14 +3585,14 @@
 .math-editor-actions svg { width: 16px; height: 16px; }
 
 @media (max-width: 520px) {
-  .topbar.window-frame-native .toolbar > .action-menu > button {
+  .topbar .toolbar > .action-menu > button {
     width: 36px;
     justify-content: center;
     padding: 0;
   }
 
-  .topbar.window-frame-native .toolbar > .action-menu > button > span,
-  .topbar.window-frame-native .toolbar > .action-menu > button > svg:last-child {
+  .topbar .toolbar > .action-menu > button > span,
+  .topbar .toolbar > .action-menu > button > svg:last-child {
     display: none;
   }
 

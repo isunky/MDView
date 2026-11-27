@@ -44,6 +44,11 @@ describe('App', () => {
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
       expect(access.openMarkdownFile).not.toHaveBeenCalled()
       expect(screen.getByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Keep these changes')
+      if (outcome === 'failed') {
+        expect(await screen.findByRole('alert')).toHaveTextContent('Disk is full')
+        fireEvent.change(screen.getByRole('textbox', { name: 'Markdown source' }), { target: { value: '# Keep editing' } })
+        expect(screen.getByRole('alert')).toHaveTextContent('Disk is full')
+      }
     }
   })
 
@@ -356,7 +361,7 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reading' }))
     await user.click(screen.getByRole('menuitem', { name: 'Reading Settings' }))
-    expect(screen.getByRole('dialog', { name: 'Reading Settings' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Reading Settings' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Dark' }))
 
